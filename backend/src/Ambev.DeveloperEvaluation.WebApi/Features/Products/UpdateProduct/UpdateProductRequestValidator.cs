@@ -8,14 +8,15 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Products.UpdateProduct;
 /// </summary>
 public class UpdateProductRequestValidator : AbstractValidator<UpdateProductRequest>
 {
+    // Work item: BUG-009 (FEAT-010)
     /// <summary>
     /// Initializes validation rules for UpdateProductRequest: the id is required; the description is required
-    /// and has at most 200 characters; the unit price is greater than zero.
+    /// and has at most 200 characters; the unit price is greater than zero and fits numeric(18,2).
     /// </summary>
     public UpdateProductRequestValidator()
     {
         RuleFor(x => x.Id).NotEmpty().WithMessage("Product ID is required");
         RuleFor(x => x.Description).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.UnitPrice).GreaterThan(0m);
+        RuleFor(x => x.UnitPrice).GreaterThan(0m).PrecisionScale(18, 2, true);
     }
 }

@@ -73,14 +73,20 @@ public class ProductRepository : IProductRepository
         return true;
     }
 
+    // Work item: BUG-008 (FEAT-010)
     /// <summary>
-    /// Retrieves one page of products ordered by description
+    /// Retrieves one page of products ordered by description. A page past the last one, including one whose offset does not fit
+    /// an int, is empty
     /// </summary>
     public async Task<(IReadOnlyList<Product> Items, int TotalCount)> ListAsync(int page, int size, CancellationToken cancellationToken = default)
     {
         var query = _context.Products.AsNoTracking().OrderBy(p => p.Description).ThenBy(p => p.Id);
         var totalCount = await query.CountAsync(cancellationToken);
-        var items = await query.Skip((page - 1) * size).Take(size).ToListAsync(cancellationToken);
+        var offset = (long)(page - 1) * size;
+        if (offset >= totalCount)
+            return ([], totalCount);
+
+        var items = await query.Skip((int)offset).Take(size).ToListAsync(cancellationToken);
         return (items, totalCount);
     }
 }

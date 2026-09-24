@@ -1,0 +1,126 @@
+using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.ORM.Repositories;
+using Xunit;
+
+namespace Ambev.DeveloperEvaluation.Integration;
+
+// Work item: BUG-008 (FEAT-010)
+/// <summary>
+/// Contains integration tests for the paging of the customer, branch, product, and sale repositories.
+/// </summary>
+public class ListPaginationTests : IClassFixture<PostgresFixture>
+{
+    private readonly PostgresFixture _fixture;
+
+    /// <summary>
+    /// Initializes the tests with the shared throwaway database.
+    /// </summary>
+    public ListPaginationTests(PostgresFixture fixture)
+    {
+        _fixture = fixture;
+    }
+
+    /// <summary>
+    /// Tests that a page number whose offset does not fit an int returns an empty page with the total count.
+    /// </summary>
+    [Theory(DisplayName = "Given a page whose offset overflows an int When listing Then returns an empty page")]
+    [InlineData("customers")]
+    [InlineData("branches")]
+    [InlineData("products")]
+    [InlineData("sales")]
+    public async Task Given_PageOffsetOverflowingInt_When_Listing_Then_ReturnsEmptyPage(string resource)
+    {
+        // Arrange
+        await SeedOneAsync(resource);
+
+        // Act
+        var (count, totalCount) = await ListAsync(resource, int.MaxValue, 100);
+
+        // Assert
+        Assert.Equal(0, count);
+        Assert.True(totalCount >= 1);
+    }
+
+    /// <summary>
+    /// Tests that the first page still returns the stored rows.
+    /// </summary>
+    [Theory(DisplayName = "Given stored rows When listing the first page Then returns them")]
+    [InlineData("customers")]
+    [InlineData("branches")]
+    [InlineData("products")]
+    [InlineData("sales")]
+    public async Task Given_StoredRows_When_ListingFirstPage_Then_ReturnsThem(string resource)
+    {
+        // Arrange
+        await SeedOneAsync(resource);
+
+        // Act
+        var (count, totalCount) = await ListAsync(resource, 1, 100);
+
+        // Assert
+        Assert.True(count >= 1);
+        Assert.Equal(totalCount, count);
+    }
+
+    private async Task SeedOneAsync(string resource)
+    {
+        await using var context = _fixture.CreateContext();
+        switch (resource)
+        {
+            case "customers":
+                context.Customers.Add(new Customer { Name = "Acme Market" });
+                break;
+            case "branches":
+                context.Branches.Add(new Branch { Name = "Downtown" });
+                break;
+            case "products":
+                context.Products.Add(new Product { Description = "Beer 350ml", UnitPrice = 10m });
+                break;
+            default:
+                context.Sales.Add(new Sale
+                {
+                    SaleDate = DateTime.UtcNow,
+                    CustomerId = Guid.NewGuid(),
+                    CustomerName = "Acme Market",
+                    BranchId = Guid.NewGuid(),
+                    BranchName = "Downtown",
+                    TotalAmount = 10m,
+                    Items =
+                    [
+                        new SaleItem
+                        {
+                            LineNumber = 1,
+                            ProductId = Guid.NewGuid(),
+                            ProductDescription = "Beer 350ml",
+                            UnitPrice = 10m,
+                            Quantity = 1,
+                            TotalAmount = 10m
+                        }
+                    ]
+                });
+                break;
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    private async Task<(int Count, int TotalCount)> ListAsync(string resource, int page, int size)
+    {
+        await using var context = _fixture.CreateContext();
+        switch (resource)
+        {
+            case "customers":
+                var customers = await new CustomerRepository(context).ListAsync(page, size);
+                return (customers.Items.Count, customers.TotalCount);
+            case "branches":
+                var branches = await new BranchRepository(context).ListAsync(page, size);
+                return (branches.Items.Count, branches.TotalCount);
+            case "products":
+                var products = await new ProductRepository(context).ListAsync(page, size);
+                return (products.Items.Count, products.TotalCount);
+            default:
+                var sales = await new SaleRepository(context).ListAsync(page, size);
+                return (sales.Items.Count, sales.TotalCount);
+        }
+    }
+}

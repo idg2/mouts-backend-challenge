@@ -14,6 +14,12 @@ public class SaleItem : BaseEntity
     /// </summary>
     public Guid SaleId { get; set; }
 
+    // Work item: TD-010 (FEAT-010)
+    /// <summary>
+    /// Gets or sets the position of the item in the sale, starting at 1, in the order the client sent the items.
+    /// </summary>
+    public int LineNumber { get; set; }
+
     /// <summary>
     /// Gets or sets the product id (external identity, no foreign key).
     /// </summary>

@@ -3,6 +3,7 @@ using MediatR;
 using FluentValidation;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Common.Security;
 
 namespace Ambev.DeveloperEvaluation.Application.Users.CreateUser;
@@ -29,6 +30,7 @@ public class CreateUserHandler : IRequestHandler<CreateUserCommand, CreateUserRe
         _passwordHasher = passwordHasher;
     }
 
+    // Work item: BUG-003
     /// <summary>
     /// Handles the CreateUserCommand request
     /// </summary>
@@ -45,7 +47,7 @@ public class CreateUserHandler : IRequestHandler<CreateUserCommand, CreateUserRe
 
         var existingUser = await _userRepository.GetByEmailAsync(command.Email, cancellationToken);
         if (existingUser != null)
-            throw new InvalidOperationException($"User with email {command.Email} already exists");
+            throw new DuplicateEntryException($"User with email {command.Email} already exists");
 
         var user = _mapper.Map<User>(command);
         user.Password = _passwordHasher.HashPassword(command.Password);

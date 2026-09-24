@@ -1,6 +1,8 @@
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Ambev.DeveloperEvaluation.ORM.Repositories;
 
@@ -21,13 +23,14 @@ public class ProductRepository : IProductRepository
         _context = context;
     }
 
+    // Work item: TASK-016 (FEAT-010), FEAT-013
     /// <summary>
-    /// Creates a new product in the database
+    /// Creates a new product in the database. A code already stored raises <see cref="DuplicateEntryException"/>
     /// </summary>
     public async Task<Product> CreateAsync(Product product, CancellationToken cancellationToken = default)
     {
         await _context.Products.AddAsync(product, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveChangesAsync(product, cancellationToken);
         return product;
     }
 
@@ -37,6 +40,15 @@ public class ProductRepository : IProductRepository
     public async Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.Products.FirstOrDefaultAsync(p => p.Id == id, cancellationToken);
+    }
+
+    // Work item: FEAT-013
+    /// <summary>
+    /// Retrieves a product by its code, without tracking
+    /// </summary>
+    public async Task<Product?> GetByCodeAsync(string code, CancellationToken cancellationToken = default)
+    {
+        return await _context.Products.AsNoTracking().FirstOrDefaultAsync(p => p.Code == code, cancellationToken);
     }
 
     /// <summary>
@@ -50,13 +62,35 @@ public class ProductRepository : IProductRepository
             .ToListAsync(cancellationToken);
     }
 
+    // Work item: TASK-016 (FEAT-010), FEAT-013
     /// <summary>
-    /// Saves the changes made to a tracked product
+    /// Saves the changes made to a tracked product. A code used by another product raises <see cref="DuplicateEntryException"/>
     /// </summary>
     public async Task<Product> UpdateAsync(Product product, CancellationToken cancellationToken = default)
     {
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveChangesAsync(product, cancellationToken);
         return product;
+    }
+
+    // Work item: FEAT-013
+    /// <summary>
+    /// Saves the pending changes, turning a violation of the unique code index into <see cref="DuplicateEntryException"/>,
+    /// so a request that passed the handler's check concurrently with another gets the same answer
+    /// </summary>
+    private async Task SaveChangesAsync(Product product, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException
+                                           {
+                                               SqlState: PostgresErrorCodes.UniqueViolation,
+                                               ConstraintName: "IX_Products_Code"
+                                           })
+        {
+            throw new DuplicateEntryException($"Product with code {product.Code} already exists");
+        }
     }
 
     /// <summary>

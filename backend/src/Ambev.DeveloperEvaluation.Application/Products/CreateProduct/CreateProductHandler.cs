@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentValidation;
@@ -26,8 +27,9 @@ public class CreateProductHandler : IRequestHandler<CreateProductCommand, Create
         _mapper = mapper;
     }
 
+    // Work item: TASK-020 (FEAT-010), FEAT-013
     /// <summary>
-    /// Handles the CreateProductCommand request.
+    /// Handles the CreateProductCommand request. The code is stored trimmed and in upper case, and must not be in use.
     /// </summary>
     /// <param name="command">The CreateProduct command</param>
     /// <param name="cancellationToken">Cancellation token</param>
@@ -40,7 +42,12 @@ public class CreateProductHandler : IRequestHandler<CreateProductCommand, Create
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        var code = command.Code.Trim().ToUpperInvariant();
+        if (await _productRepository.GetByCodeAsync(code, cancellationToken) != null)
+            throw new DuplicateEntryException($"Product with code {code} already exists");
+
         var product = _mapper.Map<Product>(command);
+        product.Code = code;
         var createdProduct = await _productRepository.CreateAsync(product, cancellationToken);
         return _mapper.Map<CreateProductResult>(createdProduct);
     }

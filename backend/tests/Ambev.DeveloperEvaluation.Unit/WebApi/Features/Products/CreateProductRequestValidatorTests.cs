@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.WebApi.Features.Products;
 
-// Work item: BUG-009 (FEAT-010), TD-007 (FEAT-010)
+// Work item: BUG-009 (FEAT-010), TD-007 (FEAT-010), FEAT-013
 /// <summary>
 /// Contains unit tests for the <see cref="CreateProductRequestValidator"/> class.
 /// Tests cover description limits and the unit price range and precision.
@@ -73,8 +73,51 @@ public class CreateProductRequestValidatorTests
         result.Errors.Select(e => e.PropertyName).Should().Contain("Description");
     }
 
+    // Work item: FEAT-013
+    /// <summary>
+    /// Tests that a code of up to 50 characters passes.
+    /// </summary>
+    [Theory(DisplayName = "Given a code within the length limit When validated Then is valid")]
+    [InlineData(1)]
+    [InlineData(50)]
+    public void Given_CodeWithinLengthLimit_When_Validated_Then_IsValid(int length)
+    {
+        // Arrange
+        var request = ValidRequest();
+        request.Code = new string('A', length);
+
+        // Act
+        var result = _validator.Validate(request);
+
+        // Assert
+        result.IsValid.Should().BeTrue();
+    }
+
+    // Work item: FEAT-013
+    /// <summary>
+    /// Tests that an empty, blank, or longer than 50 characters code is rejected.
+    /// </summary>
+    [Theory(DisplayName = "Given an invalid code When validated Then is invalid")]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("ABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJX")]
+    public void Given_InvalidCode_When_Validated_Then_IsInvalid(string code)
+    {
+        // Arrange
+        var request = ValidRequest();
+        request.Code = code;
+
+        // Act
+        var result = _validator.Validate(request);
+
+        // Assert
+        result.Errors.Select(e => e.PropertyName).Should().Contain("Code");
+    }
+
+    // Work item: FEAT-013
     private static CreateProductRequest ValidRequest() => new()
     {
+        Code = "BEER-350",
         Description = "Beer 350ml",
         UnitPrice = 10m
     };

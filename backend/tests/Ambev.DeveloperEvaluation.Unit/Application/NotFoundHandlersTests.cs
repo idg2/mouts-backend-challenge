@@ -71,6 +71,7 @@ public class NotFoundHandlersTests
         await act.Should().ThrowAsync<ValidationException>();
     }
 
+    // Work item: TD-007 (FEAT-010), FEAT-013
     private Task HandleAsync(string operation, Guid id) => operation switch
     {
         "customers/get" => new GetCustomerHandler(_customers, _mapper).Handle(new GetCustomerCommand(id), CancellationToken.None),
@@ -83,7 +84,7 @@ public class NotFoundHandlersTests
         "branches/delete" => new DeleteBranchHandler(_branches).Handle(new DeleteBranchCommand(id), CancellationToken.None),
         "products/get" => new GetProductHandler(_products, _mapper).Handle(new GetProductCommand(id), CancellationToken.None),
         "products/update" => new UpdateProductHandler(_products, _mapper)
-            .Handle(new UpdateProductCommand { Id = id, Description = "Beer 350ml", UnitPrice = 10m }, CancellationToken.None),
+            .Handle(new UpdateProductCommand { Id = id, Code = "BEER-350", Description = "Beer 350ml", UnitPrice = 10m }, CancellationToken.None),
         "products/delete" => new DeleteProductHandler(_products).Handle(new DeleteProductCommand(id), CancellationToken.None),
         "sales/get" => new GetSaleHandler(_sales, _mapper).Handle(new GetSaleCommand(id), CancellationToken.None),
         _ => new DeleteSaleHandler(_sales).Handle(new DeleteSaleCommand(id), CancellationToken.None)

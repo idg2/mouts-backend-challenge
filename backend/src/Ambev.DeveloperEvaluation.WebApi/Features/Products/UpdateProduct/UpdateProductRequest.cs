@@ -11,6 +11,12 @@ public class UpdateProductRequest
     /// </summary>
     public Guid Id { get; set; }
 
+    // Work item: FEAT-013
+    /// <summary>
+    /// Gets or sets the new product code. Required, at most 50 characters; stored trimmed and in upper case, and unique.
+    /// </summary>
+    public string Code { get; set; } = string.Empty;
+
     /// <summary>
     /// Gets or sets the new product description. Required, at most 200 characters.
     /// </summary>

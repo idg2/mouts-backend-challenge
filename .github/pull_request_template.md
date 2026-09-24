@@ -1,10 +1,8 @@
 ## Work items
 ## Work items
 
-<!-- IDs from docs/work-items.json. The PR title uses a semantic prefix (feat:, fix:, chore:, docs:, test:). -->
+<!-- IDs from work-items.json. The PR title uses a semantic prefix (feat:, fix:, chore:, docs:, test:). -->
 - Closes: FEAT-000 / TASK-000 / BUG-000 / TD-000
-- Spec: `docs/superpowers/specs/...` (§ sections touched)
-- Plan: `docs/superpowers/plans/...`
 
 ## Summary
 
@@ -44,7 +42,6 @@
 
 - [ ] Base branch is `dev` (Git Flow)
 - [ ] Every new type and every changed member has its `// Work item:` comment
-- [ ] `docs/work-items.json` is updated on `dev` (statuses; bugs and debt found during the work are added as `backlog`)
 - [ ] Follows the existing layer pattern (Request/Validator/Response/Profile in WebApi; Command/Handler/Validator/Result/Profile in Application)
 - [ ] XML doc comments on public members; file-scoped namespaces
 - [ ] Build has no new warnings

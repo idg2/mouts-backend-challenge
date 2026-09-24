@@ -51,7 +51,7 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         _timeProvider = timeProvider;
     }
 
-    // Work item: TD-010 (FEAT-010)
+    // Work item: TD-010 (FEAT-010), TASK-037 (FEAT-006)
     /// <summary>
     /// Handles the CreateSaleCommand request.
     /// </summary>
@@ -65,6 +65,13 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
+
+        if (command.Id is Guid presetId)
+        {
+            var stored = await _saleRepository.GetByIdAsync(presetId, cancellationToken);
+            if (stored != null)
+                return _mapper.Map<SaleResult>(stored);
+        }
 
         var customer = await _customerRepository.GetByIdAsync(command.CustomerId, cancellationToken);
         var branch = await _branchRepository.GetByIdAsync(command.BranchId, cancellationToken);
@@ -89,6 +96,8 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
 
         var sale = new Sale
         {
+            // Guid.Empty leaves the id to the column default (gen_random_uuid()).
+            Id = command.Id ?? Guid.Empty,
             SaleDate = _timeProvider.GetUtcNow().UtcDateTime,
             CustomerId = customer.Id,
             CustomerName = customer.Name,

@@ -14,6 +14,7 @@ using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Rebus.Bus;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales;
 
@@ -31,28 +32,41 @@ public class SalesController : BaseController
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
 
+    // Work item: TASK-039 (FEAT-006)
+    private readonly IBus _bus;
+
+    // Work item: TASK-039 (FEAT-006)
     /// <summary>
     /// Initializes a new instance of SalesController
     /// </summary>
     /// <param name="mediator">The mediator instance</param>
     /// <param name="mapper">The AutoMapper instance</param>
-    public SalesController(IMediator mediator, IMapper mapper)
+    /// <param name="bus">The bus that queues sales sent with Prefer: respond-async</param>
+    public SalesController(IMediator mediator, IMapper mapper, IBus bus)
     {
         _mediator = mediator;
         _mapper = mapper;
+        _bus = bus;
     }
 
+    // Work item: TASK-039 (FEAT-006)
     /// <summary>
-    /// Creates a new sale with its items
+    /// Creates a new sale with its items. With the header Prefer: respond-async the sale is queued instead: the
+    /// response is 202 with the id it will be stored under, and GET /api/sales/{id} answers 404 until it is stored
     /// </summary>
     /// <param name="request">The sale creation request</param>
+    /// <param name="prefer">The RFC 7240 Prefer header; respond-async queues the sale</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>The created sale with its sale number, date, and copied catalog values</returns>
+    /// <returns>The created sale, or the id of the queued sale</returns>
     [HttpPost]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponseWithData<SaleResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponseWithData<SaleAcceptedResponse>), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateSale([FromBody] CreateSaleRequest request, CancellationToken cancellationToken)
+    public async Task<IActionResult> CreateSale(
+        [FromBody] CreateSaleRequest request,
+        [FromHeader(Name = "Prefer")] string? prefer,
+        CancellationToken cancellationToken)
     {
         var validator = new CreateSaleRequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
@@ -61,6 +75,21 @@ public class SalesController : BaseController
             return BadRequest(validationResult.Errors);
 
         var command = _mapper.Map<CreateSaleCommand>(request);
+
+        if (PreferHeader.RequestsRespondAsync(prefer))
+        {
+            command.Id = Guid.NewGuid();
+            await _bus.SendLocal(command);
+
+            Response.Headers["Preference-Applied"] = PreferHeader.RespondAsync;
+            return AcceptedAtAction(nameof(GetSale), new { id = command.Id }, new ApiResponseWithData<SaleAcceptedResponse>
+            {
+                Success = true,
+                Message = "Sale sent for processing",
+                Data = new SaleAcceptedResponse { Id = command.Id.Value }
+            });
+        }
+
         var response = await _mediator.Send(command, cancellationToken);
 
         return Created(string.Empty, new ApiResponseWithData<SaleResponse>

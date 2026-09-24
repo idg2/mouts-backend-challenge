@@ -199,4 +199,77 @@ public class CreateSaleHandlerTests
             Arg.Is<IEnumerable<Guid>>(ids => ids.Count() == 1 && ids.Contains(_beer.Id)),
             Arg.Any<CancellationToken>());
     }
+
+    // Work item: TASK-037 (FEAT-006)
+    /// <summary>
+    /// Tests that a caller-chosen id becomes the id of the stored sale.
+    /// </summary>
+    [Fact(DisplayName = "Given a command with an id When creating sale Then stores the sale with that id")]
+    public async Task Given_CommandWithId_When_Handled_Then_StoresSaleWithThatId()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        _saleRepository.GetByIdAsync(id, Arg.Any<CancellationToken>()).Returns((Sale?)null);
+        var command = ValidCommand();
+        command.Id = id;
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _savedSale!.Id.Should().Be(id);
+    }
+
+    // Work item: TASK-037 (FEAT-006)
+    /// <summary>
+    /// Tests that a redelivered command whose sale is already stored returns that sale and writes nothing.
+    /// </summary>
+    [Fact(DisplayName = "Given the id of a stored sale When creating sale Then returns it without writing")]
+    public async Task Given_IdOfStoredSale_When_Handled_Then_ReturnsItWithoutWriting()
+    {
+        // Arrange
+        var existing = new Sale { Id = Guid.NewGuid() };
+        _saleRepository.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
+        var expected = new SaleResult { Id = existing.Id };
+        _mapper.Map<SaleResult>(existing).Returns(expected);
+        var command = ValidCommand();
+        command.Id = existing.Id;
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().BeSameAs(expected);
+        await _saleRepository.DidNotReceive().CreateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
+        await _customerRepository.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _branchRepository.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _productRepository.DidNotReceive().GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>());
+    }
+
+    // Work item: TASK-037 (FEAT-006)
+    /// <summary>
+    /// Tests that without an id the database assigns it and no stored sale is looked up.
+    /// </summary>
+    [Fact(DisplayName = "Given a command without an id When creating sale Then leaves the id to the database")]
+    public async Task Given_CommandWithoutId_When_Handled_Then_LeavesIdToDatabase()
+    {
+        // Arrange
+        var command = ValidCommand();
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _savedSale!.Id.Should().Be(Guid.Empty);
+        await _saleRepository.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    // Work item: TASK-037 (FEAT-006)
+    private CreateSaleCommand ValidCommand() => new()
+    {
+        CustomerId = _customer.Id,
+        BranchId = _branch.Id,
+        TotalAmount = 10m,
+        Items = [new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 1, TotalAmount = 10m }]
+    };
 }

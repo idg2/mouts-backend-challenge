@@ -14,6 +14,7 @@ namespace Ambev.DeveloperEvaluation.WebApi.Middleware
             _next = next;
         }
 
+        // Work item: TASK-017 (FEAT-010)
         public async Task InvokeAsync(HttpContext context)
         {
             try
@@ -23,6 +24,10 @@ namespace Ambev.DeveloperEvaluation.WebApi.Middleware
             catch (ValidationException ex)
             {
                 await HandleValidationExceptionAsync(context, ex);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                await HandleNotFoundExceptionAsync(context, ex);
             }
         }
 
@@ -37,6 +42,26 @@ namespace Ambev.DeveloperEvaluation.WebApi.Middleware
                 Message = "Validation Failed",
                 Errors = exception.Errors
                     .Select(error => (ValidationErrorDetail)error)
+            };
+
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            return context.Response.WriteAsync(JsonSerializer.Serialize(response, jsonOptions));
+        }
+
+        // Work item: TASK-017 (FEAT-010)
+        private static Task HandleNotFoundExceptionAsync(HttpContext context, KeyNotFoundException exception)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+
+            var response = new ApiResponse
+            {
+                Success = false,
+                Message = exception.Message
             };
 
             var jsonOptions = new JsonSerializerOptions

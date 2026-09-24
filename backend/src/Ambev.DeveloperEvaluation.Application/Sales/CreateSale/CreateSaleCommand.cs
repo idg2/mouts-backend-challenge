@@ -10,6 +10,13 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
 /// </summary>
 public class CreateSaleCommand : IRequest<SaleResult>, ITransactionalCommand
 {
+    // Work item: TASK-037 (FEAT-006)
+    /// <summary>
+    /// Gets or sets the sale id chosen by the caller, or null to let the database assign one. When a sale with this
+    /// id is already stored, the handler returns it without writing, so a redelivered message is harmless.
+    /// </summary>
+    public Guid? Id { get; set; }
+
     /// <summary>
     /// Gets or sets the customer id.
     /// </summary>

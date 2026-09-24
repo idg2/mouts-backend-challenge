@@ -80,4 +80,52 @@ public class SaleRepositoryTests : IClassFixture<PostgresFixture>
         Assert.NotNull(loaded);
         Assert.Equal(new[] { 1, 2, 3 }, loaded.Items.Select(i => i.LineNumber));
     }
+
+    // Work item: TASK-037 (FEAT-006)
+    /// <summary>
+    /// Tests that a sale created with a preset id is stored under that id instead of the column default.
+    /// </summary>
+    [Fact(DisplayName = "Given a preset sale id When creating the sale Then the stored sale has that id")]
+    public async Task Given_PresetSaleId_When_Creating_Then_StoredSaleHasThatId()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+        var sale = new Sale
+        {
+            Id = id,
+            SaleDate = DateTime.UtcNow,
+            CustomerId = Guid.NewGuid(),
+            CustomerName = "Acme Market",
+            BranchId = Guid.NewGuid(),
+            BranchName = "Downtown",
+            TotalAmount = 10m,
+            Items =
+            [
+                new SaleItem
+                {
+                    LineNumber = 1,
+                    ProductId = Guid.NewGuid(),
+                    ProductDescription = "Beer 350ml",
+                    UnitPrice = 10m,
+                    Quantity = 1,
+                    TotalAmount = 10m
+                }
+            ]
+        };
+
+        // Act
+        await using (var context = _fixture.CreateContext())
+        {
+            await new SaleRepository(context).CreateAsync(sale);
+        }
+
+        // Assert
+        await using (var context = _fixture.CreateContext())
+        {
+            var loaded = await new SaleRepository(context).GetByIdAsync(id);
+            Assert.NotNull(loaded);
+            Assert.Equal(id, loaded.Id);
+            Assert.Single(loaded.Items);
+        }
+    }
 }

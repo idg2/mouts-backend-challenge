@@ -1,13 +1,15 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using Serilog;
 using Serilog.Core;
-using Serilog.Events;
+using Serilog.Debugging;
 using Serilog.Exceptions;
 using Serilog.Exceptions.Core;
 using Serilog.Exceptions.EntityFrameworkCore.Destructurers;
-using Serilog.Sinks.SystemConsole.Themes;
+using Serilog.Exceptions.Filters;
 using Serilog.Templates;
 using System.Diagnostics;
 
@@ -18,75 +20,87 @@ namespace Ambev.DeveloperEvaluation.Common.Logging;
 /// <summary> Add default Logging configuration to project. This configuration supports Serilog logs with DataDog compatible output.</summary>
 public static class LoggingExtension
 {
+    // Work item: TASK-033 (FEAT-016)
     /// <summary>
     /// The destructuring options builder configured with default destructurers and a custom DbUpdateExceptionDestructurer.
+    /// Its <c>Entries</c> property is dropped because it carries every tracked entity value (e-mails, password hashes).
     /// </summary>
     static readonly DestructuringOptionsBuilder _destructuringOptionsBuilder = new DestructuringOptionsBuilder()
         .WithDefaultDestructurers()
-        .WithDestructurers([new DbUpdateExceptionDestructurer()]);
+        .WithDestructurers([new DbUpdateExceptionDestructurer()])
+        .WithFilter(new IgnorePropertyByNameExceptionFilter("Entries"));
 
+    // Work item: TASK-033 (FEAT-016)
     /// <summary>
-    /// A filter predicate to exclude log events with specific criteria.
-    /// </summary>
-    static readonly Func<LogEvent, bool> _filterPredicate = exclusionPredicate =>
-    {
-
-        if (exclusionPredicate.Level != LogEventLevel.Information) return true;
-
-        exclusionPredicate.Properties.TryGetValue("StatusCode", out var statusCode);
-        exclusionPredicate.Properties.TryGetValue("Path", out var path);
-
-        var excludeByStatusCode = statusCode == null || statusCode.ToString().Equals("200");
-        var excludeByPath = path?.ToString().Contains("/health") ?? false;
-
-        return excludeByStatusCode && excludeByPath;
-    };
-
-    /// <summary>
-    /// This method configures the logging with commonly used features for DataDog integration.
+    /// Replaces the default logging provider with Serilog, configured by <see cref="ConfigureDefaultLogging"/>.
     /// </summary>
     /// <param name="builder">The <see cref="WebApplicationBuilder" /> to add services to.</param>
     /// <returns>A <see cref="WebApplicationBuilder"/> that can be used to further configure the API services.</returns>
-    /// <remarks>
-    /// <para>Logging output are diferents on Debug and Release modes.</para>
-    /// </remarks> 
     public static WebApplicationBuilder AddDefaultLogging(this WebApplicationBuilder builder)
     {
         Log.Logger = new LoggerConfiguration().CreateLogger();
         builder.Host.UseSerilog((hostingContext, loggerConfiguration) =>
-        {
-            loggerConfiguration
-                .ReadFrom.Configuration(hostingContext.Configuration)
-                .Enrich.WithMachineName()
-                .Enrich.WithProperty("Environment", builder.Environment.EnvironmentName)
-                .Enrich.WithProperty("Application", builder.Environment.ApplicationName)
-                .Enrich.FromLogContext()
-                .Enrich.WithExceptionDetails(_destructuringOptionsBuilder)
-                .Filter.ByExcluding(_filterPredicate);
-
-            if (Debugger.IsAttached)
-            {
-                loggerConfiguration.Enrich.WithProperty("DebuggerAttached", Debugger.IsAttached);
-                loggerConfiguration.WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] [{SourceContext}] {Message:lj}{NewLine}{Exception}", theme: SystemConsoleTheme.Colored);
-            }
-            else
-            {
-                loggerConfiguration
-                    .WriteTo.Console
-                    (
-                        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}"
-                    )
-                    .WriteTo.File(
-                        "logs/log-.txt",
-                        rollingInterval: RollingInterval.Day,
-                        outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}"
-                    );
-            }
-        });
+            loggerConfiguration.ConfigureDefaultLogging(
+                hostingContext.Configuration,
+                builder.Environment.EnvironmentName,
+                builder.Environment.ApplicationName));
 
         builder.Services.AddLogging();
 
         return builder;
+    }
+
+    // Work item: TASK-033 (FEAT-016)
+    /// <summary>
+    /// Applies the <c>Serilog</c> configuration section (levels, console, enrichers, filters), the exception and
+    /// host enrichers, and the MongoDB sink described by <see cref="LogStorageSettings"/>.
+    /// </summary>
+    /// <param name="loggerConfiguration">The logger configuration to extend.</param>
+    /// <param name="configuration">The application configuration.</param>
+    /// <param name="environmentName">The host environment name, stamped as <c>Environment</c>.</param>
+    /// <param name="applicationName">The host application name, stamped as <c>Application</c>.</param>
+    /// <returns>The same logger configuration.</returns>
+    public static LoggerConfiguration ConfigureDefaultLogging(
+        this LoggerConfiguration loggerConfiguration,
+        IConfiguration configuration,
+        string environmentName,
+        string applicationName)
+    {
+        var storage = LogStorageSettings.FromConfiguration(configuration);
+
+        // The MongoDB sink reports write failures only through SelfLog; without it, lost storage is silent.
+        SelfLog.Enable(TextWriter.Synchronized(Console.Error));
+
+        return loggerConfiguration
+            .ReadFrom.Configuration(configuration)
+            .Enrich.WithProperty("Environment", environmentName)
+            .Enrich.WithProperty("Application", applicationName)
+            .Enrich.WithExceptionDetails(_destructuringOptionsBuilder)
+            .WriteTo.MongoDBBson(sink =>
+            {
+                sink.SetMongoDatabase(new MongoClient(storage.ConnectionString).GetDatabase(storage.Database));
+                sink.SetCollectionName(storage.Collection);
+                sink.SetExpireTTL(storage.ExpireAfter);
+            });
+    }
+
+    // Work item: TASK-034 (FEAT-016)
+    /// <summary>
+    /// Writes one log event per HTTP request, with <c>RequestId</c> and <c>RemoteIpAddress</c>. Register it before
+    /// the exception-handling middleware so the event carries the final status code.
+    /// </summary>
+    /// <param name="app">The <see cref="WebApplication"/> instance this method extends.</param>
+    /// <returns>The same <see cref="WebApplication"/>.</returns>
+    public static WebApplication UseRequestLogging(this WebApplication app)
+    {
+        app.UseSerilogRequestLogging(options =>
+            options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+            {
+                diagnosticContext.Set("RequestId", httpContext.TraceIdentifier);
+                diagnosticContext.Set("RemoteIpAddress", httpContext.Connection.RemoteIpAddress?.ToString());
+            });
+
+        return app;
     }
 
     /// <summary>Adds middleware for Swagger documetation generation.</summary>

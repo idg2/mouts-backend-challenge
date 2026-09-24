@@ -24,6 +24,7 @@
 		<PackageReference Include="Serilog.Exceptions.EntityFrameworkCore" Version="8.4.0" />
 		<PackageReference Include="Serilog.Expressions" Version="5.0.0" />
 		<PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+		<PackageReference Include="Serilog.Sinks.MongoDB" Version="7.3.0" />
 		<PackageReference Include="Serilog.Enrichers.ExceptionData" Version="1.0.0" />
 		<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
 	</ItemGroup>

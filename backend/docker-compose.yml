@@ -12,10 +12,12 @@ services:
       ASPNETCORE_HTTP_PORTS: "8080"
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: Host=ambev.developerevaluation.database;Port=5432;Database=developer_evaluation;Username=developer;Password=ev@luAt10n
+      ConnectionStrings__LogStorage: "mongodb://developer:ev%40luAt10n@ambev.developerevaluation.nosql:27017/?authSource=admin"
     ports:
       - "8080:8080"
     depends_on:
       - ambev.developerevaluation.database
+      - ambev.developerevaluation.nosql
 
   ambev.developerevaluation.database:
     container_name: ambev_developer_evaluation_database

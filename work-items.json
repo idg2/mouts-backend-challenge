@@ -482,7 +482,7 @@
       "description": "Every CRUD write must open and close an explicit transaction: a MediatR TransactionBehavior over an IUnitOfWork, applied to commands marked ITransactionalCommand. Until then each write relies on a single SaveChangesAsync (registry CRUDs D7).",
       "parent": null,
       "moscow": "must",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },

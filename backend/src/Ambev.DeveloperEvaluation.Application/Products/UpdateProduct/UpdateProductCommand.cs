@@ -1,12 +1,13 @@
+using Ambev.DeveloperEvaluation.Application.Common;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Products.UpdateProduct;
 
-// Work item: TASK-020 (FEAT-010)
+// Work item: TASK-020 (FEAT-010), TD-006
 /// <summary>
 /// Command for updating an existing product.
 /// </summary>
-public class UpdateProductCommand : IRequest<UpdateProductResult>
+public class UpdateProductCommand : IRequest<UpdateProductResult>, ITransactionalCommand
 {
     /// <summary>
     /// Gets or sets the unique identifier of the product to update.

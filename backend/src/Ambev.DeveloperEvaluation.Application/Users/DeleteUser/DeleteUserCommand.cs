@@ -1,11 +1,13 @@
+using Ambev.DeveloperEvaluation.Application.Common;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Users.DeleteUser;
 
+// Work item: TD-006
 /// <summary>
 /// Command for deleting a user
 /// </summary>
-public record DeleteUserCommand : IRequest<DeleteUserResponse>
+public record DeleteUserCommand : IRequest<DeleteUserResponse>, ITransactionalCommand
 {
     /// <summary>
     /// The unique identifier of the user to delete

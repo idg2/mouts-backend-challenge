@@ -1,9 +1,11 @@
-﻿using Ambev.DeveloperEvaluation.Common.Validation;
+﻿using Ambev.DeveloperEvaluation.Application.Common;
+using Ambev.DeveloperEvaluation.Common.Validation;
 using Ambev.DeveloperEvaluation.Domain.Enums;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Users.CreateUser;
 
+// Work item: TD-006
 /// <summary>
 /// Command for creating a new user.
 /// </summary>
@@ -18,7 +20,7 @@ namespace Ambev.DeveloperEvaluation.Application.Users.CreateUser;
 /// <see cref="AbstractValidator{T}"/> to ensure that the fields are correctly 
 /// populated and follow the required rules.
 /// </remarks>
-public class CreateUserCommand : IRequest<CreateUserResult>
+public class CreateUserCommand : IRequest<CreateUserResult>, ITransactionalCommand
 {
     /// <summary>
     /// Gets or sets the username of the user to be created.

@@ -7,6 +7,7 @@ namespace Ambev.DeveloperEvaluation.ORM.Mapping;
 
 public class UserConfiguration : IEntityTypeConfiguration<User>
 {
+    // Work item: BUG-011
     public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.ToTable("Users");
@@ -17,6 +18,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Username).IsRequired().HasMaxLength(50);
         builder.Property(u => u.Password).IsRequired().HasMaxLength(100);
         builder.Property(u => u.Email).IsRequired().HasMaxLength(100);
+        builder.HasIndex(u => u.Email).IsUnique();
         builder.Property(u => u.Phone).HasMaxLength(20);
 
         builder.Property(u => u.Status)

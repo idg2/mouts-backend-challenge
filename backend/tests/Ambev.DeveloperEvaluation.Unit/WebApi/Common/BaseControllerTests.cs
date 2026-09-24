@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.WebApi.Common;
 
-// Work item: BUG-001
+// Work item: BUG-001, TD-007 (FEAT-010)
 /// <summary>
 /// Contains unit tests for the <see cref="BaseController"/> class.
 /// </summary>
@@ -36,11 +36,33 @@ public class BaseControllerTests
         Assert.Equal(userId, result);
     }
 
+    // Work item: TD-007 (FEAT-010)
+    /// <summary>
+    /// Tests that Ok returns the given response as the body, without wrapping it in another ApiResponse (BUG-004).
+    /// </summary>
+    [Fact(DisplayName = "Given an ApiResponse When calling Ok Then the body is that response, not wrapped again")]
+    public void Given_ApiResponse_When_Ok_Then_BodyIsNotWrappedAgain()
+    {
+        // Arrange
+        var response = new ApiResponseWithData<string> { Success = true, Message = "ok", Data = "value" };
+        var controller = new TestController();
+
+        // Act
+        var result = controller.OkResponse(response);
+
+        // Assert
+        var ok = Assert.IsType<OkObjectResult>(result);
+        Assert.Same(response, ok.Value);
+    }
+
     /// <summary>
     /// Exposes the protected members of <see cref="BaseController"/> to the tests.
     /// </summary>
     private sealed class TestController : BaseController
     {
         public Guid CurrentUserId() => GetCurrentUserId();
+
+        // Work item: TD-007 (FEAT-010)
+        public IActionResult OkResponse(object value) => Ok(value);
     }
 }

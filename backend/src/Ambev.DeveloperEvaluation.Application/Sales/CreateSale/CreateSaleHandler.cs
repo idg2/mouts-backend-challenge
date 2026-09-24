@@ -51,6 +51,7 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         _timeProvider = timeProvider;
     }
 
+    // Work item: TD-010 (FEAT-010)
     /// <summary>
     /// Handles the CreateSaleCommand request.
     /// </summary>
@@ -95,8 +96,9 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
             BranchName = branch.Name,
             TotalAmount = command.TotalAmount,
             IsCancelled = false,
-            Items = command.Items.Select(item => new SaleItem
+            Items = command.Items.Select((item, index) => new SaleItem
             {
+                LineNumber = index + 1,
                 ProductId = item.ProductId,
                 ProductDescription = products[item.ProductId].Description,
                 UnitPrice = products[item.ProductId].UnitPrice,

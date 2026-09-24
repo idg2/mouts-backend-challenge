@@ -71,13 +71,14 @@ public class Sale : BaseEntity
         };
     }
 
+    // Work item: TD-010 (FEAT-010)
     /// <summary>
     /// Replaces the item list with the incoming items, matching them by id.
     /// </summary>
     /// <remarks>
     /// An incoming item with <see cref="Guid.Empty"/> as id is added. An incoming item with an id copies its
     /// values onto the existing item with that id, which must exist. An existing item whose id is not among
-    /// the incoming items is removed.
+    /// the incoming items is removed. Every resulting item is numbered by its position in the incoming list.
     /// </remarks>
     /// <param name="incoming">The complete list of items the sale must have.</param>
     public void SyncItems(IReadOnlyCollection<SaleItem> incoming)
@@ -89,15 +90,20 @@ public class Sale : BaseEntity
 
         Items.RemoveAll(existing => !incomingIds.Contains(existing.Id));
 
+        var lineNumber = 0;
         foreach (var item in incoming)
         {
+            lineNumber++;
             if (item.Id == Guid.Empty)
             {
+                item.LineNumber = lineNumber;
                 Items.Add(item);
                 continue;
             }
 
-            CopyValues(item, Items.Single(existing => existing.Id == item.Id));
+            var target = Items.Single(existing => existing.Id == item.Id);
+            CopyValues(item, target);
+            target.LineNumber = lineNumber;
         }
     }
 

@@ -8,33 +8,37 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales.UpdateSale;
 /// </summary>
 public class UpdateSaleRequestValidator : AbstractValidator<UpdateSaleRequest>
 {
+    // Work item: BUG-007 (FEAT-010), BUG-009 (FEAT-010)
     /// <summary>
     /// Initializes validation rules for UpdateSaleRequest.
     /// </summary>
     /// <remarks>
-    /// Rules: sale, customer, and branch ids required; total not negative; at least one item; item ids unique;
-    /// per item, id not empty when present, product id required, quantity greater than zero, discount
-    /// percentage between 0 and 100, discount amount and total not negative.
+    /// Rules: sale, customer, and branch ids required; total not negative; at least one item; no null item; item
+    /// ids unique; per item, id not empty when present, product id required, quantity greater than zero, discount
+    /// percentage between 0 and 100, discount amount and total not negative. Amounts fit numeric(18,2) and the
+    /// percentage fits numeric(5,2).
     /// </remarks>
     public UpdateSaleRequestValidator()
     {
         RuleFor(sale => sale.Id).NotEmpty().WithMessage("Sale ID is required");
         RuleFor(sale => sale.CustomerId).NotEmpty();
         RuleFor(sale => sale.BranchId).NotEmpty();
-        RuleFor(sale => sale.TotalAmount).GreaterThanOrEqualTo(0m);
+        RuleFor(sale => sale.TotalAmount).GreaterThanOrEqualTo(0m).PrecisionScale(18, 2, true);
         RuleFor(sale => sale.Items).NotEmpty().WithMessage("A sale must have at least one item.");
         RuleFor(sale => sale.Items)
-            .Must(items => items.Where(i => i.Id.HasValue).Select(i => i.Id).Distinct().Count()
-                           == items.Count(i => i.Id.HasValue))
+            .Must(items => items is null
+                           || items.Where(i => i?.Id != null).Select(i => i!.Id).Distinct().Count()
+                           == items.Count(i => i?.Id != null))
             .WithMessage("Item ids must be unique.");
+        RuleForEach(sale => sale.Items).NotNull();
         RuleForEach(sale => sale.Items).ChildRules(item =>
         {
             item.RuleFor(i => i.Id).NotEqual(Guid.Empty).When(i => i.Id.HasValue);
             item.RuleFor(i => i.ProductId).NotEmpty();
             item.RuleFor(i => i.Quantity).GreaterThan(0);
-            item.RuleFor(i => i.DiscountPercentage).InclusiveBetween(0m, 100m);
-            item.RuleFor(i => i.DiscountAmount).GreaterThanOrEqualTo(0m);
-            item.RuleFor(i => i.TotalAmount).GreaterThanOrEqualTo(0m);
+            item.RuleFor(i => i.DiscountPercentage).InclusiveBetween(0m, 100m).PrecisionScale(5, 2, true);
+            item.RuleFor(i => i.DiscountAmount).GreaterThanOrEqualTo(0m).PrecisionScale(18, 2, true);
+            item.RuleFor(i => i.TotalAmount).GreaterThanOrEqualTo(0m).PrecisionScale(18, 2, true);
         });
     }
 }

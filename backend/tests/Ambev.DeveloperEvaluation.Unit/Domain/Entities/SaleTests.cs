@@ -115,6 +115,83 @@ public class SaleTests
         Assert.Same(kept, item);
     }
 
+    // Work item: TD-010 (FEAT-010)
+    /// <summary>
+    /// Tests that after a sync every line is numbered by its position in the incoming list, so kept, moved,
+    /// and new items follow the order the client sent.
+    /// </summary>
+    [Fact(DisplayName = "SyncItems should number the lines in the incoming order")]
+    public void Given_ReorderedAndNewItems_When_Synced_Then_LinesFollowIncomingOrder()
+    {
+        // Arrange
+        var first = NewItem(Guid.NewGuid());
+        first.LineNumber = 1;
+        var second = NewItem(Guid.NewGuid());
+        second.LineNumber = 2;
+        var sale = NewSale(first, second);
+        var added = NewItem(Guid.Empty);
+
+        // Act
+        sale.SyncItems([added, NewItem(second.Id), NewItem(first.Id)]);
+
+        // Assert
+        Assert.Equal(1, added.LineNumber);
+        Assert.Equal(2, second.LineNumber);
+        Assert.Equal(3, first.LineNumber);
+    }
+
+    // Work item: TD-010 (FEAT-010)
+    /// <summary>
+    /// Tests that an item without a positive line number is rejected.
+    /// </summary>
+    [Fact(DisplayName = "Validation should fail for an item without a line number")]
+    public void Given_ItemWithoutLineNumber_When_Validated_Then_ShouldReturnInvalid()
+    {
+        // Arrange
+        var item = NewItem(Guid.NewGuid());
+        item.LineNumber = 0;
+        var sale = NewSale(item);
+
+        // Act
+        var result = sale.Validate();
+
+        // Assert
+        Assert.False(result.IsValid);
+    }
+
+    // Work item: BUG-009 (FEAT-010)
+    /// <summary>
+    /// Tests that sale and item amounts that do not fit numeric(18,2), and percentages that do not fit
+    /// numeric(5,2), are rejected.
+    /// </summary>
+    [Theory(DisplayName = "Validation should fail for an amount beyond the stored precision")]
+    [InlineData("TotalAmount", "10.123")]
+    [InlineData("Items[0].UnitPrice", "0.001")]
+    [InlineData("Items[0].DiscountAmount", "5.555")]
+    [InlineData("Items[0].TotalAmount", "12345678901234567")]
+    [InlineData("Items[0].DiscountPercentage", "12.345")]
+    public void Given_AmountBeyondPrecision_When_Validated_Then_ShouldReturnInvalid(string property, string value)
+    {
+        // Arrange
+        var item = NewItem(Guid.NewGuid());
+        var sale = NewSale(item);
+        var amount = decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
+        switch (property)
+        {
+            case "TotalAmount": sale.TotalAmount = amount; break;
+            case "Items[0].UnitPrice": item.UnitPrice = amount; break;
+            case "Items[0].DiscountAmount": item.DiscountAmount = amount; break;
+            case "Items[0].TotalAmount": item.TotalAmount = amount; break;
+            case "Items[0].DiscountPercentage": item.DiscountPercentage = amount; break;
+        }
+
+        // Act
+        var result = sale.Validate();
+
+        // Assert
+        Assert.False(result.IsValid);
+    }
+
     private static Sale NewSale(params SaleItem[] items) => new()
     {
         Id = Guid.NewGuid(),
@@ -131,6 +208,7 @@ public class SaleTests
     private static SaleItem NewItem(Guid id) => new()
     {
         Id = id,
+        LineNumber = 1,
         ProductId = Guid.NewGuid(),
         ProductDescription = "Beer 350ml",
         UnitPrice = 10m,

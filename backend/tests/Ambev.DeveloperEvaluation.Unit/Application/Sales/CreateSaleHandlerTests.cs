@@ -4,6 +4,7 @@ using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentAssertions;
+using FluentValidation;
 using NSubstitute;
 using Xunit;
 
@@ -112,6 +113,61 @@ public class CreateSaleHandlerTests
         item.DiscountAmount.Should().Be(3m);
         item.TotalAmount.Should().Be(40m);
         item.IsCancelled.Should().BeFalse();
+    }
+
+    // Work item: TD-010 (FEAT-010)
+    /// <summary>
+    /// Tests that the lines are numbered from 1 in the order the command lists them.
+    /// </summary>
+    [Fact(DisplayName = "Given several items When creating sale Then lines are numbered in the command order")]
+    public async Task Given_SeveralItems_When_Handled_Then_LinesAreNumberedInCommandOrder()
+    {
+        // Arrange
+        var command = new CreateSaleCommand
+        {
+            CustomerId = _customer.Id,
+            BranchId = _branch.Id,
+            TotalAmount = 60m,
+            Items =
+            [
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 3, TotalAmount = 30m },
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 1, TotalAmount = 10m },
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 2, TotalAmount = 20m }
+            ]
+        };
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _savedSale!.Items.Select(item => (item.LineNumber, item.Quantity)).Should()
+            .Equal((1, 3), (2, 1), (3, 2));
+    }
+
+    // Work item: TD-007 (FEAT-010)
+    /// <summary>
+    /// Tests that an unknown customer, branch, and product are all reported, and nothing is saved.
+    /// </summary>
+    [Fact(DisplayName = "Given unknown references When creating sale Then reports each one and saves nothing")]
+    public async Task Given_UnknownReferences_When_Handled_Then_ReportsEachAndSavesNothing()
+    {
+        // Arrange
+        var command = new CreateSaleCommand
+        {
+            CustomerId = Guid.NewGuid(),
+            BranchId = Guid.NewGuid(),
+            TotalAmount = 10m,
+            Items = [new CreateSaleItemInput { ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m }]
+        };
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        var exception = await act.Should().ThrowAsync<ValidationException>();
+        exception.Which.Errors.Select(e => e.PropertyName).Should()
+            .BeEquivalentTo(["CustomerId", "BranchId", "Items[0].ProductId"]);
+        await _saleRepository.DidNotReceive().CreateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
     }
 
     /// <summary>

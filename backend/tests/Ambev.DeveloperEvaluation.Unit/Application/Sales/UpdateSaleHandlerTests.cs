@@ -3,6 +3,7 @@ using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentAssertions;
+using FluentValidation;
 using NSubstitute;
 using Xunit;
 
@@ -148,6 +149,80 @@ public class UpdateSaleHandlerTests
         await _customerRepository.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _productRepository.DidNotReceive().GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>());
     }
+
+    // Work item: TD-007 (FEAT-010)
+    /// <summary>
+    /// Tests that updating a sale that does not exist raises KeyNotFoundException.
+    /// </summary>
+    [Fact(DisplayName = "Given an unknown sale id When updating sale Then throws KeyNotFoundException")]
+    public async Task Given_UnknownSaleId_When_Handled_Then_ThrowsKeyNotFound()
+    {
+        // Arrange
+        var command = ValidCommand(NewSale());
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    // Work item: TD-007 (FEAT-010)
+    /// <summary>
+    /// Tests that an item id from another sale is rejected and nothing is saved.
+    /// </summary>
+    [Fact(DisplayName = "Given an item id from another sale When updating sale Then reports it and saves nothing")]
+    public async Task Given_ItemIdFromAnotherSale_When_Handled_Then_ReportsItAndSavesNothing()
+    {
+        // Arrange
+        var sale = NewSale();
+        _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        var command = ValidCommand(sale);
+        command.Items[0].Id = Guid.NewGuid();
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        var exception = await act.Should().ThrowAsync<ValidationException>();
+        exception.Which.Errors.Should().ContainSingle(e => e.PropertyName == "Items[0].Id" && e.ErrorCode == "ItemNotInSale");
+        await _saleRepository.DidNotReceive().UpdateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
+    }
+
+    // Work item: TD-007 (FEAT-010)
+    /// <summary>
+    /// Tests that a changed customer, a changed branch, and a new item's product that do not exist are all
+    /// reported, and nothing is saved.
+    /// </summary>
+    [Fact(DisplayName = "Given unknown references When updating sale Then reports each one and saves nothing")]
+    public async Task Given_UnknownReferences_When_Handled_Then_ReportsEachAndSavesNothing()
+    {
+        // Arrange
+        var sale = NewSale();
+        _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _productRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>()).Returns(new List<Product>());
+        var command = ValidCommand(sale);
+        command.CustomerId = Guid.NewGuid();
+        command.BranchId = Guid.NewGuid();
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        var exception = await act.Should().ThrowAsync<ValidationException>();
+        exception.Which.Errors.Select(e => e.PropertyName).Should()
+            .BeEquivalentTo(["CustomerId", "BranchId", "Items[0].ProductId"]);
+        await _saleRepository.DidNotReceive().UpdateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
+    }
+
+    private static UpdateSaleCommand ValidCommand(Sale sale) => new()
+    {
+        Id = sale.Id,
+        CustomerId = sale.CustomerId,
+        BranchId = sale.BranchId,
+        TotalAmount = 10m,
+        Items = [new UpdateSaleItemInput { ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m }]
+    };
 
     private static Sale NewSale(params SaleItem[] items) => new()
     {

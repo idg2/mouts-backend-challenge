@@ -10,6 +10,7 @@ namespace Ambev.DeveloperEvaluation.ORM.Mapping;
 /// </summary>
 public class SaleItemConfiguration : IEntityTypeConfiguration<SaleItem>
 {
+    // Work item: TD-010 (FEAT-010)
     /// <summary>
     /// Configures the SaleItems table
     /// </summary>
@@ -18,6 +19,7 @@ public class SaleItemConfiguration : IEntityTypeConfiguration<SaleItem>
     {
         builder.ToTable("SaleItems", t =>
         {
+            t.HasCheckConstraint("CK_SaleItems_LineNumber", "\"LineNumber\" > 0");
             t.HasCheckConstraint("CK_SaleItems_UnitPrice", "\"UnitPrice\" > 0");
             t.HasCheckConstraint("CK_SaleItems_Quantity", "\"Quantity\" > 0");
             t.HasCheckConstraint("CK_SaleItems_DiscountPercentage", "\"DiscountPercentage\" >= 0 AND \"DiscountPercentage\" <= 100");

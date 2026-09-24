@@ -61,7 +61,8 @@ public sealed class PostgresFixture : IAsyncLifetime
         await context.Database.EnsureDeletedAsync();
     }
 
-    private static string FindWebApiDirectory()
+    // Work item: TASK-033 (FEAT-016)
+    internal static string FindWebApiDirectory()
     {
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Ambev.DeveloperEvaluation.sln")))

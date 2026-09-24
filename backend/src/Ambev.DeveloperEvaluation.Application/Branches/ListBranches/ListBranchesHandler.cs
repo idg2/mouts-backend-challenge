@@ -25,6 +25,7 @@ public class ListBranchesHandler : IRequestHandler<ListBranchesCommand, ListBran
         _mapper = mapper;
     }
 
+    // Work item: TASK-025 (FEAT-011)
     /// <summary>
     /// Handles the ListBranchesCommand request.
     /// </summary>
@@ -39,7 +40,14 @@ public class ListBranchesHandler : IRequestHandler<ListBranchesCommand, ListBran
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var (branches, totalCount) = await _branchRepository.ListAsync(command.Page, command.Size, cancellationToken);
+        var query = new ListQuery
+        {
+            Page = command.Page,
+            Size = command.Size,
+            Filters = command.Filters,
+            Order = command.Order
+        };
+        var (branches, totalCount) = await _branchRepository.ListAsync(query, cancellationToken);
 
         return new ListBranchesResult
         {

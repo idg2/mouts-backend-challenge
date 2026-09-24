@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.ORM.Repositories;
 using Xunit;
 
@@ -105,22 +106,24 @@ public class ListPaginationTests : IClassFixture<PostgresFixture>
         await context.SaveChangesAsync();
     }
 
+    // Work item: TASK-025 (FEAT-011)
     private async Task<(int Count, int TotalCount)> ListAsync(string resource, int page, int size)
     {
+        var query = new ListQuery { Page = page, Size = size };
         await using var context = _fixture.CreateContext();
         switch (resource)
         {
             case "customers":
-                var customers = await new CustomerRepository(context).ListAsync(page, size);
+                var customers = await new CustomerRepository(context).ListAsync(query);
                 return (customers.Items.Count, customers.TotalCount);
             case "branches":
-                var branches = await new BranchRepository(context).ListAsync(page, size);
+                var branches = await new BranchRepository(context).ListAsync(query);
                 return (branches.Items.Count, branches.TotalCount);
             case "products":
-                var products = await new ProductRepository(context).ListAsync(page, size);
+                var products = await new ProductRepository(context).ListAsync(query);
                 return (products.Items.Count, products.TotalCount);
             default:
-                var sales = await new SaleRepository(context).ListAsync(page, size);
+                var sales = await new SaleRepository(context).ListAsync(query);
                 return (sales.Items.Count, sales.TotalCount);
         }
     }

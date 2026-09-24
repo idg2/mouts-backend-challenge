@@ -25,6 +25,7 @@ public class ListProductsHandler : IRequestHandler<ListProductsCommand, ListProd
         _mapper = mapper;
     }
 
+    // Work item: TASK-025 (FEAT-011)
     /// <summary>
     /// Handles the ListProductsCommand request.
     /// </summary>
@@ -39,7 +40,14 @@ public class ListProductsHandler : IRequestHandler<ListProductsCommand, ListProd
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var (products, totalCount) = await _productRepository.ListAsync(command.Page, command.Size, cancellationToken);
+        var query = new ListQuery
+        {
+            Page = command.Page,
+            Size = command.Size,
+            Filters = command.Filters,
+            Order = command.Order
+        };
+        var (products, totalCount) = await _productRepository.ListAsync(query, cancellationToken);
 
         return new ListProductsResult
         {

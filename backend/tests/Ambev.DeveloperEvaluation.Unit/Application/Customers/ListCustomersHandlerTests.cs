@@ -28,17 +28,23 @@ public class ListCustomersHandlerTests
         _handler = new ListCustomersHandler(_customerRepository, _mapper);
     }
 
+    // Work item: TASK-025 (FEAT-011)
     /// <summary>
-    /// Tests that the requested page and the total count are returned.
+    /// Tests that the page, size, filters, and order reach the repository and the page and total count are returned.
     /// </summary>
-    [Fact(DisplayName = "Given a page request When listing customers Then returns the page and the total count")]
-    public async Task Given_PageRequest_When_Handled_Then_ReturnsPageAndTotalCount()
+    [Fact(DisplayName = "Given a page request with filters and order When listing customers Then passes them and returns the page")]
+    public async Task Given_PageRequestWithFiltersAndOrder_When_Handled_Then_PassesThemAndReturnsPage()
     {
         // Arrange
-        var command = new ListCustomersCommand { Page = 2, Size = 5 };
+        var filters = new List<FieldFilter> { new("Name", FilterOperator.Like, "acme%") };
+        var order = new List<SortField> { new("Name", true) };
+        var command = new ListCustomersCommand { Page = 2, Size = 5, Filters = filters, Order = order };
         IReadOnlyList<Customer> customers = new List<Customer> { new() { Id = Guid.NewGuid(), Name = "Acme Market" } };
         var items = new List<ListCustomersItem> { new() { Id = customers[0].Id, Name = customers[0].Name } };
-        _customerRepository.ListAsync(2, 5, Arg.Any<CancellationToken>()).Returns((customers, 12));
+        _customerRepository.ListAsync(
+                Arg.Is<ListQuery>(query => query.Page == 2 && query.Size == 5 && query.Filters == filters && query.Order == order),
+                Arg.Any<CancellationToken>())
+            .Returns((customers, 12));
         _mapper.Map<List<ListCustomersItem>>(customers).Returns(items);
 
         // Act

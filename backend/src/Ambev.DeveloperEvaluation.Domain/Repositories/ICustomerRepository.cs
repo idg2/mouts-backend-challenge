@@ -40,12 +40,12 @@ public interface ICustomerRepository
     /// <returns>True if the customer was deleted, false if not found</returns>
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
+    // Work item: TASK-025 (FEAT-011)
     /// <summary>
-    /// Retrieves one page of customers ordered by name
+    /// Retrieves one page of customers that match the query's filters, in the query's order or else by name
     /// </summary>
-    /// <param name="page">The page number, starting at 1</param>
-    /// <param name="size">The page size</param>
+    /// <param name="query">The page, size, filters, and sort fields</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>The customers on the page and the total number of customers</returns>
-    Task<(IReadOnlyList<Customer> Items, int TotalCount)> ListAsync(int page, int size, CancellationToken cancellationToken = default);
+    /// <returns>The customers on the page and the number of customers that match the filters</returns>
+    Task<(IReadOnlyList<Customer> Items, int TotalCount)> ListAsync(ListQuery query, CancellationToken cancellationToken = default);
 }

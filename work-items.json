@@ -152,7 +152,7 @@
       "description": "Add the general-api.md field filters, * wildcards, _min/_max ranges, and _order to the customer, branch, product, and sale list endpoints.",
       "parent": "EPIC-001",
       "moscow": "should",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -416,6 +416,50 @@
       "description": "Clean build, full unit suite, no pending model changes, and the manual smoke test against PostgreSQL.",
       "parent": "FEAT-010",
       "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-24",
+      "updatedAt": "2026-09-24"
+    },
+    {
+      "id": "TASK-024",
+      "type": "task",
+      "title": "List query model and ORM translation",
+      "description": "ListQuery, FieldFilter, FilterOperator, and SortField in Domain; ListQueryExtensions.ApplyFilters/ApplyOrder in ORM, with Postgres integration tests.",
+      "parent": "FEAT-011",
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-24",
+      "updatedAt": "2026-09-24"
+    },
+    {
+      "id": "TASK-025",
+      "type": "task",
+      "title": "Repositories and list handlers take the list query",
+      "description": "ListAsync(ListQuery) on the four repositories; list commands carry Filters and Order and handlers pass them through.",
+      "parent": "FEAT-011",
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-24",
+      "updatedAt": "2026-09-24"
+    },
+    {
+      "id": "TASK-026",
+      "type": "task",
+      "title": "List query parser",
+      "description": "ListQueryParser in WebApi reads filters, wildcards, ranges, and _order against the list response and throws ValidationException.",
+      "parent": "FEAT-011",
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-24",
+      "updatedAt": "2026-09-24"
+    },
+    {
+      "id": "TASK-027",
+      "type": "task",
+      "title": "List endpoints read filters and order",
+      "description": "The four list actions call the parser; response-to-entity pin test and e2e verification.",
+      "parent": "FEAT-011",
+      "moscow": "should",
       "status": "done",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"

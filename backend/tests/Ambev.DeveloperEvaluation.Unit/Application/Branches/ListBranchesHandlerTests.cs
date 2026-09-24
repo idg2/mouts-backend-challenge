@@ -28,17 +28,23 @@ public class ListBranchesHandlerTests
         _handler = new ListBranchesHandler(_branchRepository, _mapper);
     }
 
+    // Work item: TASK-025 (FEAT-011)
     /// <summary>
-    /// Tests that the requested page and the total count are returned.
+    /// Tests that the page, size, filters, and order reach the repository and the page and total count are returned.
     /// </summary>
-    [Fact(DisplayName = "Given a page request When listing branches Then returns the page and the total count")]
-    public async Task Given_PageRequest_When_Handled_Then_ReturnsPageAndTotalCount()
+    [Fact(DisplayName = "Given a page request with filters and order When listing branches Then passes them and returns the page")]
+    public async Task Given_PageRequestWithFiltersAndOrder_When_Handled_Then_PassesThemAndReturnsPage()
     {
         // Arrange
-        var command = new ListBranchesCommand { Page = 2, Size = 5 };
+        var filters = new List<FieldFilter> { new("Name", FilterOperator.Like, "acme%") };
+        var order = new List<SortField> { new("Name", true) };
+        var command = new ListBranchesCommand { Page = 2, Size = 5, Filters = filters, Order = order };
         IReadOnlyList<Branch> branches = new List<Branch> { new() { Id = Guid.NewGuid(), Name = "Downtown" } };
         var items = new List<ListBranchesItem> { new() { Id = branches[0].Id, Name = branches[0].Name } };
-        _branchRepository.ListAsync(2, 5, Arg.Any<CancellationToken>()).Returns((branches, 12));
+        _branchRepository.ListAsync(
+                Arg.Is<ListQuery>(query => query.Page == 2 && query.Size == 5 && query.Filters == filters && query.Order == order),
+                Arg.Any<CancellationToken>())
+            .Returns((branches, 12));
         _mapper.Map<List<ListBranchesItem>>(branches).Returns(items);
 
         // Act

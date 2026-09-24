@@ -13,6 +13,9 @@ public class SaleRepository : ISaleRepository
 {
     private readonly DefaultContext _context;
 
+    // Work item: TASK-025 (FEAT-011)
+    private static readonly SortField[] DefaultOrder = [new("SaleNumber", false)];
+
     /// <summary>
     /// Initializes a new instance of SaleRepository
     /// </summary>
@@ -66,20 +69,22 @@ public class SaleRepository : ISaleRepository
         return true;
     }
 
-    // Work item: BUG-008 (FEAT-010)
+    // Work item: BUG-008 (FEAT-010), TASK-025 (FEAT-011)
     /// <summary>
-    /// Retrieves one page of sales ordered by sale number, without their items. A page past the last one, including one whose offset does not fit
-    /// an int, is empty
+    /// Retrieves one page of sales, without their items, that match the query's filters, in the query's order or else by sale number. A page
+    /// past the last one, including one whose offset does not fit an int, is empty
     /// </summary>
-    public async Task<(IReadOnlyList<Sale> Items, int TotalCount)> ListAsync(int page, int size, CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<Sale> Items, int TotalCount)> ListAsync(ListQuery query, CancellationToken cancellationToken = default)
     {
-        var query = _context.Sales.AsNoTracking().OrderBy(s => s.SaleNumber);
-        var totalCount = await query.CountAsync(cancellationToken);
-        var offset = (long)(page - 1) * size;
+        var rows = _context.Sales.AsNoTracking()
+            .ApplyFilters(query.Filters)
+            .ApplyOrder(query.Order, DefaultOrder);
+        var totalCount = await rows.CountAsync(cancellationToken);
+        var offset = (long)(query.Page - 1) * query.Size;
         if (offset >= totalCount)
             return ([], totalCount);
 
-        var items = await query.Skip((int)offset).Take(size).ToListAsync(cancellationToken);
+        var items = await rows.Skip((int)offset).Take(query.Size).ToListAsync(cancellationToken);
         return (items, totalCount);
     }
 }

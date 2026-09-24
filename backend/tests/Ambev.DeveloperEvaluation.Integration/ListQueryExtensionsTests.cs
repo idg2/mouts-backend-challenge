@@ -27,6 +27,7 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
         _fixture = fixture;
     }
 
+    // Work item: TASK-024 (FEAT-011), FEAT-012
     /// <summary>
     /// Tests that an exact text filter ignores case.
     /// </summary>
@@ -35,7 +36,7 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
     {
         // Arrange
         var marker = NewMarker();
-        await SeedAsync(new Customer { Name = $"{marker} Acme Market" }, new Customer { Name = $"{marker} Acme Market Two" });
+        await SeedAsync(new Customer { Name = $"{marker} Acme Market", Document = TestDocuments.Next() }, new Customer { Name = $"{marker} Acme Market Two", Document = TestDocuments.Next() });
 
         // Act
         var customers = await ListAsync<Customer>([Like("Name", $"{marker} ACME MARKET")], [], ByName);
@@ -44,6 +45,7 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
         Assert.Equal([$"{marker} Acme Market"], customers.Select(customer => customer.Name));
     }
 
+    // Work item: TASK-024 (FEAT-011), FEAT-012
     /// <summary>
     /// Tests that leading and trailing wildcards match the texts that fit them.
     /// </summary>
@@ -53,9 +55,9 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
         // Arrange
         var marker = NewMarker();
         await SeedAsync(
-            new Customer { Name = $"{marker} Acme Market" },
-            new Customer { Name = $"{marker} Acme Store" },
-            new Customer { Name = $"{marker} Beta Market" });
+            new Customer { Name = $"{marker} Acme Market", Document = TestDocuments.Next() },
+            new Customer { Name = $"{marker} Acme Store", Document = TestDocuments.Next() },
+            new Customer { Name = $"{marker} Beta Market", Document = TestDocuments.Next() });
 
         // Act
         var startingWithAcme = await ListAsync<Customer>([Like("Name", $"{marker} acme%")], [], ByName);
@@ -66,6 +68,7 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
         Assert.Equal([$"{marker} Acme Market", $"{marker} Beta Market"], endingWithMarket.Select(customer => customer.Name));
     }
 
+    // Work item: TASK-024 (FEAT-011), FEAT-012
     /// <summary>
     /// Tests that escaped LIKE metacharacters match only themselves.
     /// </summary>
@@ -75,10 +78,10 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
         // Arrange
         var marker = NewMarker();
         await SeedAsync(
-            new Customer { Name = $"{marker} a_b" },
-            new Customer { Name = $"{marker} acb" },
-            new Customer { Name = $"{marker} 100%" },
-            new Customer { Name = $"{marker} 1000" });
+            new Customer { Name = $"{marker} a_b", Document = TestDocuments.Next() },
+            new Customer { Name = $"{marker} acb", Document = TestDocuments.Next() },
+            new Customer { Name = $"{marker} 100%", Document = TestDocuments.Next() },
+            new Customer { Name = $"{marker} 1000", Document = TestDocuments.Next() });
 
         // Act
         var underscore = await ListAsync<Customer>([Like("Name", $"{marker} a\\_b")], [], ByName);
@@ -89,6 +92,7 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
         Assert.Equal([$"{marker} 100%"], percent.Select(customer => customer.Name));
     }
 
+    // Work item: TASK-024 (FEAT-011), FEAT-012
     /// <summary>
     /// Tests that a value with a SQL quote is sent as a parameter and matches.
     /// </summary>
@@ -97,7 +101,7 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
     {
         // Arrange
         var marker = NewMarker();
-        await SeedAsync(new Customer { Name = $"{marker} O'Brien Market" });
+        await SeedAsync(new Customer { Name = $"{marker} O'Brien Market", Document = TestDocuments.Next() });
 
         // Act
         var customers = await ListAsync<Customer>([Like("Name", $"{marker} o'brien%")], [], ByName);
@@ -232,6 +236,7 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
         Assert.Equal([$"{marker}-3", $"{marker}-2", $"{marker}-1"], products.Select(product => product.Code));
     }
 
+    // Work item: TASK-024 (FEAT-011), FEAT-012
     /// <summary>
     /// Tests that without sort fields the default order applies and ties are broken by id.
     /// </summary>
@@ -241,9 +246,9 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
         // Arrange
         var marker = NewMarker();
         await SeedAsync(
-            new Customer { Name = $"{marker} same" },
-            new Customer { Name = $"{marker} alpha" },
-            new Customer { Name = $"{marker} same" });
+            new Customer { Name = $"{marker} same", Document = TestDocuments.Next() },
+            new Customer { Name = $"{marker} alpha", Document = TestDocuments.Next() },
+            new Customer { Name = $"{marker} same", Document = TestDocuments.Next() });
 
         // Act
         var customers = await ListAsync<Customer>([Like("Name", $"{marker}%")], [], ByName);
@@ -254,6 +259,7 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
         Assert.Equal(tied.OrderBy(id => id, StringComparer.Ordinal), tied);
     }
 
+    // Work item: TASK-024 (FEAT-011), FEAT-012
     /// <summary>
     /// Tests that many matches on one field translate without exhausting the stack.
     /// </summary>
@@ -262,7 +268,7 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
     {
         // Arrange
         var marker = NewMarker();
-        await SeedAsync(new Customer { Name = $"{marker} target" });
+        await SeedAsync(new Customer { Name = $"{marker} target", Document = TestDocuments.Next() });
         var filters = Enumerable.Range(0, 2000).Select(value => Like("Name", $"{marker} miss {value}")).ToList();
         filters.Add(Like("Name", $"{marker} target"));
 

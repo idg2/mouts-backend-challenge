@@ -22,6 +22,7 @@ public class UnitOfWorkTests : IClassFixture<PostgresFixture>
         _fixture = fixture;
     }
 
+    // Work item: TD-006, FEAT-012
     /// <summary>
     /// Tests that a repository write inside a rolled back transaction is not stored.
     /// </summary>
@@ -33,7 +34,7 @@ public class UnitOfWorkTests : IClassFixture<PostgresFixture>
         await using var context = _fixture.CreateContext();
         var unitOfWork = new UnitOfWork(context);
         await unitOfWork.BeginTransactionAsync();
-        await new CustomerRepository(context).CreateAsync(new Customer { Name = name });
+        await new CustomerRepository(context).CreateAsync(new Customer { Name = name, Document = TestDocuments.Next() });
 
         // Act
         await unitOfWork.RollbackTransactionAsync();
@@ -42,6 +43,7 @@ public class UnitOfWorkTests : IClassFixture<PostgresFixture>
         Assert.False(await CustomerExistsAsync(name));
     }
 
+    // Work item: TD-006, FEAT-012
     /// <summary>
     /// Tests that a repository write inside a committed transaction is stored.
     /// </summary>
@@ -53,7 +55,7 @@ public class UnitOfWorkTests : IClassFixture<PostgresFixture>
         await using var context = _fixture.CreateContext();
         var unitOfWork = new UnitOfWork(context);
         await unitOfWork.BeginTransactionAsync();
-        await new CustomerRepository(context).CreateAsync(new Customer { Name = name });
+        await new CustomerRepository(context).CreateAsync(new Customer { Name = name, Document = TestDocuments.Next() });
 
         // Act
         await unitOfWork.CommitTransactionAsync();

@@ -64,6 +64,7 @@ public class RepositoryListQueryTests : IClassFixture<PostgresFixture>
         Assert.Equal(3, totalCount);
     }
 
+    // Work item: TASK-025 (FEAT-011), FEAT-012
     /// <summary>
     /// Tests that customers and branches are ordered by name when no order is requested.
     /// </summary>
@@ -78,7 +79,7 @@ public class RepositoryListQueryTests : IClassFixture<PostgresFixture>
         await using (var context = _fixture.CreateContext())
         {
             if (resource == "customers")
-                context.Customers.AddRange(letters.Select(letter => new Customer { Name = $"{marker} {letter}" }));
+                context.Customers.AddRange(letters.Select(letter => new Customer { Name = $"{marker} {letter}", Document = TestDocuments.Next() }));
             else
                 context.Branches.AddRange(letters.Select(letter => new Branch { Name = $"{marker} {letter}" }));
             await context.SaveChangesAsync();

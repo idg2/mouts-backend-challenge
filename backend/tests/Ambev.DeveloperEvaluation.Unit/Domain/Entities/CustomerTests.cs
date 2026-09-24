@@ -9,6 +9,7 @@ namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities;
 /// </summary>
 public class CustomerTests
 {
+    // Work item: TASK-014 (FEAT-010), FEAT-012
     /// <summary>
     /// Tests that validation passes when the customer data is valid.
     /// </summary>
@@ -16,7 +17,7 @@ public class CustomerTests
     public void Given_ValidCustomer_When_Validated_Then_ShouldReturnValid()
     {
         // Arrange
-        var customer = new Customer { Id = Guid.NewGuid(), Name = "Acme Market" };
+        var customer = new Customer { Id = Guid.NewGuid(), Name = "Acme Market", Document = "12ABC34501DE35" };
 
         // Act
         var result = customer.Validate();
@@ -24,5 +25,26 @@ public class CustomerTests
         // Assert
         Assert.True(result.IsValid);
         Assert.Empty(result.Errors);
+    }
+
+    // Work item: FEAT-012
+    /// <summary>
+    /// Tests that a customer without a valid CPF or CNPJ fails validation on its document.
+    /// </summary>
+    [Theory(DisplayName = "Validation should fail for a missing or invalid document")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("52998224724")]
+    [InlineData("11222333000180")]
+    public void Given_CustomerWithInvalidDocument_When_Validated_Then_ShouldReturnInvalid(string? document)
+    {
+        // Arrange
+        var customer = new Customer { Id = Guid.NewGuid(), Name = "Acme Market", Document = document! };
+
+        // Act
+        var result = customer.Validate();
+
+        // Assert
+        Assert.False(result.IsValid);
     }
 }

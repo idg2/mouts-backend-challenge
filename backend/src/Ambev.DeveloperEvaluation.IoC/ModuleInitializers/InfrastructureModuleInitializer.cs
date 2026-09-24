@@ -10,7 +10,7 @@ namespace Ambev.DeveloperEvaluation.IoC.ModuleInitializers;
 
 public class InfrastructureModuleInitializer : IModuleInitializer
 {
-    // Work item: TASK-016 (FEAT-010)
+    // Work item: TASK-016 (FEAT-010), TD-006
     public void Initialize(WebApplicationBuilder builder)
     {
         builder.Services.AddScoped<DbContext>(provider => provider.GetRequiredService<DefaultContext>());
@@ -19,5 +19,6 @@ public class InfrastructureModuleInitializer : IModuleInitializer
         builder.Services.AddScoped<IBranchRepository, BranchRepository>();
         builder.Services.AddScoped<IProductRepository, ProductRepository>();
         builder.Services.AddScoped<ISaleRepository, SaleRepository>();
+        builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
     }
 }

@@ -1,12 +1,13 @@
+using Ambev.DeveloperEvaluation.Application.Common;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Products.CreateProduct;
 
-// Work item: TASK-020 (FEAT-010)
+// Work item: TASK-020 (FEAT-010), TD-006
 /// <summary>
 /// Command for creating a new product.
 /// </summary>
-public class CreateProductCommand : IRequest<CreateProductResult>
+public class CreateProductCommand : IRequest<CreateProductResult>, ITransactionalCommand
 {
     // Work item: FEAT-013
     /// <summary>

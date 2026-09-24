@@ -1,13 +1,14 @@
+using Ambev.DeveloperEvaluation.Application.Common;
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
 
-// Work item: TASK-022 (FEAT-010)
+// Work item: TASK-022 (FEAT-010), TD-006
 /// <summary>
 /// Command for updating a sale and replacing its item list; items are matched by id.
 /// </summary>
-public class UpdateSaleCommand : IRequest<SaleResult>
+public class UpdateSaleCommand : IRequest<SaleResult>, ITransactionalCommand
 {
     /// <summary>
     /// Gets or sets the unique identifier of the sale to update.

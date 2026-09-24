@@ -1,12 +1,13 @@
+using Ambev.DeveloperEvaluation.Application.Common;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Branches.UpdateBranch;
 
-// Work item: TASK-019 (FEAT-010)
+// Work item: TASK-019 (FEAT-010), TD-006
 /// <summary>
 /// Command for updating an existing branch.
 /// </summary>
-public class UpdateBranchCommand : IRequest<UpdateBranchResult>
+public class UpdateBranchCommand : IRequest<UpdateBranchResult>, ITransactionalCommand
 {
     /// <summary>
     /// Gets or sets the unique identifier of the branch to update.

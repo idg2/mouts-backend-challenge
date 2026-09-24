@@ -1,12 +1,13 @@
+using Ambev.DeveloperEvaluation.Application.Common;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Products.DeleteProduct;
 
-// Work item: TASK-020 (FEAT-010)
+// Work item: TASK-020 (FEAT-010), TD-006
 /// <summary>
 /// Command for deleting a product. Sales that reference it keep their own copy.
 /// </summary>
-public record DeleteProductCommand : IRequest<DeleteProductResult>
+public record DeleteProductCommand : IRequest<DeleteProductResult>, ITransactionalCommand
 {
     /// <summary>
     /// The unique identifier of the product to delete.

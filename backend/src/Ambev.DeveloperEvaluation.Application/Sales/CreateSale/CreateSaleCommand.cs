@@ -1,13 +1,14 @@
+using Ambev.DeveloperEvaluation.Application.Common;
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
 
-// Work item: TASK-021 (FEAT-010)
+// Work item: TASK-021 (FEAT-010), TD-006
 /// <summary>
 /// Command for creating a new sale with its items.
 /// </summary>
-public class CreateSaleCommand : IRequest<SaleResult>
+public class CreateSaleCommand : IRequest<SaleResult>, ITransactionalCommand
 {
     /// <summary>
     /// Gets or sets the customer id.

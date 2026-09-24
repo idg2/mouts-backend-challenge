@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Application;
+using Ambev.DeveloperEvaluation.Application.Common;
 using Ambev.DeveloperEvaluation.Common.HealthChecks;
 using Ambev.DeveloperEvaluation.Common.Logging;
 using Ambev.DeveloperEvaluation.Common.Security;
@@ -14,6 +15,7 @@ namespace Ambev.DeveloperEvaluation.WebApi;
 
 public class Program
 {
+    // Work item: TD-006
     public static void Main(string[] args)
     {
         try
@@ -51,6 +53,7 @@ public class Program
             });
 
             builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+            builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
 
             var app = builder.Build();
             app.UseMiddleware<ValidationExceptionMiddleware>();

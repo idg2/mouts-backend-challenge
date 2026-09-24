@@ -1,12 +1,13 @@
+using Ambev.DeveloperEvaluation.Application.Common;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Customers.DeleteCustomer;
 
-// Work item: TASK-018 (FEAT-010)
+// Work item: TASK-018 (FEAT-010), TD-006
 /// <summary>
 /// Command for deleting a customer.
 /// </summary>
-public record DeleteCustomerCommand : IRequest<DeleteCustomerResult>
+public record DeleteCustomerCommand : IRequest<DeleteCustomerResult>, ITransactionalCommand
 {
     /// <summary>
     /// The unique identifier of the customer to delete.

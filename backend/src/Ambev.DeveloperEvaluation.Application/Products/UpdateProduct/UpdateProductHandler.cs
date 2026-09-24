@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentValidation;
@@ -25,8 +26,10 @@ public class UpdateProductHandler : IRequestHandler<UpdateProductCommand, Update
         _mapper = mapper;
     }
 
+    // Work item: TASK-020 (FEAT-010), FEAT-013
     /// <summary>
-    /// Handles the UpdateProductCommand request.
+    /// Handles the UpdateProductCommand request. The code is stored trimmed and in upper case, and must not be used by
+    /// another product.
     /// </summary>
     /// <param name="command">The UpdateProduct command</param>
     /// <param name="cancellationToken">Cancellation token</param>
@@ -43,6 +46,12 @@ public class UpdateProductHandler : IRequestHandler<UpdateProductCommand, Update
         if (product == null)
             throw new KeyNotFoundException($"Product with ID {command.Id} not found");
 
+        var code = command.Code.Trim().ToUpperInvariant();
+        var productWithCode = await _productRepository.GetByCodeAsync(code, cancellationToken);
+        if (productWithCode != null && productWithCode.Id != product.Id)
+            throw new DuplicateEntryException($"Product with code {code} already exists");
+
+        product.Code = code;
         product.Description = command.Description;
         product.UnitPrice = command.UnitPrice;
 

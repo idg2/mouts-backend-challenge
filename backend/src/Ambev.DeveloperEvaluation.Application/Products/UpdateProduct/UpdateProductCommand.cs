@@ -13,6 +13,12 @@ public class UpdateProductCommand : IRequest<UpdateProductResult>
     /// </summary>
     public Guid Id { get; set; }
 
+    // Work item: FEAT-013
+    /// <summary>
+    /// Gets or sets the new product code.
+    /// </summary>
+    public string Code { get; set; } = string.Empty;
+
     /// <summary>
     /// Gets or sets the new product description.
     /// </summary>

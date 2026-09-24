@@ -8,6 +8,12 @@ namespace Ambev.DeveloperEvaluation.Application.Products.CreateProduct;
 /// </summary>
 public class CreateProductCommand : IRequest<CreateProductResult>
 {
+    // Work item: FEAT-013
+    /// <summary>
+    /// Gets or sets the product code.
+    /// </summary>
+    public string Code { get; set; } = string.Empty;
+
     /// <summary>
     /// Gets or sets the product description.
     /// </summary>

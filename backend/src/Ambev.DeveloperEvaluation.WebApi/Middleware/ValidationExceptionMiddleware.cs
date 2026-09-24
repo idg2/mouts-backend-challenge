@@ -1,4 +1,5 @@
 ﻿using Ambev.DeveloperEvaluation.Common.Validation;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.WebApi.Common;
 using FluentValidation;
 using System.Text.Json;
@@ -14,7 +15,7 @@ namespace Ambev.DeveloperEvaluation.WebApi.Middleware
             _next = next;
         }
 
-        // Work item: TASK-017 (FEAT-010), BUG-002
+        // Work item: TASK-017 (FEAT-010), BUG-002, BUG-003
         public async Task InvokeAsync(HttpContext context)
         {
             try
@@ -32,6 +33,10 @@ namespace Ambev.DeveloperEvaluation.WebApi.Middleware
             catch (UnauthorizedAccessException ex)
             {
                 await HandleUnauthorizedExceptionAsync(context, ex);
+            }
+            catch (DuplicateEntryException ex)
+            {
+                await HandleDuplicateEntryExceptionAsync(context, ex);
             }
         }
 
@@ -81,6 +86,26 @@ namespace Ambev.DeveloperEvaluation.WebApi.Middleware
         {
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+            var response = new ApiResponse
+            {
+                Success = false,
+                Message = exception.Message
+            };
+
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            return context.Response.WriteAsync(JsonSerializer.Serialize(response, jsonOptions));
+        }
+
+        // Work item: BUG-003
+        private static Task HandleDuplicateEntryExceptionAsync(HttpContext context, DuplicateEntryException exception)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status409Conflict;
 
             var response = new ApiResponse
             {

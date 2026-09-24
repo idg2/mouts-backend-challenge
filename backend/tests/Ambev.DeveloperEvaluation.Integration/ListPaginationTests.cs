@@ -62,6 +62,7 @@ public class ListPaginationTests : IClassFixture<PostgresFixture>
         Assert.Equal(totalCount, count);
     }
 
+    // Work item: BUG-008 (FEAT-010), FEAT-013
     private async Task SeedOneAsync(string resource)
     {
         await using var context = _fixture.CreateContext();
@@ -74,7 +75,7 @@ public class ListPaginationTests : IClassFixture<PostgresFixture>
                 context.Branches.Add(new Branch { Name = "Downtown" });
                 break;
             case "products":
-                context.Products.Add(new Product { Description = "Beer 350ml", UnitPrice = 10m });
+                context.Products.Add(new Product { Code = $"BEER-{Guid.NewGuid():N}", Description = "Beer 350ml", UnitPrice = 10m });
                 break;
             default:
                 context.Sales.Add(new Sale

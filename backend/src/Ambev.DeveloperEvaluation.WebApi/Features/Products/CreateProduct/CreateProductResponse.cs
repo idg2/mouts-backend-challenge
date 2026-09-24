@@ -11,6 +11,12 @@ public class CreateProductResponse
     /// </summary>
     public Guid Id { get; set; }
 
+    // Work item: FEAT-013
+    /// <summary>
+    /// The product code.
+    /// </summary>
+    public string Code { get; set; } = string.Empty;
+
     /// <summary>
     /// The product description.
     /// </summary>

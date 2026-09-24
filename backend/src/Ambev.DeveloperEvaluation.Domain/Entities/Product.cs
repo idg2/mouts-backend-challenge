@@ -10,6 +10,12 @@ namespace Ambev.DeveloperEvaluation.Domain.Entities;
 /// </summary>
 public class Product : BaseEntity
 {
+    // Work item: FEAT-013
+    /// <summary>
+    /// Gets or sets the product code: unique, trimmed, and stored in upper case.
+    /// </summary>
+    public string Code { get; set; } = string.Empty;
+
     /// <summary>
     /// Gets or sets the product description.
     /// </summary>

@@ -1,6 +1,7 @@
 using Ambev.DeveloperEvaluation.Application.Users.CreateUser;
 using Ambev.DeveloperEvaluation.Common.Security;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Unit.Domain;
 using AutoMapper;
@@ -159,5 +160,26 @@ public class CreateUserHandlerTests
             c.Phone == command.Phone &&
             c.Status == command.Status &&
             c.Role == command.Role));
+    }
+
+    // Work item: BUG-003
+    /// <summary>
+    /// Tests that an e-mail already in use is rejected with a duplicate entry exception and no user is created.
+    /// </summary>
+    [Fact(DisplayName = "Given an e-mail already in use When creating user Then throws duplicate entry exception")]
+    public async Task Given_EmailInUse_When_CreatingUser_Then_ThrowsDuplicateEntryException()
+    {
+        // Arrange
+        var command = CreateUserHandlerTestData.GenerateValidCommand();
+        _userRepository.GetByEmailAsync(command.Email, Arg.Any<CancellationToken>())
+            .Returns(new User { Id = Guid.NewGuid(), Email = command.Email });
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<DuplicateEntryException>()
+            .WithMessage($"User with email {command.Email} already exists");
+        await _userRepository.DidNotReceive().CreateAsync(Arg.Any<User>(), Arg.Any<CancellationToken>());
     }
 }

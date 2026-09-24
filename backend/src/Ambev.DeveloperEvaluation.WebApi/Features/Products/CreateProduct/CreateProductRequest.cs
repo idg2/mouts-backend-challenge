@@ -6,6 +6,12 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Products.CreateProduct;
 /// </summary>
 public class CreateProductRequest
 {
+    // Work item: FEAT-013
+    /// <summary>
+    /// Gets or sets the product code. Required, at most 50 characters; stored trimmed and in upper case, and unique.
+    /// </summary>
+    public string Code { get; set; } = string.Empty;
+
     /// <summary>
     /// Gets or sets the product description. Required, at most 200 characters.
     /// </summary>

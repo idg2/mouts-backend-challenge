@@ -24,6 +24,15 @@ public interface IProductRepository
     /// <returns>The tracked product if found, null otherwise</returns>
     Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    // Work item: FEAT-013
+    /// <summary>
+    /// Retrieves a product by its code, without tracking
+    /// </summary>
+    /// <param name="code">The product code, already trimmed and in upper case</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The product if found, null otherwise</returns>
+    Task<Product?> GetByCodeAsync(string code, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Retrieves the products with the given identifiers in a single query
     /// </summary>

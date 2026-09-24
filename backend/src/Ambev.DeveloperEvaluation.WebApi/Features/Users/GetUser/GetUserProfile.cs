@@ -7,6 +7,7 @@ namespace Ambev.DeveloperEvaluation.WebApi.Features.Users.GetUser;
 /// </summary>
 public class GetUserProfile : Profile
 {
+    // Work item: BUG-005
     /// <summary>
     /// Initializes the mappings for GetUser feature
     /// </summary>
@@ -14,5 +15,6 @@ public class GetUserProfile : Profile
     {
         CreateMap<Guid, Application.Users.GetUser.GetUserCommand>()
             .ConstructUsing(id => new Application.Users.GetUser.GetUserCommand(id));
+        CreateMap<Application.Users.GetUser.GetUserResult, GetUserResponse>();
     }
 }

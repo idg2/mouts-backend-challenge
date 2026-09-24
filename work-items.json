@@ -633,10 +633,10 @@
       "id": "BUG-005",
       "type": "bug",
       "title": "GET /api/users/{id} returns 500",
-      "description": "UsersController maps GetUserResult to GetUserResponse, but no AutoMapper profile defines that map, so AutoMapperMappingException becomes a 500.",
+      "description": "UsersController maps GetUserResult to GetUserResponse, but no AutoMapper profile defines that map, so AutoMapperMappingException becomes a 500. The User to GetUserResult map also left Name empty, since the entity property is Username; fixed with it.",
       "parent": null,
       "moscow": "should",
-      "status": "backlog",
+      "status": "done",
       "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
@@ -685,6 +685,18 @@
       "parent": "FEAT-010",
       "moscow": "should",
       "status": "done",
+      "branch": null,
+      "createdAt": "2026-09-24",
+      "updatedAt": "2026-09-24"
+    },
+    {
+      "id": "BUG-010",
+      "type": "bug",
+      "title": "POST /api/users echoes empty user fields",
+      "description": "CreateUserResult has only Id, so the CreateUserResult to CreateUserResponse map leaves name, email, and phone empty and role and status at 0 in the 201 response, even though the user is stored with the values sent.",
+      "parent": null,
+      "moscow": "should",
+      "status": "backlog",
       "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"

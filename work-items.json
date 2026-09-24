@@ -160,10 +160,10 @@
       "id": "FEAT-012",
       "type": "feature",
       "title": "Customer document (CPF/CNPJ)",
-      "description": "Add a required, unique Document field to customers that holds a CPF or a CNPJ, stored as digits only, with the type inferred from the length (11 digits = CPF, 14 = CNPJ) and validated through new CPF and CNPJ validator classes (length and check digits). Expose it through the customer create, update, get, and list endpoints. The migration deletes all existing customers before adding the column. A duplicate Document throws DuplicateEntryException, which returns 409.",
+      "description": "Add a required, unique Document field to customers that holds a CPF or a CNPJ. Masks ('.', '-', '/', spaces) are removed and letters are stored in upper case; the type comes from the length (11 = CPF, 14 = CNPJ). New CpfValidator and CnpjValidator classes check length, characters, repeated sequences, and check digits; the CNPJ validator also accepts the alphanumeric CNPJ issued since July 2026 (12 characters 0-9/A-Z, check digits over ASCII - 48). Exposed through the customer create, update, get, and list endpoints. The migration deletes all existing customers before adding the column. A duplicate Document throws DuplicateEntryException, which returns 409.",
       "parent": "EPIC-001",
       "moscow": "must",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },

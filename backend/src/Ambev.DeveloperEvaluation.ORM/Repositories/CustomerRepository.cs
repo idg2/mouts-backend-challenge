@@ -1,6 +1,8 @@
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Ambev.DeveloperEvaluation.ORM.Repositories;
 
@@ -24,13 +26,14 @@ public class CustomerRepository : ICustomerRepository
         _context = context;
     }
 
+    // Work item: TASK-016 (FEAT-010), FEAT-012
     /// <summary>
-    /// Creates a new customer in the database
+    /// Creates a new customer in the database. A document already stored raises <see cref="DuplicateEntryException"/>
     /// </summary>
     public async Task<Customer> CreateAsync(Customer customer, CancellationToken cancellationToken = default)
     {
         await _context.Customers.AddAsync(customer, cancellationToken);
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveChangesAsync(customer, cancellationToken);
         return customer;
     }
 
@@ -42,13 +45,44 @@ public class CustomerRepository : ICustomerRepository
         return await _context.Customers.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
+    // Work item: FEAT-012
     /// <summary>
-    /// Saves the changes made to a tracked customer
+    /// Retrieves a customer by its normalized document, without tracking it
+    /// </summary>
+    public async Task<Customer?> GetByDocumentAsync(string document, CancellationToken cancellationToken = default)
+    {
+        return await _context.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.Document == document, cancellationToken);
+    }
+
+    // Work item: TASK-016 (FEAT-010), FEAT-012
+    /// <summary>
+    /// Saves the changes made to a tracked customer. A document used by another customer raises
+    /// <see cref="DuplicateEntryException"/>
     /// </summary>
     public async Task<Customer> UpdateAsync(Customer customer, CancellationToken cancellationToken = default)
     {
-        await _context.SaveChangesAsync(cancellationToken);
+        await SaveChangesAsync(customer, cancellationToken);
         return customer;
+    }
+
+    // Work item: FEAT-012
+    /// <summary>
+    /// Saves the pending changes and turns a violation of the unique document index into <see cref="DuplicateEntryException"/>
+    /// </summary>
+    private async Task SaveChangesAsync(Customer customer, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException
+                                           {
+                                               SqlState: PostgresErrorCodes.UniqueViolation,
+                                               ConstraintName: "IX_Customers_Document"
+                                           })
+        {
+            throw new DuplicateEntryException($"Customer with document {customer.Document} already exists");
+        }
     }
 
     /// <summary>

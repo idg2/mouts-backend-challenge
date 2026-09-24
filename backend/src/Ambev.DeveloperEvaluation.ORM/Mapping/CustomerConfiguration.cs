@@ -10,6 +10,7 @@ namespace Ambev.DeveloperEvaluation.ORM.Mapping;
 /// </summary>
 public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
 {
+    // Work item: TASK-016 (FEAT-010), FEAT-012
     /// <summary>
     /// Configures the Customers table
     /// </summary>
@@ -22,5 +23,8 @@ public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
         builder.Property(c => c.Id).HasColumnType("uuid").HasDefaultValueSql("gen_random_uuid()");
 
         builder.Property(c => c.Name).IsRequired().HasMaxLength(100);
+
+        builder.Property(c => c.Document).IsRequired().HasMaxLength(14);
+        builder.HasIndex(c => c.Document).IsUnique();
     }
 }

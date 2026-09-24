@@ -24,6 +24,15 @@ public interface ICustomerRepository
     /// <returns>The tracked customer if found, null otherwise</returns>
     Task<Customer?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    // Work item: FEAT-012
+    /// <summary>
+    /// Retrieves a customer by its document
+    /// </summary>
+    /// <param name="document">The CPF or CNPJ, already normalized (no mask, upper case)</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>The customer if found, null otherwise</returns>
+    Task<Customer?> GetByDocumentAsync(string document, CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Saves the changes made to a customer loaded through <see cref="GetByIdAsync"/>
     /// </summary>

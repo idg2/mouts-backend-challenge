@@ -18,4 +18,10 @@ public class UpdateCustomerCommand : IRequest<UpdateCustomerResult>, ITransactio
     /// Gets or sets the new customer name.
     /// </summary>
     public string Name { get; set; } = string.Empty;
+
+    // Work item: FEAT-012
+    /// <summary>
+    /// Gets or sets the customer's CPF or CNPJ as sent; a mask ('.', '-', '/') is accepted and removed.
+    /// </summary>
+    public string Document { get; set; } = string.Empty;
 }

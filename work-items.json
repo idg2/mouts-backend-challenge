@@ -914,6 +914,28 @@
       "status": "backlog",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
+    },
+    {
+      "id": "TD-013",
+      "type": "td",
+      "title": "Step-by-step usage guide (README_.md)",
+      "description": "README_.md, the future repository README: prerequisites, containers with make dev-up, database schema, running the API in a container or with dotnet run, first requests, configuration reference, asynchronous sale intake, the load simulator, logs, tests, and troubleshooting.",
+      "parent": null,
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-24",
+      "updatedAt": "2026-09-24"
+    },
+    {
+      "id": "TD-014",
+      "type": "td",
+      "title": "JWT security scheme in Swagger",
+      "description": "AddSwaggerGen has no bearer security definition, so Swagger UI cannot send the token and every protected endpoint answers 401 from it. Add the JWT security definition and requirement so Swagger can be used end to end.",
+      "parent": null,
+      "moscow": "could",
+      "status": "backlog",
+      "createdAt": "2026-09-24",
+      "updatedAt": "2026-09-24"
     }
   ]
 }

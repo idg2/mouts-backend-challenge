@@ -14,7 +14,7 @@ namespace Ambev.DeveloperEvaluation.WebApi.Middleware
             _next = next;
         }
 
-        // Work item: TASK-017 (FEAT-010)
+        // Work item: TASK-017 (FEAT-010), BUG-002
         public async Task InvokeAsync(HttpContext context)
         {
             try
@@ -28,6 +28,10 @@ namespace Ambev.DeveloperEvaluation.WebApi.Middleware
             catch (KeyNotFoundException ex)
             {
                 await HandleNotFoundExceptionAsync(context, ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                await HandleUnauthorizedExceptionAsync(context, ex);
             }
         }
 
@@ -57,6 +61,26 @@ namespace Ambev.DeveloperEvaluation.WebApi.Middleware
         {
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = StatusCodes.Status404NotFound;
+
+            var response = new ApiResponse
+            {
+                Success = false,
+                Message = exception.Message
+            };
+
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
+            return context.Response.WriteAsync(JsonSerializer.Serialize(response, jsonOptions));
+        }
+
+        // Work item: BUG-002
+        private static Task HandleUnauthorizedExceptionAsync(HttpContext context, UnauthorizedAccessException exception)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
 
             var response = new ApiResponse
             {

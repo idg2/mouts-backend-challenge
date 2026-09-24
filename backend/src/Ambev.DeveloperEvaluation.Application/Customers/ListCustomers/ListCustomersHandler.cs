@@ -25,6 +25,7 @@ public class ListCustomersHandler : IRequestHandler<ListCustomersCommand, ListCu
         _mapper = mapper;
     }
 
+    // Work item: TASK-025 (FEAT-011)
     /// <summary>
     /// Handles the ListCustomersCommand request.
     /// </summary>
@@ -39,7 +40,14 @@ public class ListCustomersHandler : IRequestHandler<ListCustomersCommand, ListCu
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        var (customers, totalCount) = await _customerRepository.ListAsync(command.Page, command.Size, cancellationToken);
+        var query = new ListQuery
+        {
+            Page = command.Page,
+            Size = command.Size,
+            Filters = command.Filters,
+            Order = command.Order
+        };
+        var (customers, totalCount) = await _customerRepository.ListAsync(query, cancellationToken);
 
         return new ListCustomersResult
         {

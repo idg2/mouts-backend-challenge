@@ -28,17 +28,23 @@ public class ListSalesHandlerTests
         _handler = new ListSalesHandler(_saleRepository, _mapper);
     }
 
+    // Work item: TASK-025 (FEAT-011)
     /// <summary>
-    /// Tests that the requested page and the total count are returned.
+    /// Tests that the page, size, filters, and order reach the repository and the page and total count are returned.
     /// </summary>
-    [Fact(DisplayName = "Given a page request When listing sales Then returns the page and the total count")]
-    public async Task Given_PageRequest_When_Handled_Then_ReturnsPageAndTotalCount()
+    [Fact(DisplayName = "Given a page request with filters and order When listing sales Then passes them and returns the page")]
+    public async Task Given_PageRequestWithFiltersAndOrder_When_Handled_Then_PassesThemAndReturnsPage()
     {
         // Arrange
-        var command = new ListSalesCommand { Page = 3, Size = 20 };
+        var filters = new List<FieldFilter> { new("IsCancelled", FilterOperator.Equal, false) };
+        var order = new List<SortField> { new("SaleDate", true) };
+        var command = new ListSalesCommand { Page = 3, Size = 20, Filters = filters, Order = order };
         IReadOnlyList<Sale> sales = new List<Sale> { new() { Id = Guid.NewGuid(), SaleNumber = 41 } };
         var items = new List<ListSalesItem> { new() { Id = sales[0].Id, SaleNumber = 41 } };
-        _saleRepository.ListAsync(3, 20, Arg.Any<CancellationToken>()).Returns((sales, 41));
+        _saleRepository.ListAsync(
+                Arg.Is<ListQuery>(query => query.Page == 3 && query.Size == 20 && query.Filters == filters && query.Order == order),
+                Arg.Any<CancellationToken>())
+            .Returns((sales, 41));
         _mapper.Map<List<ListSalesItem>>(sales).Returns(items);
 
         // Act

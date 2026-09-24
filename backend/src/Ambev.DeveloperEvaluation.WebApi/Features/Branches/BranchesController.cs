@@ -100,11 +100,16 @@ public class BranchesController : BaseController
         });
     }
 
+    // Work item: TASK-027 (FEAT-011)
     /// <summary>
-    /// Lists branches one page at a time, ordered by name
+    /// Lists branches one page at a time. Any response field (id, name) can be a query key: text matches ignore
+    /// case and accept '*' at the start or end, and a repeated key matches any of its values. Numeric and date fields
+    /// also accept _min and _max prefixed keys. _order sorts by response fields, for example "name desc"; without it
+    /// the list is ordered by name
     /// </summary>
     /// <param name="page">The page number, starting at 1 (query parameter _page)</param>
     /// <param name="size">The page size, from 1 to 100 (query parameter _size)</param>
+    /// <param name="order">Comma-separated response fields, each optionally followed by asc or desc (query parameter _order)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The requested page of branches</returns>
     [HttpGet]
@@ -113,8 +118,11 @@ public class BranchesController : BaseController
     public async Task<IActionResult> ListBranches(
         [FromQuery(Name = "_page")] int page = 1,
         [FromQuery(Name = "_size")] int size = 10,
+        [FromQuery(Name = "_order")] string? order = null,
         CancellationToken cancellationToken = default)
     {
+        var (filters, sortFields) = ListQueryParser.Parse<ListBranchesResponse>(Request.Query);
+
         var request = new ListBranchesRequest { Page = page, Size = size };
         var validator = new ListBranchesRequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
@@ -123,6 +131,8 @@ public class BranchesController : BaseController
             return BadRequest(validationResult.Errors);
 
         var command = _mapper.Map<ListBranchesCommand>(request);
+        command.Filters = filters;
+        command.Order = sortFields;
         var response = await _mediator.Send(command, cancellationToken);
 
         var branches = _mapper.Map<List<ListBranchesResponse>>(response.Items);

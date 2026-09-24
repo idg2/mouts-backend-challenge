@@ -101,11 +101,16 @@ public class SalesController : BaseController
         });
     }
 
+    // Work item: TASK-027 (FEAT-011)
     /// <summary>
-    /// Lists sale headers (without items) one page at a time, ordered by sale number
+    /// Lists sales one page at a time. Any response field (id, saleNumber, saleDate, customerId, customerName, branchId, branchName, totalAmount, isCancelled) can be a query key: text matches ignore
+    /// case and accept '*' at the start or end, and a repeated key matches any of its values. Numeric and date fields
+    /// also accept _min and _max prefixed keys. _order sorts by response fields, for example "saleNumber desc"; without it
+    /// the list is ordered by sale number
     /// </summary>
     /// <param name="page">The page number, starting at 1 (query parameter _page)</param>
     /// <param name="size">The page size, from 1 to 100 (query parameter _size)</param>
+    /// <param name="order">Comma-separated response fields, each optionally followed by asc or desc (query parameter _order)</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>The requested page of sale headers</returns>
     [HttpGet]
@@ -114,8 +119,11 @@ public class SalesController : BaseController
     public async Task<IActionResult> ListSales(
         [FromQuery(Name = "_page")] int page = 1,
         [FromQuery(Name = "_size")] int size = 10,
+        [FromQuery(Name = "_order")] string? order = null,
         CancellationToken cancellationToken = default)
     {
+        var (filters, sortFields) = ListQueryParser.Parse<ListSalesResponse>(Request.Query);
+
         var request = new ListSalesRequest { Page = page, Size = size };
         var validator = new ListSalesRequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
@@ -124,6 +132,8 @@ public class SalesController : BaseController
             return BadRequest(validationResult.Errors);
 
         var command = _mapper.Map<ListSalesCommand>(request);
+        command.Filters = filters;
+        command.Order = sortFields;
         var response = await _mediator.Send(command, cancellationToken);
 
         var sales = _mapper.Map<List<ListSalesResponse>>(response.Items);

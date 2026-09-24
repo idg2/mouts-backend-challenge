@@ -28,20 +28,26 @@ public class ListProductsHandlerTests
         _handler = new ListProductsHandler(_productRepository, _mapper);
     }
 
+    // Work item: TASK-025 (FEAT-011)
     /// <summary>
-    /// Tests that the requested page and the total count are returned.
+    /// Tests that the page, size, filters, and order reach the repository and the page and total count are returned.
     /// </summary>
-    [Fact(DisplayName = "Given a page request When listing products Then returns the page and the total count")]
-    public async Task Given_PageRequest_When_Handled_Then_ReturnsPageAndTotalCount()
+    [Fact(DisplayName = "Given a page request with filters and order When listing products Then passes them and returns the page")]
+    public async Task Given_PageRequestWithFiltersAndOrder_When_Handled_Then_PassesThemAndReturnsPage()
     {
         // Arrange
-        var command = new ListProductsCommand { Page = 2, Size = 5 };
+        var filters = new List<FieldFilter> { new("UnitPrice", FilterOperator.GreaterThanOrEqual, 10m) };
+        var order = new List<SortField> { new("UnitPrice", true) };
+        var command = new ListProductsCommand { Page = 2, Size = 5, Filters = filters, Order = order };
         IReadOnlyList<Product> products = new List<Product> { new() { Id = Guid.NewGuid(), Description = "Beer 350ml", UnitPrice = 10m } };
         var items = new List<ListProductsItem>
         {
             new() { Id = products[0].Id, Description = products[0].Description, UnitPrice = products[0].UnitPrice }
         };
-        _productRepository.ListAsync(2, 5, Arg.Any<CancellationToken>()).Returns((products, 12));
+        _productRepository.ListAsync(
+                Arg.Is<ListQuery>(query => query.Page == 2 && query.Size == 5 && query.Filters == filters && query.Order == order),
+                Arg.Any<CancellationToken>())
+            .Returns((products, 12));
         _mapper.Map<List<ListProductsItem>>(products).Returns(items);
 
         // Act

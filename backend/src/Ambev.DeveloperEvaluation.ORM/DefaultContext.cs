@@ -10,18 +10,33 @@ public class DefaultContext : DbContext
 {
     public DbSet<User> Users { get; set; }
 
+    // Work item: TASK-016 (FEAT-010)
+    public DbSet<Customer> Customers { get; set; }
+
+    // Work item: TASK-016 (FEAT-010)
+    public DbSet<Branch> Branches { get; set; }
+
+    // Work item: TASK-016 (FEAT-010)
+    public DbSet<Product> Products { get; set; }
+
+    // Work item: TASK-016 (FEAT-010)
+    public DbSet<Sale> Sales { get; set; }
+
     public DefaultContext(DbContextOptions<DefaultContext> options) : base(options)
     {
     }
 
+    // Work item: TASK-016 (FEAT-010)
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasSequence<long>("SaleNumbers");
         modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
         base.OnModelCreating(modelBuilder);
     }
 }
 public class YourDbContextFactory : IDesignTimeDbContextFactory<DefaultContext>
 {
+    // Work item: TASK-013 (FEAT-010)
     public DefaultContext CreateDbContext(string[] args)
     {
         IConfigurationRoot configuration = new ConfigurationBuilder()
@@ -34,7 +49,7 @@ public class YourDbContextFactory : IDesignTimeDbContextFactory<DefaultContext>
 
         builder.UseNpgsql(
                connectionString,
-               b => b.MigrationsAssembly("Ambev.DeveloperEvaluation.WebApi")
+               b => b.MigrationsAssembly("Ambev.DeveloperEvaluation.ORM")
         );
 
         return new DefaultContext(builder.Options);

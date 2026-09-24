@@ -21,12 +21,7 @@
       "should",
       "could",
       "wont"
-    ],
-    "branchPrefixes": {
-      "feature": "feature/",
-      "td": "chore/",
-      "bug": "fix/"
-    }
+    ]
   },
   "items": [
     {
@@ -37,7 +32,6 @@
       "parent": null,
       "moscow": "must",
       "status": "todo",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -49,7 +43,6 @@
       "parent": "EPIC-001",
       "moscow": "must",
       "status": "todo",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -61,7 +54,6 @@
       "parent": "EPIC-001",
       "moscow": "must",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -73,7 +65,6 @@
       "parent": "EPIC-001",
       "moscow": "should",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -85,7 +76,6 @@
       "parent": "EPIC-001",
       "moscow": "should",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -97,7 +87,6 @@
       "parent": "EPIC-001",
       "moscow": "could",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -109,7 +98,6 @@
       "parent": "EPIC-001",
       "moscow": "could",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -121,7 +109,6 @@
       "parent": "EPIC-001",
       "moscow": "could",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -133,7 +120,6 @@
       "parent": "EPIC-001",
       "moscow": "wont",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -145,7 +131,6 @@
       "parent": "EPIC-001",
       "moscow": "wont",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -157,7 +142,6 @@
       "parent": "EPIC-001",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -169,7 +153,6 @@
       "parent": "EPIC-001",
       "moscow": "should",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -181,7 +164,6 @@
       "parent": "EPIC-001",
       "moscow": "must",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -193,7 +175,6 @@
       "parent": "FEAT-001",
       "moscow": "must",
       "status": "cancelled",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -205,7 +186,6 @@
       "parent": "FEAT-001",
       "moscow": "must",
       "status": "todo",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -217,7 +197,6 @@
       "parent": "FEAT-001",
       "moscow": "must",
       "status": "todo",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -229,7 +208,6 @@
       "parent": "FEAT-001",
       "moscow": "must",
       "status": "todo",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -241,7 +219,6 @@
       "parent": "FEAT-001",
       "moscow": "must",
       "status": "todo",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -253,7 +230,6 @@
       "parent": "FEAT-001",
       "moscow": "must",
       "status": "todo",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -265,7 +241,6 @@
       "parent": "FEAT-001",
       "moscow": "must",
       "status": "todo",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -277,7 +252,6 @@
       "parent": "FEAT-001",
       "moscow": "must",
       "status": "todo",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -289,7 +263,6 @@
       "parent": "FEAT-001",
       "moscow": "must",
       "status": "todo",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -301,7 +274,6 @@
       "parent": "FEAT-001",
       "moscow": "must",
       "status": "todo",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -313,7 +285,6 @@
       "parent": "FEAT-001",
       "moscow": "must",
       "status": "todo",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -325,7 +296,6 @@
       "parent": "FEAT-001",
       "moscow": "must",
       "status": "todo",
-      "branch": "feature/discount-policy-matrix",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -337,7 +307,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -349,7 +318,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -361,7 +329,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -373,7 +340,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -385,7 +351,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -397,7 +362,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -409,7 +373,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -421,7 +384,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -433,7 +395,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -445,7 +406,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -457,7 +417,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -469,7 +428,6 @@
       "parent": "FEAT-001",
       "moscow": "should",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -481,7 +439,6 @@
       "parent": null,
       "moscow": "must",
       "status": "done",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -493,7 +450,6 @@
       "parent": null,
       "moscow": "could",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -505,7 +461,6 @@
       "parent": null,
       "moscow": "could",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -517,7 +472,6 @@
       "parent": null,
       "moscow": "could",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -529,7 +483,6 @@
       "parent": null,
       "moscow": "must",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -541,7 +494,6 @@
       "parent": "FEAT-010",
       "moscow": "should",
       "status": "done",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -553,7 +505,6 @@
       "parent": null,
       "moscow": "should",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -565,7 +516,6 @@
       "parent": null,
       "moscow": "could",
       "status": "backlog",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -577,7 +527,6 @@
       "parent": "FEAT-010",
       "moscow": "could",
       "status": "done",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -589,7 +538,6 @@
       "parent": null,
       "moscow": "could",
       "status": "done",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -601,7 +549,6 @@
       "parent": null,
       "moscow": "should",
       "status": "done",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -613,7 +560,6 @@
       "parent": null,
       "moscow": "should",
       "status": "done",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -625,7 +571,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -637,7 +582,6 @@
       "parent": null,
       "moscow": "should",
       "status": "done",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -649,7 +593,6 @@
       "parent": "FEAT-010",
       "moscow": "must",
       "status": "done",
-      "branch": "feature/registry-cruds",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -661,7 +604,6 @@
       "parent": "FEAT-010",
       "moscow": "could",
       "status": "done",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -673,7 +615,6 @@
       "parent": "FEAT-010",
       "moscow": "could",
       "status": "done",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -685,7 +626,6 @@
       "parent": "FEAT-010",
       "moscow": "should",
       "status": "done",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -696,8 +636,7 @@
       "description": "CreateUserResult has only Id, so the CreateUserResult to CreateUserResponse map leaves name, email, and phone empty and role and status at 0 in the 201 response, even though the user is stored with the values sent.",
       "parent": null,
       "moscow": "should",
-      "status": "backlog",
-      "branch": null,
+      "status": "done",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -709,7 +648,6 @@
       "parent": "EPIC-001",
       "moscow": "must",
       "status": "done",
-      "branch": null,
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     },
@@ -720,8 +658,7 @@
       "description": "CreateUserHandler rejects a duplicate e-mail with a read-then-insert check, but the Users table has no unique index on Email, so two concurrent requests with the same e-mail can both store a user.",
       "parent": null,
       "moscow": "should",
-      "status": "backlog",
-      "branch": null,
+      "status": "done",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
     }

@@ -340,7 +340,18 @@ dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- t all --yes >
 ```bash
 dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- t all --yes \
   --ConnectionStrings:DefaultConnection="Host=localhost;Port=5432;Database=trace_scratch;Username=developer;Password=ev@luAt10n" \
-  --ConnectionStrings:MessageBus="mongodb://developer:ev%40luAt10n@localhost:27017/trace_scratch_bus?authSource=admin"
+  --ConnectionStrings:MessageBus="mongodb://developer:ev%40luAt10n@localhost:27017/trace_scratch_bus?authSource=admin" \
+  > trace.txt 2>&1; echo "exit $?"
+tail -3 trace.txt          # a good run ends with ===== no unexpected misses
+grep -n '^!!!' trace.txt   # a good run prints nothing: no scenario failed and no wait timed out
+```
+
+A good run shows `exit 0`, ends with `===== no unexpected misses`, and has no `!!!` line. The scratch databases stay after the run so you can inspect the data. Drop them, and delete `trace.txt`, when you no longer need them:
+
+```bash
+docker compose exec -T ambev.developerevaluation.database psql -U developer -d postgres -c 'DROP DATABASE IF EXISTS trace_scratch'
+docker compose exec -T ambev.developerevaluation.nosql mongosh -u developer -p 'ev@luAt10n' --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("trace_scratch_bus").dropDatabase()'
+rm trace.txt
 ```
 
 The console reads the API's configuration in the API's order (the WebApi `appsettings.json`, `appsettings.Development.json`, the WebApi user secrets, environment variables), then its own `appsettings.json`, then the command line. It forwards the command-line pairs, the resolved connection strings, and the `Seed:Admin` credentials to the hosted API, so the wipe, the login, and the API always use the same databases and administrator.

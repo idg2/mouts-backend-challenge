@@ -1,6 +1,6 @@
 {
   "meta": {
-    "updatedAt": "2026-09-24",
+    "updatedAt": "2026-09-25",
     "types": [
       "epic",
       "feature",
@@ -936,6 +936,17 @@
       "status": "backlog",
       "createdAt": "2026-09-24",
       "updatedAt": "2026-09-24"
+    },
+    {
+      "id": "TD-015",
+      "type": "td",
+      "title": "Remove the original challenge template copy",
+      "description": "Delete template/backend/, the untouched copy of the challenge template that backend/ was created from. Nothing in the repository references it; the owner decided to remove it from dev.",
+      "parent": null,
+      "moscow": "could",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
     }
   ]
 }

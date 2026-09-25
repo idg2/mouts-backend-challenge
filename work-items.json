@@ -1332,6 +1332,17 @@
       "status": "backlog",
       "createdAt": "2026-09-25",
       "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TD-031",
+      "type": "td",
+      "title": "README: check a trace run and drop the scratch databases",
+      "description": "README_.md §9 (Trace console): the scratch-database command redirects the output to trace.txt and prints the exit code, followed by the checks for a good run (the last summary line and no !!! lines) and the commands that drop the two scratch databases.",
+      "parent": null,
+      "moscow": "could",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
     }
   ]
 }

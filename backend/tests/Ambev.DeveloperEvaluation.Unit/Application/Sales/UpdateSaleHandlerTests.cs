@@ -1,5 +1,7 @@
 using Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Events;
+using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentAssertions;
@@ -23,6 +25,13 @@ public class UpdateSaleHandlerTests
     private readonly IMapper _mapper;
     private readonly UpdateSaleHandler _handler;
 
+    // Work item: TASK-029 (FEAT-004)
+    private readonly IOutbox _outbox;
+
+    // Work item: TASK-029 (FEAT-004)
+    private readonly List<IIntegrationEvent> _enqueued = [];
+
+    // Work item: TASK-029 (FEAT-004)
     /// <summary>
     /// Initializes the test dependencies.
     /// </summary>
@@ -34,7 +43,10 @@ public class UpdateSaleHandlerTests
         _productRepository = Substitute.For<IProductRepository>();
         _mapper = Substitute.For<IMapper>();
         _saleRepository.UpdateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>()).Returns(call => call.Arg<Sale>());
-        _handler = new UpdateSaleHandler(_saleRepository, _customerRepository, _branchRepository, _productRepository, _mapper);
+        _outbox = Substitute.For<IOutbox>();
+        _outbox.When(outbox => outbox.EnqueueAsync(Arg.Any<IIntegrationEvent>(), Arg.Any<CancellationToken>()))
+            .Do(call => _enqueued.Add(call.Arg<IIntegrationEvent>()));
+        _handler = new UpdateSaleHandler(_saleRepository, _customerRepository, _branchRepository, _productRepository, _mapper, _outbox);
     }
 
     /// <summary>
@@ -222,6 +234,144 @@ public class UpdateSaleHandlerTests
         BranchId = sale.BranchId,
         TotalAmount = 10m,
         Items = [new UpdateSaleItemInput { ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m }]
+    };
+
+    // Work item: TASK-029 (FEAT-004)
+    /// <summary>
+    /// Tests that an update that does not cancel the sale or any item, including one that un-cancels the sale,
+    /// enqueues only SaleModified with the sale after the update.
+    /// </summary>
+    [Theory(DisplayName = "Given no cancellation When updating sale Then enqueues only SaleModified")]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Given_NoCancellation_When_Handled_Then_EnqueuesOnlySaleModified(bool saleWasCancelled)
+    {
+        // Arrange
+        var item = new SaleItem { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m };
+        var sale = NewSale(item);
+        sale.IsCancelled = saleWasCancelled;
+        _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        var command = UpdateCommand(sale, isCancelled: false, new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 3, TotalAmount = 30m });
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        var modified = _enqueued.Should().ContainSingle().Which.Should().BeOfType<SaleModified>().Subject;
+        modified.Sale.SaleId.Should().Be(sale.Id);
+        modified.Sale.IsCancelled.Should().BeFalse();
+        modified.Sale.Items.Should().ContainSingle().Which.Quantity.Should().Be(3);
+    }
+
+    // Work item: TASK-029 (FEAT-004)
+    /// <summary>
+    /// Tests that cancelling an active sale enqueues SaleModified and then SaleCancelled.
+    /// </summary>
+    [Fact(DisplayName = "Given an active sale cancelled When updating sale Then enqueues SaleModified then SaleCancelled")]
+    public async Task Given_ActiveSaleCancelled_When_Handled_Then_EnqueuesModifiedThenCancelled()
+    {
+        // Arrange
+        var item = new SaleItem { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m };
+        var sale = NewSale(item);
+        _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        var command = UpdateCommand(sale, isCancelled: true, new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 1, TotalAmount = 10m });
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _enqueued.Select(e => e.GetType()).Should().Equal(typeof(SaleModified), typeof(SaleCancelled));
+        _enqueued[1].Should().Be(new SaleCancelled(sale.Id));
+    }
+
+    // Work item: TASK-029 (FEAT-004)
+    /// <summary>
+    /// Tests that ItemCancelled is enqueued only for existing items that were active and are now cancelled, in the
+    /// order of the incoming item list; an item already cancelled and a new item sent cancelled enqueue nothing.
+    /// </summary>
+    [Fact(DisplayName = "Given item flag changes When updating sale Then enqueues ItemCancelled only for active items in incoming order")]
+    public async Task Given_ItemFlagChanges_When_Handled_Then_EnqueuesItemCancelledOnlyForActiveItemsInIncomingOrder()
+    {
+        // Arrange
+        var first = new SaleItem { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m };
+        var second = new SaleItem { Id = Guid.NewGuid(), LineNumber = 2, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m };
+        var alreadyCancelled = new SaleItem
+        {
+            Id = Guid.NewGuid(), LineNumber = 3, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m, IsCancelled = true
+        };
+        var sale = NewSale(first, second, alreadyCancelled);
+        var water = new Product { Id = Guid.NewGuid(), Description = "Water 500ml", UnitPrice = 3m };
+        _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        _productRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>())
+            .Returns(new List<Product> { water });
+        var command = UpdateCommand(sale, isCancelled: false,
+            new UpdateSaleItemInput { Id = second.Id, ProductId = second.ProductId, Quantity = 1, TotalAmount = 10m, IsCancelled = true },
+            new UpdateSaleItemInput { Id = first.Id, ProductId = first.ProductId, Quantity = 1, TotalAmount = 10m, IsCancelled = true },
+            new UpdateSaleItemInput { Id = alreadyCancelled.Id, ProductId = alreadyCancelled.ProductId, Quantity = 1, TotalAmount = 10m, IsCancelled = true },
+            new UpdateSaleItemInput { ProductId = water.Id, Quantity = 1, TotalAmount = 3m, IsCancelled = true });
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _enqueued.Should().HaveCount(3);
+        _enqueued[0].Should().BeOfType<SaleModified>();
+        _enqueued.Skip(1).Should().Equal(
+            new ItemCancelled(sale.Id, second.Id, second.ProductId),
+            new ItemCancelled(sale.Id, first.Id, first.ProductId));
+    }
+
+    // Work item: TASK-029 (FEAT-004)
+    /// <summary>
+    /// Tests that an update cancelling an item and the sale together enqueues SaleModified, then ItemCancelled,
+    /// then SaleCancelled.
+    /// </summary>
+    [Fact(DisplayName = "Given sale and item cancelled together When updating sale Then enqueues modified, item, then sale")]
+    public async Task Given_SaleAndItemCancelledTogether_When_Handled_Then_EnqueuesModifiedThenItemThenSale()
+    {
+        // Arrange
+        var item = new SaleItem { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m };
+        var sale = NewSale(item);
+        _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        var command = UpdateCommand(sale, isCancelled: true,
+            new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 1, TotalAmount = 10m, IsCancelled = true });
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _enqueued.Select(e => e.GetType()).Should().Equal(typeof(SaleModified), typeof(ItemCancelled), typeof(SaleCancelled));
+    }
+
+    // Work item: TASK-029 (FEAT-004)
+    /// <summary>
+    /// Tests that an update of an unknown sale enqueues nothing.
+    /// </summary>
+    [Fact(DisplayName = "Given an unknown sale When updating sale Then enqueues nothing")]
+    public async Task Given_UnknownSale_When_Handled_Then_EnqueuesNothing()
+    {
+        // Arrange
+        var sale = NewSale(new SaleItem { Id = Guid.NewGuid(), ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m });
+        var command = UpdateCommand(sale, isCancelled: false,
+            new UpdateSaleItemInput { ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m });
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<KeyNotFoundException>();
+        _enqueued.Should().BeEmpty();
+    }
+
+    // Work item: TASK-029 (FEAT-004)
+    private static UpdateSaleCommand UpdateCommand(Sale sale, bool isCancelled, params UpdateSaleItemInput[] items) => new()
+    {
+        Id = sale.Id,
+        CustomerId = sale.CustomerId,
+        BranchId = sale.BranchId,
+        TotalAmount = items.Sum(item => item.TotalAmount),
+        IsCancelled = isCancelled,
+        Items = items.ToList()
     };
 
     private static Sale NewSale(params SaleItem[] items) => new()

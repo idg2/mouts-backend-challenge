@@ -4,9 +4,10 @@ using MongoDB.Driver;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Messaging;
 
-// Work item: TASK-038 (FEAT-006)
+// Work item: TASK-038 (FEAT-006), TASK-031 (FEAT-004)
 /// <summary>
-/// Where the sale intake queue lives and how many messages the API consumes at a time. Every value is required.
+/// Where the Rebus queue lives, how many messages the API consumes at a time, and how often the outbox relay feeds it.
+/// Every value is required.
 /// </summary>
 public sealed class MessagingSettings
 {
@@ -30,15 +31,45 @@ public sealed class MessagingSettings
     /// </summary>
     public const string MaxParallelismKey = "Rebus:MaxParallelism";
 
+    // Work item: TASK-031 (FEAT-004)
+    /// <summary>
+    /// Configuration key of the wait between outbox relay cycles, from <see cref="MinPollingInterval"/> to
+    /// <see cref="MaxPollingInterval"/>.
+    /// </summary>
+    public const string PollingIntervalKey = "Outbox:PollingInterval";
+
+    // Work item: TASK-031 (FEAT-004)
+    /// <summary>
+    /// The shortest accepted polling interval; below it the relay would query the database in a hot loop.
+    /// </summary>
+    public static readonly TimeSpan MinPollingInterval = TimeSpan.FromMilliseconds(100);
+
+    // Work item: TASK-031 (FEAT-004)
+    /// <summary>
+    /// The longest accepted polling interval. It also rejects a bare number, which TimeSpan reads as days, and keeps
+    /// the wait far below the limit of Task.Delay.
+    /// </summary>
+    public static readonly TimeSpan MaxPollingInterval = TimeSpan.FromHours(1);
+
+    // Work item: TASK-031 (FEAT-004)
+    /// <summary>
+    /// Configuration key of the maximum number of outbox rows one relay cycle dispatches.
+    /// </summary>
+    public const string BatchSizeKey = "Outbox:BatchSize";
+
     // Characters MongoDB refuses in database names, plus the 63-character limit checked below.
     private static readonly char[] InvalidDatabaseNameCharacters = ['/', '\\', '.', ' ', '"', '$'];
 
-    private MessagingSettings(string connectionString, string inputQueue, int workers, int maxParallelism)
+    // Work item: TASK-031 (FEAT-004)
+    private MessagingSettings(
+        string connectionString, string inputQueue, int workers, int maxParallelism, TimeSpan pollingInterval, int batchSize)
     {
         ConnectionString = connectionString;
         InputQueue = inputQueue;
         Workers = workers;
         MaxParallelism = maxParallelism;
+        PollingInterval = pollingInterval;
+        BatchSize = batchSize;
     }
 
     /// <summary>
@@ -61,6 +92,19 @@ public sealed class MessagingSettings
     /// </summary>
     public int MaxParallelism { get; }
 
+    // Work item: TASK-031 (FEAT-004)
+    /// <summary>
+    /// Gets the wait between outbox relay cycles.
+    /// </summary>
+    public TimeSpan PollingInterval { get; }
+
+    // Work item: TASK-031 (FEAT-004)
+    /// <summary>
+    /// Gets the maximum number of outbox rows one relay cycle dispatches.
+    /// </summary>
+    public int BatchSize { get; }
+
+    // Work item: TASK-031 (FEAT-004)
     /// <summary>
     /// Reads the settings, throwing <see cref="InvalidOperationException"/> naming the first missing or invalid key.
     /// </summary>
@@ -100,8 +144,10 @@ public sealed class MessagingSettings
         var inputQueue = Required(configuration, InputQueueKey);
         var workers = PositiveInteger(configuration, WorkersKey);
         var maxParallelism = PositiveInteger(configuration, MaxParallelismKey);
+        var pollingInterval = BoundedTimeSpan(configuration, PollingIntervalKey, MinPollingInterval, MaxPollingInterval);
+        var batchSize = PositiveInteger(configuration, BatchSizeKey);
 
-        return new MessagingSettings(connectionString, inputQueue, workers, maxParallelism);
+        return new MessagingSettings(connectionString, inputQueue, workers, maxParallelism, pollingInterval, batchSize);
     }
 
     private static int PositiveInteger(IConfiguration configuration, string key)
@@ -109,6 +155,17 @@ public sealed class MessagingSettings
         var text = Required(configuration, key);
         if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var value) || value <= 0)
             throw new InvalidOperationException($"{key} must be a positive integer; got \"{text}\".");
+
+        return value;
+    }
+
+    // Work item: TASK-031 (FEAT-004)
+    private static TimeSpan BoundedTimeSpan(IConfiguration configuration, string key, TimeSpan minimum, TimeSpan maximum)
+    {
+        var text = Required(configuration, key);
+        if (!TimeSpan.TryParse(text, CultureInfo.InvariantCulture, out var value) || value < minimum || value > maximum)
+            throw new InvalidOperationException(
+                $"{key} must be a time span (hh:mm:ss) from {minimum:c} to {maximum:c}, such as \"00:00:05\"; got \"{text}\".");
 
         return value;
     }

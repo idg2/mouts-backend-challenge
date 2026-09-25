@@ -108,7 +108,7 @@ The command reads `ConnectionStrings:DefaultConnection` from `backend/src/Ambev.
 
 ## 5. Choose how to run the API
 
-Run **one** API instance at a time. Every instance consumes the same MongoDB queue (`sales-intake`), so two instances split the queued sales between them and distort any measurement.
+Run **one** API instance at a time. Every instance consumes the same MongoDB queue (`sales-intake`), so two instances split the queued sales between them and distort any measurement. Each instance also runs an outbox relay ([§8](#8-asynchronous-sale-intake)), which assumes it is the only one: two relays can send the same sale events twice and out of order.
 
 ### Option A — API in the container (port 8080)
 
@@ -234,7 +234,9 @@ Configuration comes from `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettin
 | `ConnectionStrings:MessageBus` | `mongodb://…/developer_evaluation_bus?authSource=admin` | MongoDB URL of the Rebus queue. The path **must** name a database, and it cannot be the `LogStorage` database. |
 | `Rebus:InputQueue` | `sales-intake` | Queue the API sends to and consumes from. |
 | `Rebus:Workers` | `1` | Rebus worker threads. |
-| `Rebus:MaxParallelism` | `20` | Queued sales processed at the same time. Keep it **below** the Npgsql pool size. |
+| `Rebus:MaxParallelism` | `20` | Queued messages processed at the same time. Keep it **below** the Npgsql pool size. |
+| `Outbox:PollingInterval` | `00:00:05` | Wait between outbox relay cycles; after a full batch the next cycle starts at once. A time span (hh:mm:ss) from `00:00:00.1` to `01:00:00`; a bare number is rejected, since .NET reads it as days. |
+| `Outbox:BatchSize` | `50` | Outbox rows one relay cycle sends. |
 | `Serilog` section | Levels, console output, `/health` filter | EF Core and ASP.NET Core log at Warning, so SQL commands do not flood the log. |
 
 The API container overrides `DefaultConnection`, `LogStorage`, and `MessageBus` in `backend/docker-compose.yml` so they point at the service names instead of `localhost`.
@@ -268,6 +270,24 @@ How a queued sale is processed:
 - **Fail fast on bad references.** An unknown customer, branch, or product goes straight to the Rebus **error queue** after a single attempt. Other failures, such as a database outage, are retried 5 times and then moved to the error queue.
 - **What the client sees.** It follows the sale with `GET /api/sales/{id}`: `404` means still queued or rejected, `200` means stored. Rejected sales are visible only in the error queue and the log.
 
+### Sale events
+
+Every sale create, update, and delete records its events (`SaleCreated`, `SaleModified`, `SaleCancelled`, `ItemCancelled`, `SaleDeleted`) in the `OutboxMessages` table, inside the same transaction as the write:
+
+- A write that rolls back leaves no event, and a committed write always leaves its events.
+- A relay inside the API sends pending rows, oldest first, to the same Rebus queue.
+- `SaleEventLogHandler` writes one line per event to the log: `Sale event <Type> <MessageId> for sale <SaleId>`.
+- **Delivery is at least once.** The message id is the outbox row id, so a re-sent event keeps its id.
+- **Consumers may process events in any order**, because they run in parallel. The order is guaranteed only for how events leave the outbox.
+- A queued sale that is delivered again after it was stored produces no second `SaleCreated`.
+
+See which events are still waiting in the outbox:
+
+```bash
+docker exec ambev_developer_evaluation_database psql -U developer -d developer_evaluation \
+  -c 'select "Type", "OccurredAt" from "OutboxMessages" where "ProcessedAt" is null order by "Sequence";'
+```
+
 **Inspect the queue and the error queue:**
 
 ```bash
@@ -276,7 +296,7 @@ docker exec -it ambev_developer_evaluation_nosql mongosh -u developer -p 'ev@luA
 ```
 
 ```javascript
-db.messages.countDocuments({ q: "sales-intake" })          // waiting
+db.messages.countDocuments({ q: "sales-intake" })          // waiting: queued sales and sale events together
 db.messages.countDocuments({ q: "error" })                 // failed
 db.messages.find({ q: "sales-intake", n: { $gte: 5 } })    // claimed 5 times and never moved to "error"
 ```
@@ -401,6 +421,7 @@ docker exec ambev_developer_evaluation_database psql -U developer -d developer_e
 - **PostgreSQL and MongoDB share the host disk.** The named volumes separate data, not I/O: on Docker Desktop or OrbStack every volume lives on the same VM disk. Absolute numbers are pessimistic compared with a server.
 - **MongoDB holds both the queue and the logs.** Log writes and queue writes compete during the run.
 - **Runs accumulate data.** Every run adds its user, catalog entries, and sales. Reset the data between series if you need clean numbers ([§12](#12-stop-restart-and-reset)).
+- **The outbox has a cost.** Each sale write also stores its events, and the queue also carries them, so numbers are not comparable with runs made before the outbox existed. That difference is the outbox cost per sale.
 
 ## 10. Logs and observability
 
@@ -420,6 +441,7 @@ docker exec -it ambev_developer_evaluation_nosql mongosh -u developer -p 'ev@luA
 ```javascript
 db.logs.find({}, { _id: 0, Level: 1, UtcTimeStamp: 1, RenderedMessage: 1 }).sort({ UtcTimeStamp: -1 }).limit(20)
 db.logs.find({ Level: { $in: ["Warning", "Error"] } }).sort({ UtcTimeStamp: -1 }).limit(20)
+db.logs.find({ RenderedMessage: /^Sale event/ }).sort({ UtcTimeStamp: -1 }).limit(20)
 ```
 
 ## 11. Automated tests
@@ -459,6 +481,7 @@ Run these from `backend/`:
 | `401` on every endpoint | Missing or expired token | Log in again ([§6](#6-first-requests-end-to-end), step 2) |
 | `403` on POST, PUT, or DELETE | The user's role is Customer | Use a Manager or Admin user |
 | Simulator fails at setup with a validation message | API validation rejected the setup data | Read the message; it names the endpoint and the rule |
+| Sale events never appear in the log | The relay is failing, or rows wait behind a failing one | Run the pending-rows query ([§8](#8-asynchronous-sale-intake)) and look for Error logs from `OutboxRelay` |
 
 ## 14. Repository layout
 

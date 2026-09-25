@@ -1,6 +1,8 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Events;
+using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentAssertions;
@@ -33,6 +35,16 @@ public class CreateSaleHandlerTests
 
     private Sale? _savedSale;
 
+    // Work item: TASK-029 (FEAT-004)
+    private readonly IOutbox _outbox;
+
+    // Work item: TASK-029 (FEAT-004)
+    private readonly List<IIntegrationEvent> _enqueued = [];
+
+    // Work item: TASK-029 (FEAT-004)
+    private Guid? _idSentToRepository;
+
+    // Work item: TASK-029 (FEAT-004)
     /// <summary>
     /// Initializes the test dependencies with one customer, one branch, and one product in the catalogs.
     /// </summary>
@@ -54,12 +66,21 @@ public class CreateSaleHandlerTests
             .Returns(call =>
             {
                 var sale = call.Arg<Sale>();
+                _idSentToRepository = sale.Id;
+                if (sale.Id == Guid.Empty)
+                    sale.Id = Guid.NewGuid();
+                sale.SaleNumber = 1001;
+                sale.Items.ForEach(item => item.Id = Guid.NewGuid());
                 _savedSale = sale;
                 return sale;
             });
 
+        _outbox = Substitute.For<IOutbox>();
+        _outbox.When(outbox => outbox.EnqueueAsync(Arg.Any<IIntegrationEvent>(), Arg.Any<CancellationToken>()))
+            .Do(call => _enqueued.Add(call.Arg<IIntegrationEvent>()));
+
         _handler = new CreateSaleHandler(
-            _saleRepository, _customerRepository, _branchRepository, _productRepository, _mapper, _timeProvider);
+            _saleRepository, _customerRepository, _branchRepository, _productRepository, _mapper, _timeProvider, _outbox);
     }
 
     /// <summary>
@@ -144,7 +165,7 @@ public class CreateSaleHandlerTests
             .Equal((1, 3), (2, 1), (3, 2));
     }
 
-    // Work item: TD-007 (FEAT-010)
+    // Work item: TD-007 (FEAT-010), TASK-029 (FEAT-004)
     /// <summary>
     /// Tests that an unknown customer, branch, and product are all reported, and nothing is saved.
     /// </summary>
@@ -168,6 +189,7 @@ public class CreateSaleHandlerTests
         exception.Which.Errors.Select(e => e.PropertyName).Should()
             .BeEquivalentTo(["CustomerId", "BranchId", "Items[0].ProductId"]);
         await _saleRepository.DidNotReceive().CreateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
+        _enqueued.Should().BeEmpty();
     }
 
     /// <summary>
@@ -220,7 +242,7 @@ public class CreateSaleHandlerTests
         _savedSale!.Id.Should().Be(id);
     }
 
-    // Work item: TASK-037 (FEAT-006)
+    // Work item: TASK-037 (FEAT-006), TASK-029 (FEAT-004)
     /// <summary>
     /// Tests that a redelivered command whose sale is already stored returns that sale and writes nothing.
     /// </summary>
@@ -244,9 +266,10 @@ public class CreateSaleHandlerTests
         await _customerRepository.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _branchRepository.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _productRepository.DidNotReceive().GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>());
+        _enqueued.Should().BeEmpty();
     }
 
-    // Work item: TASK-037 (FEAT-006)
+    // Work item: TASK-037 (FEAT-006), TASK-029 (FEAT-004)
     /// <summary>
     /// Tests that without an id the database assigns it and no stored sale is looked up.
     /// </summary>
@@ -260,8 +283,62 @@ public class CreateSaleHandlerTests
         await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        _savedSale!.Id.Should().Be(Guid.Empty);
+        _idSentToRepository.Should().Be(Guid.Empty);
         await _saleRepository.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+    }
+
+    // Work item: TASK-029 (FEAT-004)
+    /// <summary>
+    /// Tests that a created sale enqueues exactly one SaleCreated carrying the saved number, ids, and items.
+    /// </summary>
+    [Fact(DisplayName = "Given a valid sale When creating sale Then enqueues SaleCreated with the saved sale")]
+    public async Task Given_ValidCommand_When_Handled_Then_EnqueuesSaleCreatedWithSavedSale()
+    {
+        // Arrange
+        var command = new CreateSaleCommand
+        {
+            CustomerId = _customer.Id,
+            BranchId = _branch.Id,
+            TotalAmount = 30m,
+            Items =
+            [
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 1, TotalAmount = 10m },
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 2, TotalAmount = 20m }
+            ]
+        };
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        var created = _enqueued.Should().ContainSingle().Which.Should().BeOfType<SaleCreated>().Subject;
+        created.Sale.SaleId.Should().Be(_savedSale!.Id);
+        created.Sale.SaleNumber.Should().Be(1001);
+        created.Sale.CustomerName.Should().Be("Acme Market");
+        created.Sale.Items.Select(item => (item.ItemId, item.LineNumber, item.Quantity)).Should()
+            .Equal(_savedSale.Items.Select(item => (item.Id, item.LineNumber, item.Quantity)));
+    }
+
+    // Work item: TASK-029 (FEAT-004)
+    /// <summary>
+    /// Tests that the sale date is truncated to microseconds, the precision PostgreSQL stores, so SaleCreated carries
+    /// the same date a later SaleModified reads back from the database.
+    /// </summary>
+    [Fact(DisplayName = "Given a clock with sub-microsecond ticks When creating sale Then the date is truncated to microseconds")]
+    public async Task Given_ClockWithSubMicrosecondTicks_When_Handled_Then_SaleDateIsTruncatedToMicroseconds()
+    {
+        // Arrange
+        _timeProvider.GetUtcNow().Returns(Now.AddTicks(1_234_567));
+        var expected = Now.UtcDateTime.AddTicks(1_234_560);
+
+        // Act
+        await _handler.Handle(ValidCommand(), CancellationToken.None);
+
+        // Assert
+        _savedSale!.SaleDate.Should().Be(expected);
+        _savedSale.SaleDate.Kind.Should().Be(DateTimeKind.Utc);
+        _enqueued.Should().ContainSingle().Which.Should().BeOfType<SaleCreated>()
+            .Which.Sale.SaleDate.Should().Be(expected);
     }
 
     // Work item: TASK-037 (FEAT-006)

@@ -257,6 +257,8 @@ dotnet run --project src/Ambev.DeveloperEvaluation.WebApi --launch-profile http
 
 ## 8. Asynchronous sale intake
 
+The internals (queue, transactional outbox, relay, and consumers, with diagrams and step keys) are documented in [backend/docs/sales.md](backend/docs/sales.md).
+
 `POST /api/sales` has two modes:
 
 | Request | What happens | Response |
@@ -268,7 +270,7 @@ How a queued sale is processed:
 
 - A Rebus consumer inside the API runs the command through the same pipeline as the synchronous endpoint, with at most `Rebus:MaxParallelism` sales at a time.
 - **Idempotent.** If the same message is delivered twice, the second delivery finds the sale already stored and writes nothing.
-- **Fail fast on bad references.** An unknown customer, branch, or product goes straight to the Rebus **error queue** after a single attempt. Other failures, such as a database outage, are retried 5 times and then moved to the error queue.
+- **Fail fast on bad references.** An unknown customer, branch, or product goes straight to the Rebus **error queue** after a single attempt. Other failures, such as a database outage, get up to 5 delivery attempts in total and then move to the error queue.
 - **What the client sees.** It follows the sale with `GET /api/sales/{id}`: `404` means still queued or rejected, `200` means stored. Rejected sales are visible only in the error queue and the log.
 
 ### Sale events
@@ -495,6 +497,7 @@ Run these from `backend/`:
 └── backend/
     ├── Ambev.DeveloperEvaluation.sln
     ├── docker-compose.yml        # PostgreSQL, MongoDB, Redis, API; named volumes
+    ├── docs/                     # API documentation: INDEX.md, TEMPLATE.md, one file per API
     ├── src/
     │   ├── Ambev.DeveloperEvaluation.Domain        # entities, rules, repository contracts
     │   ├── Ambev.DeveloperEvaluation.Application   # MediatR commands and handlers

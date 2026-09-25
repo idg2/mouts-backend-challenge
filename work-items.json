@@ -75,9 +75,9 @@
       "description": "Record SaleCreated, SaleModified, SaleCancelled, ItemCancelled, and SaleDeleted in an OutboxMessages table inside the sale write transaction; a background relay dispatches them in Sequence order through Rebus over a PostgreSQL transport, and a Rebus handler logs them. At-least-once delivery with the outbox row id as message id. Reopened and amended by the FEAT-006 spec (§10): Rebus uses the MongoDB transport wired by FEAT-006, and FEAT-004 runs after FEAT-006.",
       "parent": "EPIC-001",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "FEAT-005",
@@ -471,9 +471,9 @@
       "description": "Integration events, name registry, IOutbox, OutboxMessage entity and migration, OutboxWriter joining the command transaction.",
       "parent": "FEAT-004",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-029",
@@ -482,9 +482,9 @@
       "description": "Create, update, and delete sale handlers enqueue SaleCreated, SaleModified, ItemCancelled, SaleCancelled, and SaleDeleted.",
       "parent": "FEAT-004",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-030",
@@ -493,20 +493,20 @@
       "description": "IEventPublisher and one dispatch cycle in Sequence order that stops at the first failure.",
       "parent": "FEAT-004",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-031",
       "type": "task",
       "title": "Rebus wiring, relay service, and log consumer",
-      "description": "Rebus PostgreSQL transport, config validation, relay BackgroundService, log handler, and e2e verification.",
+      "description": "Outbox settings in MessagingSettings, RebusEventPublisher over the FEAT-006 MongoDB bus, the relay BackgroundService, SaleEventLogHandler, and e2e verification.",
       "parent": "FEAT-004",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-032",
@@ -515,9 +515,9 @@
       "description": "Build, both suites, e2e, final review, implementation log, and handoff commands.",
       "parent": "FEAT-004",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TD-001",
@@ -570,9 +570,9 @@
       "description": "The ${APPDATA} volume mounts work only on Windows, and the Redis service carries MONGO_INITDB environment variables copied from the Mongo service.",
       "parent": null,
       "moscow": "could",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TD-006",
@@ -945,6 +945,39 @@
       "parent": null,
       "moscow": "could",
       "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TD-016",
+      "type": "td",
+      "title": "Outbox relay shutdown behavior",
+      "description": "A graceful shutdown during a relay cycle re-sends one event: SendLocal completes, then SaveChangesAsync sees the cancelled stopping token and ProcessedAt is not saved (save it with CancellationToken.None after a successful publish). Shutdown can also wait up to the host timeout when MongoDB is unreachable, since IBus.SendLocal takes no cancellation token.",
+      "parent": null,
+      "moscow": "could",
+      "status": "backlog",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TD-017",
+      "type": "td",
+      "title": "Value equality for SaleSnapshot items",
+      "description": "SaleSnapshot is a record whose Items is an IReadOnlyList, so record equality compares the list by reference and two identical snapshots are unequal. Use a value-equality collection or document it before a consumer compares snapshots.",
+      "parent": null,
+      "moscow": "could",
+      "status": "backlog",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TD-018",
+      "type": "td",
+      "title": "Inject IMessageContext in SaleEventLogHandler",
+      "description": "SaleEventLogHandler reads the static MessageContext.Current for the message id; inject IMessageContext instead so the handler can be unit-tested.",
+      "parent": null,
+      "moscow": "could",
+      "status": "backlog",
       "createdAt": "2026-09-25",
       "updatedAt": "2026-09-25"
     }

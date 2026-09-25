@@ -1,5 +1,6 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentValidation;
@@ -26,6 +27,10 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
     private readonly IMapper _mapper;
     private readonly TimeProvider _timeProvider;
 
+    // Work item: TASK-029 (FEAT-004)
+    private readonly IOutbox _outbox;
+
+    // Work item: TASK-029 (FEAT-004)
     /// <summary>
     /// Initializes a new instance of CreateSaleHandler.
     /// </summary>
@@ -35,13 +40,15 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
     /// <param name="productRepository">The product repository</param>
     /// <param name="mapper">The AutoMapper instance</param>
     /// <param name="timeProvider">The source of the sale date</param>
+    /// <param name="outbox">The outbox the sale events are recorded in</param>
     public CreateSaleHandler(
         ISaleRepository saleRepository,
         ICustomerRepository customerRepository,
         IBranchRepository branchRepository,
         IProductRepository productRepository,
         IMapper mapper,
-        TimeProvider timeProvider)
+        TimeProvider timeProvider,
+        IOutbox outbox)
     {
         _saleRepository = saleRepository;
         _customerRepository = customerRepository;
@@ -49,9 +56,10 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         _productRepository = productRepository;
         _mapper = mapper;
         _timeProvider = timeProvider;
+        _outbox = outbox;
     }
 
-    // Work item: TD-010 (FEAT-010), TASK-037 (FEAT-006)
+    // Work item: TD-010 (FEAT-010), TASK-037 (FEAT-006), TASK-029 (FEAT-004)
     /// <summary>
     /// Handles the CreateSaleCommand request.
     /// </summary>
@@ -94,11 +102,16 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         if (customer == null || branch == null || failures.Count > 0)
             throw new ValidationException(failures);
 
+        // PostgreSQL stores microseconds: truncating here keeps the SaleCreated snapshot and the response equal to
+        // what a later read returns.
+        var now = _timeProvider.GetUtcNow().UtcDateTime;
+        var saleDate = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerMicrosecond));
+
         var sale = new Sale
         {
             // Guid.Empty leaves the id to the column default (gen_random_uuid()).
             Id = command.Id ?? Guid.Empty,
-            SaleDate = _timeProvider.GetUtcNow().UtcDateTime,
+            SaleDate = saleDate,
             CustomerId = customer.Id,
             CustomerName = customer.Name,
             BranchId = branch.Id,
@@ -120,6 +133,7 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         };
 
         var createdSale = await _saleRepository.CreateAsync(sale, cancellationToken);
+        await _outbox.EnqueueAsync(new SaleCreated(SaleSnapshot.From(createdSale)), cancellationToken);
         return _mapper.Map<SaleResult>(createdSale);
     }
 

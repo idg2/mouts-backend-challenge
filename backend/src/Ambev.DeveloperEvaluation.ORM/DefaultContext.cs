@@ -1,4 +1,5 @@
 ﻿using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.ORM.Outbox;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
@@ -21,6 +22,9 @@ public class DefaultContext : DbContext
 
     // Work item: TASK-016 (FEAT-010)
     public DbSet<Sale> Sales { get; set; }
+
+    // Work item: TASK-028 (FEAT-004)
+    public DbSet<OutboxMessage> OutboxMessages { get; set; }
 
     public DefaultContext(DbContextOptions<DefaultContext> options) : base(options)
     {

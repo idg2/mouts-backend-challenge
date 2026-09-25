@@ -1,5 +1,6 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentValidation;
@@ -8,7 +9,7 @@ using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
 
-// Work item: TASK-022 (FEAT-010)
+// Work item: TASK-022 (FEAT-010), TASK-029 (FEAT-004)
 /// <summary>
 /// Handler for processing UpdateSaleCommand requests.
 /// </summary>
@@ -16,6 +17,8 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
 /// Copied values are refreshed only when their reference changes: the customer or branch name when its id
 /// changes, and the product description and unit price for new items or items whose product changes. The
 /// sale number and date never change. The sale and its items are saved in a single SaveChangesAsync.
+/// After the save it enqueues SaleModified, then ItemCancelled for each existing item that went from active to cancelled
+/// (in incoming order), then SaleCancelled when the sale went from active to cancelled.
 /// </remarks>
 public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
 {
@@ -25,6 +28,10 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
     private readonly IProductRepository _productRepository;
     private readonly IMapper _mapper;
 
+    // Work item: TASK-029 (FEAT-004)
+    private readonly IOutbox _outbox;
+
+    // Work item: TASK-029 (FEAT-004)
     /// <summary>
     /// Initializes a new instance of UpdateSaleHandler.
     /// </summary>
@@ -33,20 +40,24 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
     /// <param name="branchRepository">The branch repository</param>
     /// <param name="productRepository">The product repository</param>
     /// <param name="mapper">The AutoMapper instance</param>
+    /// <param name="outbox">The outbox the sale events are recorded in</param>
     public UpdateSaleHandler(
         ISaleRepository saleRepository,
         ICustomerRepository customerRepository,
         IBranchRepository branchRepository,
         IProductRepository productRepository,
-        IMapper mapper)
+        IMapper mapper,
+        IOutbox outbox)
     {
         _saleRepository = saleRepository;
         _customerRepository = customerRepository;
         _branchRepository = branchRepository;
         _productRepository = productRepository;
         _mapper = mapper;
+        _outbox = outbox;
     }
 
+    // Work item: TASK-029 (FEAT-004)
     /// <summary>
     /// Handles the UpdateSaleCommand request.
     /// </summary>
@@ -64,6 +75,9 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
         var sale = await _saleRepository.GetByIdAsync(command.Id, cancellationToken);
         if (sale == null)
             throw new KeyNotFoundException($"Sale with ID {command.Id} not found");
+
+        var wasCancelled = sale.IsCancelled;
+        var activeItemIds = sale.Items.Where(item => !item.IsCancelled).Select(item => item.Id).ToHashSet();
 
         var existingItems = sale.Items.ToDictionary(item => item.Id);
         var failures = new List<ValidationFailure>();
@@ -150,6 +164,12 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
         sale.SyncItems(incomingItems);
 
         var updatedSale = await _saleRepository.UpdateAsync(sale, cancellationToken);
+        await _outbox.EnqueueAsync(new SaleModified(SaleSnapshot.From(updatedSale)), cancellationToken);
+        foreach (var item in command.Items.Where(item => item.IsCancelled && item.Id.HasValue && activeItemIds.Contains(item.Id.Value)))
+            await _outbox.EnqueueAsync(new ItemCancelled(updatedSale.Id, item.Id!.Value, item.ProductId), cancellationToken);
+        if (!wasCancelled && updatedSale.IsCancelled)
+            await _outbox.EnqueueAsync(new SaleCancelled(updatedSale.Id), cancellationToken);
+
         return _mapper.Map<SaleResult>(updatedSale);
     }
 

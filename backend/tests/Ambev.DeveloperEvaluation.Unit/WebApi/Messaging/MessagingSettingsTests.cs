@@ -14,6 +14,7 @@ public class MessagingSettingsTests
 {
     private const string ValidConnectionString = "mongodb://user:p%40ss@localhost:27017/bus_db?authSource=admin";
 
+    // Work item: TASK-031 (FEAT-004)
     /// <summary>
     /// Tests that a complete configuration yields its values.
     /// </summary>
@@ -31,8 +32,11 @@ public class MessagingSettingsTests
         settings.InputQueue.Should().Be("sales-intake");
         settings.Workers.Should().Be(1);
         settings.MaxParallelism.Should().Be(20);
+        settings.PollingInterval.Should().Be(TimeSpan.FromSeconds(5));
+        settings.BatchSize.Should().Be(50);
     }
 
+    // Work item: TASK-031 (FEAT-004)
     /// <summary>
     /// Tests that each missing or blank key fails with a message naming it.
     /// </summary>
@@ -45,6 +49,10 @@ public class MessagingSettingsTests
     [InlineData(MessagingSettings.WorkersKey, "  ")]
     [InlineData(MessagingSettings.MaxParallelismKey, null)]
     [InlineData(MessagingSettings.MaxParallelismKey, "  ")]
+    [InlineData(MessagingSettings.PollingIntervalKey, null)]
+    [InlineData(MessagingSettings.PollingIntervalKey, "  ")]
+    [InlineData(MessagingSettings.BatchSizeKey, null)]
+    [InlineData(MessagingSettings.BatchSizeKey, "  ")]
     public void Given_MissingOrBlankKey_When_Reading_Then_ThrowsNamingTheKey(string key, string? value)
     {
         // Arrange
@@ -61,6 +69,7 @@ public class MessagingSettingsTests
         act.Should().Throw<InvalidOperationException>().WithMessage($"*{key}*");
     }
 
+    // Work item: TASK-031 (FEAT-004)
     /// <summary>
     /// Tests that worker and parallelism counts must be positive integers.
     /// </summary>
@@ -71,6 +80,10 @@ public class MessagingSettingsTests
     [InlineData(MessagingSettings.MaxParallelismKey, "0")]
     [InlineData(MessagingSettings.MaxParallelismKey, "2.5")]
     [InlineData(MessagingSettings.MaxParallelismKey, "abc")]
+    [InlineData(MessagingSettings.BatchSizeKey, "0")]
+    [InlineData(MessagingSettings.BatchSizeKey, "-1")]
+    [InlineData(MessagingSettings.BatchSizeKey, "ten")]
+    [InlineData(MessagingSettings.BatchSizeKey, "2.5")]
     public void Given_InvalidCount_When_Reading_Then_ThrowsNamingTheKey(string key, string value)
     {
         // Arrange
@@ -82,6 +95,32 @@ public class MessagingSettingsTests
 
         // Assert
         act.Should().Throw<InvalidOperationException>().WithMessage($"*{key}*");
+    }
+
+    // Work item: TASK-031 (FEAT-004)
+    /// <summary>
+    /// Tests that a polling interval outside 100 ms to 1 hour fails naming the key: a bare number reads as days and
+    /// stalls the relay (or, above Task.Delay's limit, stops the host), and a tiny interval spins it in a hot loop.
+    /// </summary>
+    [Theory(DisplayName = "Given an invalid polling interval When reading Then throws naming the key")]
+    [InlineData("abc")]
+    [InlineData("00:00:00")]
+    [InlineData("-00:00:05")]
+    [InlineData("5")]
+    [InlineData("50")]
+    [InlineData("00:00:00.0001")]
+    [InlineData("01:00:01")]
+    public void Given_InvalidPollingInterval_When_Reading_Then_ThrowsNamingTheKey(string value)
+    {
+        // Arrange
+        var values = ValidValues();
+        values[MessagingSettings.PollingIntervalKey] = value;
+
+        // Act
+        var act = () => MessagingSettings.FromConfiguration(Build(values));
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>().WithMessage($"*{MessagingSettings.PollingIntervalKey}*");
     }
 
     /// <summary>
@@ -164,12 +203,15 @@ public class MessagingSettingsTests
             .WithMessage($"*{MessagingSettings.ConnectionStringKey}*{LogStorageSettings.DatabaseKey}*");
     }
 
+    // Work item: TASK-031 (FEAT-004)
     private static Dictionary<string, string?> ValidValues() => new()
     {
         [MessagingSettings.ConnectionStringKey] = ValidConnectionString,
         [MessagingSettings.InputQueueKey] = "sales-intake",
         [MessagingSettings.WorkersKey] = "1",
-        [MessagingSettings.MaxParallelismKey] = "20"
+        [MessagingSettings.MaxParallelismKey] = "20",
+        [MessagingSettings.PollingIntervalKey] = "00:00:05",
+        [MessagingSettings.BatchSizeKey] = "50"
     };
 
     private static IConfiguration Build(Dictionary<string, string?> values) =>

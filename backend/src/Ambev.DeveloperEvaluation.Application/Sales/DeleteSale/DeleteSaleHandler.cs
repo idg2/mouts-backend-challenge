@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using FluentValidation;
 using MediatR;
@@ -12,15 +13,22 @@ public class DeleteSaleHandler : IRequestHandler<DeleteSaleCommand, DeleteSaleRe
 {
     private readonly ISaleRepository _saleRepository;
 
+    // Work item: TASK-029 (FEAT-004)
+    private readonly IOutbox _outbox;
+
+    // Work item: TASK-029 (FEAT-004)
     /// <summary>
     /// Initializes a new instance of DeleteSaleHandler.
     /// </summary>
     /// <param name="saleRepository">The sale repository</param>
-    public DeleteSaleHandler(ISaleRepository saleRepository)
+    /// <param name="outbox">The outbox the sale events are recorded in</param>
+    public DeleteSaleHandler(ISaleRepository saleRepository, IOutbox outbox)
     {
         _saleRepository = saleRepository;
+        _outbox = outbox;
     }
 
+    // Work item: TASK-029 (FEAT-004)
     /// <summary>
     /// Handles the DeleteSaleCommand request.
     /// </summary>
@@ -38,6 +46,8 @@ public class DeleteSaleHandler : IRequestHandler<DeleteSaleCommand, DeleteSaleRe
         var success = await _saleRepository.DeleteAsync(request.Id, cancellationToken);
         if (!success)
             throw new KeyNotFoundException($"Sale with ID {request.Id} not found");
+
+        await _outbox.EnqueueAsync(new SaleDeleted(request.Id), cancellationToken);
 
         return new DeleteSaleResult { Success = true };
     }

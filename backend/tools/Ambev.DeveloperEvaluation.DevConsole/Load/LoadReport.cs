@@ -1,6 +1,6 @@
-namespace Ambev.DeveloperEvaluation.LoadSimulator;
+namespace Ambev.DeveloperEvaluation.DevConsole.Load;
 
-// Work item: TASK-040 (FEAT-006)
+// Work item: TASK-040 (FEAT-006), TASK-044 (FEAT-017)
 /// <summary>
 /// Prints request counts per outcome, throughput, and latency percentiles per profile and overall.
 /// </summary>

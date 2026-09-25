@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+﻿using Ambev.DeveloperEvaluation.Common.Tracing;
+using FluentValidation;
 using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Common.Validation;
@@ -13,8 +14,10 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
         _validators = validators;
     }
 
+    // Work item: TASK-046 (FEAT-017)
     public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
     {
+        StepTrace.Step("CMN-PIP-08", "ValidationBehavior passes through", [("request", typeof(TRequest).Name), ("validators", _validators.Count())]);
         if (_validators.Any())
         {
             var context = new ValidationContext<TRequest>(request);

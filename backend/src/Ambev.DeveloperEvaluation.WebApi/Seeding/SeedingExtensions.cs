@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.ORM;
 using Microsoft.EntityFrameworkCore;
 
@@ -22,6 +23,7 @@ public static class SeedingExtensions
         return builder;
     }
 
+    // Work item: TASK-048 (FEAT-017)
     /// <summary>
     /// Applies the pending migrations, then seeds the administrator. It runs before the host starts, so the outbox relay
     /// and the endpoints never meet a database without its tables.
@@ -31,6 +33,7 @@ public static class SeedingExtensions
     {
         using var scope = app.Services.CreateScope();
         await scope.ServiceProvider.GetRequiredService<DefaultContext>().Database.MigrateAsync();
+        StepTrace.Step("USR-SED-02", "Apply pending migrations", [("applied", true)]);
 
         var settings = scope.ServiceProvider.GetRequiredService<AdminSeedSettings>();
         await scope.ServiceProvider.GetRequiredService<AdminSeeder>().SeedAsync(settings, CancellationToken.None);

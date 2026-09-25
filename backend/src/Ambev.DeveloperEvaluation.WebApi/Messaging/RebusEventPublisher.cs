@@ -1,4 +1,6 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Events;
+using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Rebus.Bus;
 using Rebus.Messages;
 
@@ -22,7 +24,12 @@ public class RebusEventPublisher : IEventPublisher
         _bus = bus;
     }
 
+    // Work item: TASK-054 (FEAT-017)
     /// <inheritdoc />
-    public Task PublishAsync(IIntegrationEvent integrationEvent, Guid eventId, CancellationToken cancellationToken) =>
-        _bus.SendLocal(integrationEvent, new Dictionary<string, string> { [Headers.MessageId] = eventId.ToString() });
+    public Task PublishAsync(IIntegrationEvent integrationEvent, Guid eventId, CancellationToken cancellationToken)
+    {
+        StepTrace.Step("SAL-DSP-04", "Send with the message id set to the row id",
+            [("messageId", eventId), ("rowId", eventId), ("eventType", integrationEvent.GetType().Name), ("saleId", SaleEventIds.SaleIdOf(integrationEvent))]);
+        return _bus.SendLocal(integrationEvent, new Dictionary<string, string> { [Headers.MessageId] = eventId.ToString() });
+    }
 }

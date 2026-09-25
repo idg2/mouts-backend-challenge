@@ -6,13 +6,13 @@ Every document in `backend/docs/` follows this structure, so readers find the sa
 
 - A topic key `API-AREA` (for example `SAL-DSP`) names one process and appears in its section heading: `## SAL-DSP — Dispatch cycle`.
 - A step key `API-AREA-NN` (for example `SAL-DSP-04`) names one point of that process: a call, a branch, a write, or a response our code builds. It appears in diagram labels.
-- When the point runs inside a framework (JWT bearer authentication, the Rebus pipeline), the step key names the hook where a trace would go: a JWT bearer event, a Rebus pipeline step, or a Rebus error handler.
+- When the point runs inside a framework (JWT bearer authentication, the Rebus pipeline), the step key names the hook where its trace goes: a JWT bearer event, a Rebus pipeline step, or a Rebus error handler.
 - Several topics may key the same shared line, such as the transaction commit; a trace picks the key by the command type.
 - Topics that describe no process of their own (an overview, a catalog, an operations guide) have no step keys; their diagrams cite other topics by topic key.
 - The same point uses the same step key in the topic's flowchart and in its sequence diagram.
 - Keys never change. A new step takes the next free number of its area, even between existing steps, and a removed step's number is never reused.
 - Each area belongs to one document, and [INDEX.md](INDEX.md) registers every topic.
-- A future `#if DEBUG` trace console prints these keys. Tools extract them with `\b[A-Z]{3}-[A-Z]{3}(-\d{2})?\b`.
+- The trace console prints these keys: from `backend`, `dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- t <scenario>` hosts the API in process and prints one line per step, `HH:mm:ss.ffffff  T022  SAL-CRT-04 CMN-PIP-10  Validate the command  presetId=null valid=True errors=0  CreateSaleHandler.cs:74` (a shared line prints every key it carries). It wipes the development databases first; see [README_.md](../../README_.md#9-trace-console). Every step key has a `StepTrace.Step` call at its source line, and the unit test `StepKeyCoverageTests` fails when a documented key has no call or a call uses an undocumented key. Tools extract keys with `\b[A-Z]{3}-[A-Z]{3}(-\d{2})?\b`.
 
 ## Diagrams
 

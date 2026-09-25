@@ -2,6 +2,7 @@ using AutoMapper;
 using MediatR;
 using FluentValidation;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
+using Ambev.DeveloperEvaluation.Common.Tracing;
 
 namespace Ambev.DeveloperEvaluation.Application.Users.GetUser;
 
@@ -27,6 +28,7 @@ public class GetUserHandler : IRequestHandler<GetUserCommand, GetUserResult>
         _mapper = mapper;
     }
 
+    // Work item: TASK-048 (FEAT-017)
     /// <summary>
     /// Handles the GetUserCommand request
     /// </summary>
@@ -35,13 +37,16 @@ public class GetUserHandler : IRequestHandler<GetUserCommand, GetUserResult>
     /// <returns>The user details if found</returns>
     public async Task<GetUserResult> Handle(GetUserCommand request, CancellationToken cancellationToken)
     {
+        StepTrace.Step("CMN-PIP-10", "Handler validates the command and runs the use case", [("request", nameof(GetUserCommand)), ("id", request.Id)]);
         var validator = new GetUserValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        StepTrace.Step("USR-GET-02", "Load the user", [("id", request.Id)]);
         var user = await _userRepository.GetByIdAsync(request.Id, cancellationToken);
+        StepTrace.Step("USR-GET-03", "User found?", [("id", request.Id), ("found", user != null)]);
         if (user == null)
             throw new KeyNotFoundException($"User with ID {request.Id} not found");
 

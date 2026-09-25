@@ -1,6 +1,9 @@
 using Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using MediatR;
 using Rebus.Handlers;
+using Rebus.Messages;
+using Rebus.Pipeline;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Messaging;
 
@@ -22,12 +25,25 @@ public class CreateSaleMessageHandler : IHandleMessages<CreateSaleCommand>
         _mediator = mediator;
     }
 
+    // Work item: TASK-054 (FEAT-017), TASK-059 (FEAT-017)
     /// <summary>
     /// Creates the sale carried by the message; the command's preset id makes a redelivery a no-op.
     /// </summary>
     /// <param name="message">The queued command</param>
     public async Task Handle(CreateSaleCommand message)
     {
-        await _mediator.Send(message);
+        StepTrace.Step("SAL-ASY-05", "CreateSaleMessageHandler sends it through MediatR",
+            [("saleId", message.Id), ("customerId", message.CustomerId), ("branchId", message.BranchId), ("items", message.Items?.Count),
+             ("messageId", MessageContext.Current?.Headers.GetValueOrDefault(Headers.MessageId))]);
+        try
+        {
+            var result = await _mediator.Send(message);
+            StepTrace.Step("SAL-ASY-06", "Handled?", [("saleId", result?.Id), ("saleNumber", result?.SaleNumber), ("handled", true)]);
+        }
+        catch (Exception exception)
+        {
+            StepTrace.Step("SAL-ASY-06", "Handled?", [("saleId", message.Id), ("handled", false), ("error", exception)]);
+            throw;
+        }
     }
 }

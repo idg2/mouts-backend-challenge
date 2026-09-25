@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentValidation;
@@ -25,6 +26,7 @@ public class GetCustomerHandler : IRequestHandler<GetCustomerCommand, GetCustome
         _mapper = mapper;
     }
 
+    // Work item: TASK-049 (FEAT-017)
     /// <summary>
     /// Handles the GetCustomerCommand request.
     /// </summary>
@@ -33,13 +35,16 @@ public class GetCustomerHandler : IRequestHandler<GetCustomerCommand, GetCustome
     /// <returns>The customer details if found</returns>
     public async Task<GetCustomerResult> Handle(GetCustomerCommand request, CancellationToken cancellationToken)
     {
+        StepTrace.Step("CMN-PIP-10", "Handler validates the command and runs the use case", [("request", nameof(GetCustomerCommand)), ("id", request.Id)]);
         var validator = new GetCustomerValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        StepTrace.Step("CUS-GET-02", "Load the customer", [("id", request.Id)]);
         var customer = await _customerRepository.GetByIdAsync(request.Id, cancellationToken);
+        StepTrace.Step("CUS-GET-03", "Customer found?", [("id", request.Id), ("found", customer != null)]);
         if (customer == null)
             throw new KeyNotFoundException($"Customer with ID {request.Id} not found");
 

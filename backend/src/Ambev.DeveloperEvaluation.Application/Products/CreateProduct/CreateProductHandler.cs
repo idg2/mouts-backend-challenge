@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
@@ -27,7 +28,7 @@ public class CreateProductHandler : IRequestHandler<CreateProductCommand, Create
         _mapper = mapper;
     }
 
-    // Work item: TASK-020 (FEAT-010), FEAT-013
+    // Work item: TASK-020 (FEAT-010), FEAT-013, TASK-051 (FEAT-017)
     /// <summary>
     /// Handles the CreateProductCommand request. The code is stored trimmed and in upper case, and must not be in use.
     /// </summary>
@@ -38,17 +39,22 @@ public class CreateProductHandler : IRequestHandler<CreateProductCommand, Create
     {
         var validator = new CreateProductValidator();
         var validationResult = await validator.ValidateAsync(command, cancellationToken);
+        StepTrace.Step("PRD-CRT-02", "CMN-PIP-10", "Validate the command", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
         var code = command.Code.Trim().ToUpperInvariant();
-        if (await _productRepository.GetByCodeAsync(code, cancellationToken) != null)
+        StepTrace.Step("PRD-CRT-03", "Normalize the code", [("normalized", code)]);
+        var existing = await _productRepository.GetByCodeAsync(code, cancellationToken);
+        StepTrace.Step("PRD-CRT-04", "Code already stored?", [("code", code), ("exists", existing != null)]);
+        if (existing != null)
             throw new DuplicateEntryException($"Product with code {code} already exists");
 
         var product = _mapper.Map<Product>(command);
         product.Code = code;
         var createdProduct = await _productRepository.CreateAsync(product, cancellationToken);
+        StepTrace.Step("PRD-CRT-05", "Insert the product", [("id", createdProduct.Id), ("code", createdProduct.Code)]);
         return _mapper.Map<CreateProductResult>(createdProduct);
     }
 }

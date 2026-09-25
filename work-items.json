@@ -880,7 +880,7 @@
       "moscow": "could",
       "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-041",
@@ -1110,6 +1110,226 @@
       "parent": null,
       "moscow": "should",
       "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "FEAT-017",
+      "type": "feature",
+      "title": "Trace console and step tracing",
+      "description": "One StepTrace.Step call per step key documented in backend/docs, compiled out in Release and silent without a sink; framework points traced at hooks (JWT events, MVC filters, EF command interceptor, Rebus pipeline steps); a developer console under backend/tools that hosts the WebApi in process to run traced scenarios (t) and that absorbs the load simulator (l), with the LoadSimulator project removed; a unit test that keeps documented keys and traced keys equal.",
+      "parent": "EPIC-001",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-042",
+      "type": "task",
+      "title": "StepTrace helper, StepEvent, StepKeys",
+      "description": "Plan task 1 of FEAT-017: StepTrace helper, StepEvent, StepKeys.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-043",
+      "type": "task",
+      "title": "Docs ↔ code key coverage test",
+      "description": "Plan task 2 of FEAT-017: Docs ↔ code key coverage test.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-044",
+      "type": "task",
+      "title": "DevConsole project, the t/l prompt, the simulator moved in",
+      "description": "Plan task 3 of FEAT-017: DevConsole project, the t/l prompt, the simulator moved in.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-045",
+      "type": "task",
+      "title": "TraceHost spike: the WebApi under WebApplicationFactory",
+      "description": "Plan task 4 of FEAT-017: TraceHost spike: the WebApi under WebApplicationFactory.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-046",
+      "type": "task",
+      "title": "Pipeline hooks: middleware, MVC filters, JWT events, behaviors, exception middleware",
+      "description": "Plan task 5 of FEAT-017: Pipeline hooks: middleware, MVC filters, JWT events, behaviors, exception middleware.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-047",
+      "type": "task",
+      "title": "EF command interceptor, list query parser, health checks",
+      "description": "Plan task 6 of FEAT-017: EF command interceptor, list query parser, health checks.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-048",
+      "type": "task",
+      "title": "Auth, users, seed, and JWT generator trace points",
+      "description": "Plan task 7 of FEAT-017: Auth, users, seed, and JWT generator trace points.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-049",
+      "type": "task",
+      "title": "Customers trace points",
+      "description": "Plan task 8 of FEAT-017: Customers trace points.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-050",
+      "type": "task",
+      "title": "Branches trace points",
+      "description": "Plan task 9 of FEAT-017: Branches trace points.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-051",
+      "type": "task",
+      "title": "Products trace points",
+      "description": "Plan task 10 of FEAT-017: Products trace points.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-052",
+      "type": "task",
+      "title": "Sales request trace points: create, queue, get, list, delete",
+      "description": "Plan task 11 of FEAT-017: Sales request trace points: create, queue, get, list, delete.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-053",
+      "type": "task",
+      "title": "Sale update trace points",
+      "description": "Plan task 12 of FEAT-017: Sale update trace points.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-054",
+      "type": "task",
+      "title": "Outbox, relay, publisher, consumer, and queued-command trace points",
+      "description": "Plan task 13 of FEAT-017: Outbox, relay, publisher, consumer, and queued-command trace points.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-055",
+      "type": "task",
+      "title": "Rebus pipeline steps and error handler",
+      "description": "Plan task 14 of FEAT-017: Rebus pipeline steps and error handler.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-056",
+      "type": "task",
+      "title": "The trace command: sink, waiter, wipe, menu, summary",
+      "description": "Plan task 15 of FEAT-017: The trace command: sink, waiter, wipe, menu, summary.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-057",
+      "type": "task",
+      "title": "Scenarios: conventions, auth, users, customers, branches, products",
+      "description": "Plan task 16 of FEAT-017: Scenarios: conventions, auth, users, customers, branches, products.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-058",
+      "type": "task",
+      "title": "Scenarios: sales",
+      "description": "Plan task 17 of FEAT-017: Scenarios: sales.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-059",
+      "type": "task",
+      "title": "Release check, documentation, work items, implementation log, handoff",
+      "description": "Plan task 18 of FEAT-017: Release check, documentation, work items, implementation log, handoff.",
+      "parent": "FEAT-017",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TD-030",
+      "type": "td",
+      "title": "Trace console: keys no scenario exercises",
+      "description": "The trace console's full run cannot exercise six documented keys, which the summary lists as expected misses: SAL-CRT-06 (redelivered queued command), SAL-OBW-02 (outbox write outside a transaction), SAL-RLY-07 (failed relay cycle), SAL-DSP-07 (failed dispatch), SAL-BUS-06 (retried delivery; only fail-fast validation failures are provoked), USR-SED-06 (seed skip; the run always starts from a wiped database). Covering them needs fault injection or a redelivery in a scenario.",
+      "parent": null,
+      "moscow": "could",
+      "status": "backlog",
       "createdAt": "2026-09-25",
       "updatedAt": "2026-09-25"
     }

@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using FluentValidation;
 using FluentValidation.Results;
@@ -32,6 +33,7 @@ public static class ListQueryParser
     public static IReadOnlySet<Type> SupportedTypes { get; } =
         new HashSet<Type> { typeof(string), typeof(Guid), typeof(bool), typeof(decimal), typeof(long), typeof(DateTime) };
 
+    // Work item: TASK-047 (FEAT-017)
     /// <summary>
     /// Parses the filters and sort fields of a list request. Paging keys are ignored.
     /// </summary>
@@ -51,29 +53,42 @@ public static class ListQueryParser
             if (PagingKeys.Contains(key))
                 continue;
 
-            if (key.StartsWith(MinPrefix, StringComparison.OrdinalIgnoreCase) || key.StartsWith(MaxPrefix, StringComparison.OrdinalIgnoreCase))
+            StepTrace.Step("CMN-LST-01", "Read each key except _page, _size, and _order", [("key", key), ("values", values.Count)]);
+            var range = key.StartsWith(MinPrefix, StringComparison.OrdinalIgnoreCase) || key.StartsWith(MaxPrefix, StringComparison.OrdinalIgnoreCase);
+            StepTrace.Step("CMN-LST-02", "Key starts with _min or _max?", [("key", key), ("range", range)]);
+            if (range)
+            {
                 AddRange(key, values, fields, filters, failures);
-            else if (key.StartsWith('_'))
-                failures.Add(Failure(key, "UnknownParameter", $"Unknown query parameter '{key}'."));
-            else if (!fields.TryGetValue(key, out var field))
-                failures.Add(Failure(key, "UnknownField", $"Unknown filter field '{key}'."));
-            else if (values.Count > MaxValuesPerField)
-                failures.Add(Failure(key, "TooManyValues", $"'{key}' may appear at most {MaxValuesPerField} times."));
+            }
             else
-                foreach (var value in values)
-                    AddMatch(key, value ?? string.Empty, field, filters, failures);
+            {
+                StepTrace.Step("CMN-LST-04", "Known response field?",
+                    [("key", key), ("known", fields.ContainsKey(key)), ("underscore", key.StartsWith('_')), ("values", values.Count)]);
+                if (key.StartsWith('_'))
+                    failures.Add(Failure(key, "UnknownParameter", $"Unknown query parameter '{key}'."));
+                else if (!fields.TryGetValue(key, out var field))
+                    failures.Add(Failure(key, "UnknownField", $"Unknown filter field '{key}'."));
+                else if (values.Count > MaxValuesPerField)
+                    failures.Add(Failure(key, "TooManyValues", $"'{key}' may appear at most {MaxValuesPerField} times."));
+                else
+                    foreach (var value in values)
+                        AddMatch(key, value ?? string.Empty, field, filters, failures);
+            }
         }
 
         var order = ParseOrder(query[OrderKey], fields, failures);
-
+        StepTrace.Step("CMN-LST-06", "Parse _order into fields with asc or desc", [("orderValues", query[OrderKey].Count), ("sortFields", order.Count)]);
+        StepTrace.Step("CMN-LST-07", "Any failure?", [("failures", failures.Count), ("filters", filters.Count)]);
         if (failures.Count > 0)
             throw new ValidationException(failures);
 
         return (filters, order);
     }
 
+    // Work item: TASK-047 (FEAT-017)
     private static void AddMatch(string key, string value, PropertyInfo field, List<FieldFilter> filters, List<ValidationFailure> failures)
     {
+        StepTrace.Step("CMN-LST-05", "Match filter per value", [("key", key), ("field", field.Name), ("type", field.PropertyType.Name)]);
         if (field.PropertyType == typeof(string))
         {
             var pattern = ToLikePattern(value);
@@ -94,11 +109,13 @@ public static class ListQueryParser
             failures.Add(InvalidValue(key, value, field.PropertyType));
     }
 
+    // Work item: TASK-047 (FEAT-017)
     private static void AddRange(
         string key, StringValues values, Dictionary<string, PropertyInfo> fields, List<FieldFilter> filters, List<ValidationFailure> failures)
     {
         var isMin = key.StartsWith(MinPrefix, StringComparison.OrdinalIgnoreCase);
         var name = key[MinPrefix.Length..];
+        StepTrace.Step("CMN-LST-03", "Range filter on a number or date", [("key", key), ("field", name), ("isMin", isMin), ("values", values.Count)]);
 
         if (!fields.TryGetValue(name, out var field))
         {

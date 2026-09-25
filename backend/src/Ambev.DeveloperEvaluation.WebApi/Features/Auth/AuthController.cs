@@ -4,6 +4,8 @@ using AutoMapper;
 using Ambev.DeveloperEvaluation.WebApi.Common;
 using Ambev.DeveloperEvaluation.WebApi.Features.Auth.AuthenticateUserFeature;
 using Ambev.DeveloperEvaluation.Application.Auth.AuthenticateUser;
+using Ambev.DeveloperEvaluation.Application.Common;
+using Ambev.DeveloperEvaluation.Common.Tracing;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Auth;
 
@@ -28,6 +30,7 @@ public class AuthController : BaseController
         _mapper = mapper;
     }
 
+    // Work item: TASK-048 (FEAT-017)
     /// <summary>
     /// Authenticates a user with their credentials
     /// </summary>
@@ -42,12 +45,16 @@ public class AuthController : BaseController
     {
         var validator = new AuthenticateUserRequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        StepTrace.Step("AUT-LGN-01", "CMN-PIP-04", "Validate e-mail format and password presence", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors);
 
         var command = _mapper.Map<AuthenticateUserCommand>(request);
+        StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(AuthenticateUserCommand))]);
+        StepTrace.Step("AUT-LGN-02", "CMN-PIP-06", "Send the command, no transaction", [("transactional", command is ITransactionalCommand)]);
         var response = await _mediator.Send(command, cancellationToken);
+        StepTrace.Step("AUT-LGN-08", "200 with token, email, name, and role", [("status", 200), ("role", response.Role)]);
 
         return Ok(new ApiResponseWithData<AuthenticateUserResponse>
         {

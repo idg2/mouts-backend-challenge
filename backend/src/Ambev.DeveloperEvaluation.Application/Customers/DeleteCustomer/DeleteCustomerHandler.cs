@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using FluentValidation;
 using MediatR;
@@ -21,6 +22,7 @@ public class DeleteCustomerHandler : IRequestHandler<DeleteCustomerCommand, Dele
         _customerRepository = customerRepository;
     }
 
+    // Work item: TASK-049 (FEAT-017)
     /// <summary>
     /// Handles the DeleteCustomerCommand request.
     /// </summary>
@@ -29,13 +31,16 @@ public class DeleteCustomerHandler : IRequestHandler<DeleteCustomerCommand, Dele
     /// <returns>The result of the delete operation</returns>
     public async Task<DeleteCustomerResult> Handle(DeleteCustomerCommand request, CancellationToken cancellationToken)
     {
+        StepTrace.Step("CMN-PIP-10", "Handler validates the command and runs the use case", [("request", nameof(DeleteCustomerCommand)), ("id", request.Id)]);
         var validator = new DeleteCustomerValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        StepTrace.Step("CUS-DEL-02", "Delete the customer", [("id", request.Id)]);
         var success = await _customerRepository.DeleteAsync(request.Id, cancellationToken);
+        StepTrace.Step("CUS-DEL-03", "Customer existed?", [("id", request.Id), ("existed", success)]);
         if (!success)
             throw new KeyNotFoundException($"Customer with ID {request.Id} not found");
 

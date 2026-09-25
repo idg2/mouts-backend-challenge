@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Application.Users.CreateUser;
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Enums;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using MediatR;
@@ -29,6 +30,7 @@ public sealed class AdminSeeder
         _logger = logger;
     }
 
+    // Work item: TASK-048 (FEAT-017)
     /// <summary>
     /// Creates the administrator as an active Admin through the create user command, which validates and hashes it.
     /// </summary>
@@ -37,12 +39,15 @@ public sealed class AdminSeeder
     public async Task SeedAsync(AdminSeedSettings settings, CancellationToken cancellationToken)
     {
         var existing = await _userRepository.GetByEmailAsync(settings.Email, cancellationToken);
+        StepTrace.Step("USR-SED-03", "A user has the configured e-mail?", [("exists", existing is not null)]);
         if (existing is not null)
         {
             _logger.LogInformation("Administrator seed skipped: user {UserId} already has the configured e-mail", existing.Id);
+            StepTrace.Step("USR-SED-06", "Log the skip with the existing user id", [("userId", existing.Id)]);
             return;
         }
 
+        StepTrace.Step("USR-SED-04", "Create an active Admin, see USR-CRT", [("role", UserRole.Admin), ("status", UserStatus.Active)]);
         var created = await _mediator.Send(new CreateUserCommand
         {
             Username = settings.Username,
@@ -54,5 +59,6 @@ public sealed class AdminSeeder
         }, cancellationToken);
 
         _logger.LogInformation("Administrator {UserId} seeded", created.Id);
+        StepTrace.Step("USR-SED-05", "Log the new administrator id", [("userId", created.Id)]);
     }
 }

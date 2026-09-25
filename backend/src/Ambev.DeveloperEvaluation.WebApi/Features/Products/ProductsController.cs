@@ -3,6 +3,7 @@ using Ambev.DeveloperEvaluation.Application.Products.DeleteProduct;
 using Ambev.DeveloperEvaluation.Application.Products.GetProduct;
 using Ambev.DeveloperEvaluation.Application.Products.ListProducts;
 using Ambev.DeveloperEvaluation.Application.Products.UpdateProduct;
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.WebApi.Common;
 using Ambev.DeveloperEvaluation.WebApi.Features.Products.CreateProduct;
 using Ambev.DeveloperEvaluation.WebApi.Features.Products.DeleteProduct;
@@ -41,6 +42,7 @@ public class ProductsController : BaseController
         _mapper = mapper;
     }
 
+    // Work item: TASK-051 (FEAT-017)
     /// <summary>
     /// Creates a new product
     /// </summary>
@@ -55,12 +57,15 @@ public class ProductsController : BaseController
     {
         var validator = new CreateProductRequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        StepTrace.Step("PRD-CRT-01", "CMN-PIP-04", "Validate the request", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count), ("code", request.Code)]);
 
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors);
 
         var command = _mapper.Map<CreateProductCommand>(request);
+        StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(CreateProductCommand))]);
         var response = await _mediator.Send(command, cancellationToken);
+        StepTrace.Step("PRD-CRT-06", "CMN-PIP-06", "201 with id, code, description, and unit price", [("id", response.Id), ("code", response.Code)]);
 
         return Created(string.Empty, new ApiResponseWithData<CreateProductResponse>
         {
@@ -70,6 +75,7 @@ public class ProductsController : BaseController
         });
     }
 
+    // Work item: TASK-051 (FEAT-017)
     /// <summary>
     /// Retrieves a product by its ID
     /// </summary>
@@ -85,12 +91,15 @@ public class ProductsController : BaseController
         var request = new GetProductRequest { Id = id };
         var validator = new GetProductRequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        StepTrace.Step("PRD-GET-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors);
 
         var command = _mapper.Map<GetProductCommand>(request.Id);
+        StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(GetProductCommand))]);
         var response = await _mediator.Send(command, cancellationToken);
+        StepTrace.Step("PRD-GET-04", "CMN-PIP-06", "200 with the product", [("id", response.Id)]);
 
         return Ok(new ApiResponseWithData<GetProductResponse>
         {
@@ -100,7 +109,7 @@ public class ProductsController : BaseController
         });
     }
 
-    // Work item: TASK-027 (FEAT-011)
+    // Work item: TASK-027 (FEAT-011), TASK-051 (FEAT-017)
     /// <summary>
     /// Lists products one page at a time. Any response field (id, code, description, unitPrice) can be a query key: text matches ignore
     /// case and accept '*' at the start or end, and a repeated key matches any of its values. Numeric and date fields
@@ -122,23 +131,29 @@ public class ProductsController : BaseController
         CancellationToken cancellationToken = default)
     {
         var (filters, sortFields) = ListQueryParser.Parse<ListProductsResponse>(Request.Query);
+        StepTrace.Step("PRD-LST-01", "Parse filters and order, see CMN-LST", [("filters", filters.Count), ("order", sortFields.Count)]);
 
         var request = new ListProductsRequest { Page = page, Size = size };
         var validator = new ListProductsRequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        StepTrace.Step("PRD-LST-02", "CMN-LST-08", "Validate _page and _size", [("page", request.Page), ("size", request.Size), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors);
 
         var command = _mapper.Map<ListProductsCommand>(request);
+        StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(ListProductsCommand))]);
         command.Filters = filters;
         command.Order = sortFields;
         var response = await _mediator.Send(command, cancellationToken);
+        StepTrace.Step("CMN-PIP-06", "Send the command", [("total", response.TotalCount)]);
 
         var products = _mapper.Map<List<ListProductsResponse>>(response.Items);
+        StepTrace.Step("PRD-LST-04", "200 with the page", [("count", products.Count), ("total", response.TotalCount), ("page", response.Page), ("size", response.Size)]);
         return OkPaginated(new PaginatedList<ListProductsResponse>(products, response.TotalCount, response.Page, response.Size));
     }
 
+    // Work item: TASK-051 (FEAT-017)
     /// <summary>
     /// Updates a product
     /// </summary>
@@ -156,12 +171,15 @@ public class ProductsController : BaseController
         request.Id = id;
         var validator = new UpdateProductRequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        StepTrace.Step("PRD-UPD-01", "CMN-PIP-04", "Validate the request", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count), ("code", request.Code)]);
 
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors);
 
         var command = _mapper.Map<UpdateProductCommand>(request);
+        StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(UpdateProductCommand))]);
         var response = await _mediator.Send(command, cancellationToken);
+        StepTrace.Step("PRD-UPD-08", "CMN-PIP-06", "200 with the product", [("id", response.Id)]);
 
         return Ok(new ApiResponseWithData<UpdateProductResponse>
         {
@@ -171,6 +189,7 @@ public class ProductsController : BaseController
         });
     }
 
+    // Work item: TASK-051 (FEAT-017)
     /// <summary>
     /// Deletes a product by its ID
     /// </summary>
@@ -187,12 +206,15 @@ public class ProductsController : BaseController
         var request = new DeleteProductRequest { Id = id };
         var validator = new DeleteProductRequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        StepTrace.Step("PRD-DEL-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors);
 
         var command = _mapper.Map<DeleteProductCommand>(request.Id);
+        StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(DeleteProductCommand))]);
         await _mediator.Send(command, cancellationToken);
+        StepTrace.Step("PRD-DEL-04", "CMN-PIP-06", "200", [("id", request.Id)]);
 
         return Ok(new ApiResponse
         {

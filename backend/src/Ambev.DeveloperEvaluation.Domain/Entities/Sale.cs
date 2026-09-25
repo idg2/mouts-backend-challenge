@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Common.Validation;
 using Ambev.DeveloperEvaluation.Domain.Common;
 using Ambev.DeveloperEvaluation.Domain.Validation;
@@ -71,7 +72,7 @@ public class Sale : BaseEntity
         };
     }
 
-    // Work item: TD-010 (FEAT-010)
+    // Work item: TD-010 (FEAT-010), TASK-053 (FEAT-017)
     /// <summary>
     /// Replaces the item list with the incoming items, matching them by id.
     /// </summary>
@@ -88,7 +89,7 @@ public class Sale : BaseEntity
             .Select(item => item.Id)
             .ToHashSet();
 
-        Items.RemoveAll(existing => !incomingIds.Contains(existing.Id));
+        var removed = Items.RemoveAll(existing => !incomingIds.Contains(existing.Id));
 
         var lineNumber = 0;
         foreach (var item in incoming)
@@ -105,6 +106,8 @@ public class Sale : BaseEntity
             CopyValues(item, target);
             target.LineNumber = lineNumber;
         }
+
+        StepTrace.Step("SAL-UPD-10", "SyncItems removes, updates, adds, and renumbers", [("saleId", Id), ("removed", removed), ("updated", incomingIds.Count), ("added", incoming.Count - incomingIds.Count), ("items", Items.Count)]);
     }
 
     private static void CopyValues(SaleItem source, SaleItem target)

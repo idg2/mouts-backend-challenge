@@ -1,3 +1,5 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
+
 namespace Ambev.DeveloperEvaluation.WebApi.Seeding;
 
 // Work item: BUG-012
@@ -67,9 +69,11 @@ public sealed class AdminSeedSettings
             Required(configuration, PasswordKey),
             Required(configuration, PhoneKey));
 
+    // Work item: TASK-048 (FEAT-017)
     private static string Required(IConfiguration configuration, string key)
     {
         var value = configuration[key];
+        StepTrace.Step("USR-SED-01", "Every Seed:Admin key set?", [("key", key), ("set", !string.IsNullOrWhiteSpace(value))]);
         if (string.IsNullOrWhiteSpace(value))
             throw new InvalidOperationException(
                 $"{key} is not configured. Set it in appsettings or via the {key.Replace(":", "__")} environment variable.");

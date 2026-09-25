@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
@@ -57,7 +58,7 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
         _outbox = outbox;
     }
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-029 (FEAT-004), TASK-053 (FEAT-017)
     /// <summary>
     /// Handles the UpdateSaleCommand request.
     /// </summary>
@@ -68,16 +69,20 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
     {
         var validator = new UpdateSaleValidator();
         var validationResult = await validator.ValidateAsync(command, cancellationToken);
+        StepTrace.Step("SAL-UPD-02", "CMN-PIP-10", "Validate the command, item ids unique", [("saleId", command.Id), ("items", command.Items.Count), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        StepTrace.Step("SAL-UPD-03", "Load the sale with its items", [("saleId", command.Id)]);
         var sale = await _saleRepository.GetByIdAsync(command.Id, cancellationToken);
+        StepTrace.Step("SAL-UPD-04", "Sale found?", [("saleId", command.Id), ("found", sale != null), ("items", sale?.Items.Count)]);
         if (sale == null)
             throw new KeyNotFoundException($"Sale with ID {command.Id} not found");
 
         var wasCancelled = sale.IsCancelled;
         var activeItemIds = sale.Items.Where(item => !item.IsCancelled).Select(item => item.Id).ToHashSet();
+        StepTrace.Step("SAL-UPD-05", "Remember the cancelled state and the active item ids", [("saleId", sale.Id), ("wasCancelled", wasCancelled), ("activeItems", activeItemIds.Count), ("items", sale.Items.Count)]);
 
         var existingItems = sale.Items.ToDictionary(item => item.Id);
         var failures = new List<ValidationFailure>();
@@ -91,6 +96,7 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
                 });
         }
 
+        StepTrace.Step("SAL-UPD-06", "Every item id belongs to the sale?", [("existing", existingItems.Count), ("incomingWithId", command.Items.Count(item => item.Id.HasValue)), ("failures", failures.Count)]);
         if (failures.Count > 0)
             throw new ValidationException(failures);
 
@@ -101,6 +107,7 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
         var products = productIds.Count == 0
             ? new Dictionary<Guid, Product>()
             : (await _productRepository.GetByIdsAsync(productIds, cancellationToken)).ToDictionary(product => product.Id);
+        StepTrace.Step("SAL-UPD-07", "Load products of new items and changed products", [("productIds", productIds.Count), ("productsFound", products.Count)]);
 
         Customer? customer = null;
         if (command.CustomerId != sale.CustomerId)
@@ -125,6 +132,7 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
                 failures.Add(ReferenceNotFound($"Items[{index}].ProductId", $"Product {item.ProductId} not found"));
         }
 
+        StepTrace.Step("SAL-UPD-08", "Changed customer, branch, and products exist?", [("customerChanged", command.CustomerId != sale.CustomerId), ("customerFound", customer != null), ("branchChanged", command.BranchId != sale.BranchId), ("branchFound", branch != null), ("failures", failures.Count)]);
         if (failures.Count > 0)
             throw new ValidationException(failures);
 
@@ -160,15 +168,25 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
                 IsCancelled = item.IsCancelled
             });
         }
+        StepTrace.Step("SAL-UPD-09", "Apply header values and copy new names", [("saleId", sale.Id), ("customerName", sale.CustomerName), ("branchName", sale.BranchName), ("totalAmount", sale.TotalAmount), ("isCancelled", sale.IsCancelled), ("incoming", incomingItems.Count)]);
 
         sale.SyncItems(incomingItems);
 
         var updatedSale = await _saleRepository.UpdateAsync(sale, cancellationToken);
+        StepTrace.Step("SAL-UPD-11", "Save the sale and its items", [("saleId", updatedSale.Id), ("saleNumber", updatedSale.SaleNumber), ("items", updatedSale.Items.Count)]);
         await _outbox.EnqueueAsync(new SaleModified(SaleSnapshot.From(updatedSale)), cancellationToken);
+        StepTrace.Step("SAL-UPD-12", "Enqueue SaleModified", [("saleId", updatedSale.Id), ("eventType", nameof(SaleModified))]);
         foreach (var item in command.Items.Where(item => item.IsCancelled && item.Id.HasValue && activeItemIds.Contains(item.Id.Value)))
+        {
             await _outbox.EnqueueAsync(new ItemCancelled(updatedSale.Id, item.Id!.Value, item.ProductId), cancellationToken);
+            StepTrace.Step("SAL-UPD-13", "Enqueue ItemCancelled per item turned cancelled", [("saleId", updatedSale.Id), ("itemId", item.Id!.Value), ("productId", item.ProductId), ("eventType", nameof(ItemCancelled))]);
+        }
+        StepTrace.Step("SAL-UPD-14", "Sale turned cancelled?", [("saleId", updatedSale.Id), ("wasCancelled", wasCancelled), ("isCancelled", updatedSale.IsCancelled)]);
         if (!wasCancelled && updatedSale.IsCancelled)
+        {
             await _outbox.EnqueueAsync(new SaleCancelled(updatedSale.Id), cancellationToken);
+            StepTrace.Step("SAL-UPD-15", "Enqueue SaleCancelled", [("saleId", updatedSale.Id), ("eventType", nameof(SaleCancelled))]);
+        }
 
         return _mapper.Map<SaleResult>(updatedSale);
     }

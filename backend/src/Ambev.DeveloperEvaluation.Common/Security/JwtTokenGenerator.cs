@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Ambev.DeveloperEvaluation.Common.Tracing;
 
 namespace Ambev.DeveloperEvaluation.Common.Security;
 
@@ -22,6 +23,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         _configuration = configuration;
     }
 
+    // Work item: TASK-048 (FEAT-017)
     /// <summary>
     /// Generates a JWT token for a specific user.
     /// </summary>
@@ -56,6 +58,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
                 new SymmetricSecurityKey(key),
                 SecurityAlgorithms.HmacSha256Signature)
         };
+        StepTrace.Step("AUT-LGN-07", "Generate the JWT", [("userId", user.Id), ("expires", tokenDescriptor.Expires)]);
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);

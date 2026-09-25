@@ -1,6 +1,6 @@
 # DeveloperStore Sales API — Step-by-Step Guide
 
-This guide takes you from a fresh clone to a running platform, then through configuration and the load test that compares the synchronous and asynchronous ways of creating sales. The original challenge statement is in [README.md](README.md), and the API conventions are in [`.doc/`](.doc/).
+This guide takes you from a fresh clone to a running platform, then through configuration, the trace console, and the load test that compares the synchronous and asynchronous ways of creating sales. The original challenge statement is in [README.md](README.md), and the API conventions are in [`.doc/`](.doc/).
 
 **Contents**
 
@@ -12,13 +12,14 @@ This guide takes you from a fresh clone to a running platform, then through conf
 6. [First requests, end to end](#6-first-requests-end-to-end)
 7. [Configuration reference](#7-configuration-reference)
 8. [Asynchronous sale intake](#8-asynchronous-sale-intake)
-9. [Load test: synchronous vs asynchronous](#9-load-test-synchronous-vs-asynchronous)
-10. [Logs and observability](#10-logs-and-observability)
-11. [Automated tests](#11-automated-tests)
-12. [Stop, restart, and reset](#12-stop-restart-and-reset)
-13. [Troubleshooting](#13-troubleshooting)
-14. [Repository layout](#14-repository-layout)
-15. [Branching and pull requests](#15-branching-and-pull-requests)
+9. [Trace console](#9-trace-console)
+10. [Load test: synchronous vs asynchronous](#10-load-test-synchronous-vs-asynchronous)
+11. [Logs and observability](#11-logs-and-observability)
+12. [Automated tests](#12-automated-tests)
+13. [Stop, restart, and reset](#13-stop-restart-and-reset)
+14. [Troubleshooting](#14-troubleshooting)
+15. [Repository layout](#15-repository-layout)
+16. [Branching and pull requests](#16-branching-and-pull-requests)
 
 ---
 
@@ -30,7 +31,7 @@ This guide takes you from a fresh clone to a running platform, then through conf
 | PostgreSQL 13 | compose service `ambev.developerevaluation.database` | Users, customers, branches, products, sales | 5432 |
 | MongoDB 8 | compose service `ambev.developerevaluation.nosql` | Application logs (`developer_evaluation_logs`) and the Rebus sale queue (`developer_evaluation_bus`) | 27017 |
 | Redis 7 | compose service `ambev.developerevaluation.cache` | Started by the stack; not used by the code yet | 6379 |
-| Load simulator | console app (`backend/tools/Ambev.DeveloperEvaluation.LoadSimulator`) | Generates concurrent sale traffic and reports latency and throughput | — |
+| Developer console | console app (`backend/tools/Ambev.DeveloperEvaluation.DevConsole`) | Traced scenarios against the API hosted in process, and the load simulator | — |
 
 PostgreSQL keeps its data in the named volume `postgres-data` and MongoDB in `mongo-data`, so both survive `docker compose down`.
 
@@ -85,7 +86,7 @@ API       http://0.0.0.0:8080/swagger
 cd backend && docker compose ps
 ```
 
-All four services should be `running`. If the API container is `exited`, see [§13](#13-troubleshooting): the API does not start while MongoDB is still initializing.
+All four services should be `running`. If the API container is `exited`, see [§14](#14-troubleshooting): the API does not start while MongoDB is still initializing.
 
 To start only the databases, for example when you run the API with `dotnet run`, use:
 
@@ -315,7 +316,52 @@ db.messages.find({ q: "sales-intake", n: { $gte: 5 } })    // claimed 5 times an
 - The MongoDB transport claims a message at most 5 times. Claims that Rebus does not count as errors, such as a restart mid-processing, still use up those 5 claims, so a message can get stuck, which the last query above finds.
 - Update and delete are synchronous only.
 
-## 9. Load test: synchronous vs asynchronous
+## 9. Trace console
+
+The `t` command of `backend/tools/Ambev.DeveloperEvaluation.DevConsole` runs a documented flow ([`backend/docs/`](backend/docs/INDEX.md)) with every step printed. It hosts the API inside its own process, so the request, the Rebus worker, the outbox relay, and the event consumer print into one window. Each line carries the time, the thread, the step key (a shared line carries both keys), the step title, the values that decided the path, and the source file and line:
+
+```
+17:48:57.538726  T022  SAL-CRT-04 CMN-PIP-10  Validate the command  presetId=null valid=True errors=0  CreateSaleHandler.cs:74
+```
+
+**It wipes the development data.** Before hosting the API it drops the PostgreSQL database named in `ConnectionStrings:DefaultConnection` (the API then recreates the schema and reseeds the administrator, [§4](#4-database-schema-and-the-administrator)) and the MongoDB queue database named in `ConnectionStrings:MessageBus`. The log database is untouched. It asks for confirmation unless `--yes` is given. The drop is a plain `DROP DATABASE` over a connection to the maintenance database `Trace:MaintenanceDatabase` and is never forced: while another session holds the database, the console prints the command that stops the API container and exits 1. Stop the API container and any `dotnet run` of the WebApi first.
+
+```bash
+cd backend
+docker compose stop ambev.developerevaluation.webapi
+docker compose up -d ambev.developerevaluation.database ambev.developerevaluation.nosql
+dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole            # asks t or l, the scenario, then Continue? (y/n)
+dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- t sale-async --yes
+dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- t all --yes > trace.txt
+```
+
+**To keep the development data**, point the run at scratch databases. The hosted API creates them, the next run drops them again, and the API container can keep running because it holds neither. The hosted API still writes its log lines (Warning and above, `Trace:AppLogMinimumLevel`) to the log database named in `ConnectionStrings:LogStorage`:
+
+```bash
+dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- t all --yes \
+  --ConnectionStrings:DefaultConnection="Host=localhost;Port=5432;Database=trace_scratch;Username=developer;Password=ev@luAt10n" \
+  --ConnectionStrings:MessageBus="mongodb://developer:ev%40luAt10n@localhost:27017/trace_scratch_bus?authSource=admin"
+```
+
+The console reads the API's configuration in the API's order (the WebApi `appsettings.json`, `appsettings.Development.json`, the WebApi user secrets, environment variables), then its own `appsettings.json`, then the command line. It forwards the command-line pairs, the resolved connection strings, and the `Seed:Admin` credentials to the hosted API, so the wipe, the login, and the API always use the same databases and administrator.
+
+Scenarios: `conventions`, `auth`, `users`, `customers`, `branches`, `products`, `sale-create`, `sale-async`, `sale-update`, `sale-delete`, `sale-list`, and `all`.
+
+- Each request and response is printed with `password`, `token`, and a rejected password's `attemptedValue` and `formattedMessagePlaceholderValues` masked as `***`; a body that looks like JSON but does not parse prints as `[unparsed body]`.
+- A failing scenario prints `!!! scenario <name> failed: ...`; the run goes on with the next scenario and exits 1.
+- The run ends with the distinct keys seen and, for `all`, the documented keys that were not exercised. Six misses are expected (failure and redelivery paths no scenario provokes, and the seed skip, which a wiped database never reaches). `===== no unexpected misses` means every other documented step ran.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `Trace:AppLogMinimumLevel` | `Warning` | Level of the hosted API's own log lines in the same window. |
+| `Trace:WaitTimeout` | `00:00:30` | How long a scenario waits for an asynchronous step (worker, relay, consumer). |
+| `Trace:MaintenanceDatabase` | `postgres` | PostgreSQL database the console connects to for the drop. |
+
+The settings are in the console's `appsettings.json`; override them with `--Trace:<Key>=<value>`. Every setting is required.
+
+The trace exists only in Debug builds: in Release the `StepTrace` calls are compiled out and the `t` command refuses to run.
+
+## 10. Load test: synchronous vs asynchronous
 
 ### What it measures
 
@@ -325,7 +371,7 @@ The asynchronous mode turns the spike into a queue: the client gets `202` in mil
 
 ### The simulator
 
-`backend/tools/Ambev.DeveloperEvaluation.LoadSimulator` is a console app that talks to the API over HTTP only. Each run:
+The `l` command of the developer console (`backend/tools/Ambev.DeveloperEvaluation.DevConsole`) talks to the API over HTTP only. Each run:
 
 1. Logs in **once** as the administrator the API seeds ([§4](#4-database-schema-and-the-administrator)).
 2. Registers one customer, one branch, and three products for the run.
@@ -338,7 +384,7 @@ The asynchronous mode turns the spike into a queue: the client gets `202` in mil
 
 ### Simulator settings
 
-The settings are in `backend/tools/Ambev.DeveloperEvaluation.LoadSimulator/appsettings.json`. Any setting can be overridden on the command line with `--Simulator:<Key>=<value>`, and every setting is required.
+The settings are in `backend/tools/Ambev.DeveloperEvaluation.DevConsole/appsettings.json`. Any setting can be overridden on the command line with `--Simulator:<Key>=<value>`, and every setting is required.
 
 | Key | Default | Meaning |
 |---|---|---|
@@ -350,7 +396,7 @@ The settings are in `backend/tools/Ambev.DeveloperEvaluation.LoadSimulator/appse
 | `Simulator:DrainPollInterval` | `00:00:01` | How often it counts stored sales. |
 | `Simulator:RequestTimeout` | `00:01:40` | Client timeout per request; a timed-out request counts as unanswered. |
 
-The simulator also reads `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettings.json` and logs in with its `Seed:Admin:Email` and `Seed:Admin:Password`; override them with `--Seed:Admin:Email=<value>` and `--Seed:Admin:Password=<value>` when the API runs with other values.
+The simulator also reads the API's configuration, as the trace console does ([§9](#9-trace-console)), and logs in with its `Seed:Admin:Email` and `Seed:Admin:Password`; override them with `--Seed:Admin:Email=<value>` and `--Seed:Admin:Password=<value>` when the API runs with other values.
 
 With the defaults, a run has 1,000 concurrent loops × 20 requests, which is 20,000 sales.
 
@@ -366,7 +412,7 @@ With the defaults, a run has 1,000 concurrent loops × 20 requests, which is 20,
 
 ```bash
 cd backend
-dotnet run --project tools/Ambev.DeveloperEvaluation.LoadSimulator -- \
+dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- l \
   --Simulator:Mode=sync --Simulator:RequestsPerLoop=3 \
   --Simulator:Profiles:0:Loops=5 --Simulator:Profiles:1:Loops=3 --Simulator:Profiles:2:Loops=2
 ```
@@ -376,13 +422,13 @@ Expected: `TOTAL: 30 requests, … outcomes: 201=30`.
 **Step 5: run the synchronous scenario.**
 
 ```bash
-dotnet run --project tools/Ambev.DeveloperEvaluation.LoadSimulator -- --Simulator:Mode=sync
+dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- l --Simulator:Mode=sync
 ```
 
 **Step 6: run the asynchronous scenario.**
 
 ```bash
-dotnet run --project tools/Ambev.DeveloperEvaluation.LoadSimulator -- --Simulator:Mode=async
+dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- l --Simulator:Mode=async
 ```
 
 Add `--Simulator:BaseUrl=http://localhost:8080` to both commands when the target is the API container.
@@ -390,7 +436,7 @@ Add `--Simulator:BaseUrl=http://localhost:8080` to both commands when the target
 **Step 7: raise the load until the synchronous mode breaks.** Increase `Loops` or `RequestsPerLoop` until the sync run shows `500` outcomes or unanswered requests, then repeat the same settings in async mode.
 
 ```bash
-dotnet run --project tools/Ambev.DeveloperEvaluation.LoadSimulator -- --Simulator:Mode=sync \
+dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- l --Simulator:Mode=sync \
   --Simulator:Profiles:0:Loops=1500 --Simulator:RequestsPerLoop=30
 ```
 
@@ -430,10 +476,10 @@ docker exec ambev_developer_evaluation_database psql -U developer -d developer_e
 - **An unanswered request may still have been queued.** When the report shows unanswered requests, the drain target can be reached before every accepted sale is stored.
 - **PostgreSQL and MongoDB share the host disk.** The named volumes separate data, not I/O: on Docker Desktop or OrbStack every volume lives on the same VM disk. Absolute numbers are pessimistic compared with a server.
 - **MongoDB holds both the queue and the logs.** Log writes and queue writes compete during the run.
-- **Runs accumulate data.** Every run adds its user, catalog entries, and sales. Reset the data between series if you need clean numbers ([§12](#12-stop-restart-and-reset)).
+- **Runs accumulate data.** Every run adds its user, catalog entries, and sales. Reset the data between series if you need clean numbers ([§13](#13-stop-restart-and-reset)).
 - **The outbox has a cost.** Each sale write also stores its events, and the queue also carries them, so numbers are not comparable with runs made before the outbox existed. That difference is the outbox cost per sale.
 
-## 10. Logs and observability
+## 11. Logs and observability
 
 | Where | How |
 |---|---|
@@ -454,7 +500,7 @@ db.logs.find({ Level: { $in: ["Warning", "Error"] } }).sort({ UtcTimeStamp: -1 }
 db.logs.find({ RenderedMessage: /^Sale event/ }).sort({ UtcTimeStamp: -1 }).limit(20)
 ```
 
-## 11. Automated tests
+## 12. Automated tests
 
 Run these from `backend/`:
 
@@ -466,7 +512,7 @@ dotnet test tests/Ambev.DeveloperEvaluation.Integration   # needs the compose Po
 
 The integration tests create a throwaway database for each test class, apply the migrations, and drop it afterwards, so they never touch `developer_evaluation`.
 
-## 12. Stop, restart, and reset
+## 13. Stop, restart, and reset
 
 Run these from `backend/`:
 
@@ -478,7 +524,7 @@ Run these from `backend/`:
 | **Delete all data** | `docker compose down -v` | **PostgreSQL and MongoDB data erased.** The API recreates the schema and the administrator when it starts again ([§4](#4-database-schema-and-the-administrator)). |
 | Rebuild the API image after a code change | `docker compose build ambev.developerevaluation.webapi && docker compose up -d ambev.developerevaluation.webapi` | Kept |
 
-## 13. Troubleshooting
+## 14. Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -487,13 +533,13 @@ Run these from `backend/`:
 | API exits at startup with a PostgreSQL connection error | PostgreSQL is unreachable; the API applies the migrations before it listens ([§4](#4-database-schema-and-the-administrator)) | Start PostgreSQL, then the API |
 | `address already in use` on 5432, 27017, 6379, or 8080 | Another service uses the port | Stop it, or change the port and the matching connection strings ([§7](#7-configuration-reference)) |
 | `dotnet run` fails because 5119 is in use | Another API instance on the host | Stop it; run one API instance at a time |
-| Queued sales never appear | The consumer is failing, or two API instances share the queue | Check the error queue and the logs ([§8](#8-asynchronous-sale-intake), [§10](#10-logs-and-observability)) |
+| Queued sales never appear | The consumer is failing, or two API instances share the queue | Check the error queue and the logs ([§8](#8-asynchronous-sale-intake), [§11](#11-logs-and-observability)) |
 | `401` on every endpoint | Missing or expired token | Log in again ([§6](#6-first-requests-end-to-end), step 1) |
 | `403` on POST, PUT, or DELETE, or on any `/api/users` call | The user's role is Customer | Use a Manager or Admin user |
 | Simulator fails at setup with a validation message | API validation rejected the setup data | Read the message; it names the endpoint and the rule |
 | Sale events never appear in the log | The relay is failing, or rows wait behind a failing one | Run the pending-rows query ([§8](#8-asynchronous-sale-intake)) and look for Error logs from `OutboxRelay` |
 
-## 14. Repository layout
+## 15. Repository layout
 
 ```
 .
@@ -516,10 +562,10 @@ Run these from `backend/`:
     │   ├── Ambev.DeveloperEvaluation.Unit
     │   └── Ambev.DeveloperEvaluation.Integration
     └── tools/
-        └── Ambev.DeveloperEvaluation.LoadSimulator # load test console app
+        └── Ambev.DeveloperEvaluation.DevConsole    # trace console and load simulator
 ```
 
-## 15. Branching and pull requests
+## 16. Branching and pull requests
 
 Up to pull request #11 each change was committed on `dev` and released to `main` through its own pull request (#3 to #11). From pull request #12 on, every change starts on a `feature/<ITEM-ID>` or `bugfix/<ITEM-ID>` branch, where `<ITEM-ID>` is the work item from `work-items.json`, and reaches `dev` through a pull request. `dev` goes to `main` only as a release.
 

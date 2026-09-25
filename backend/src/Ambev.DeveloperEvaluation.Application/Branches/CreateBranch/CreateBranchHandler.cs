@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
@@ -26,6 +27,7 @@ public class CreateBranchHandler : IRequestHandler<CreateBranchCommand, CreateBr
         _mapper = mapper;
     }
 
+    // Work item: TASK-050 (FEAT-017)
     /// <summary>
     /// Handles the CreateBranchCommand request.
     /// </summary>
@@ -36,12 +38,14 @@ public class CreateBranchHandler : IRequestHandler<CreateBranchCommand, CreateBr
     {
         var validator = new CreateBranchValidator();
         var validationResult = await validator.ValidateAsync(command, cancellationToken);
+        StepTrace.Step("BRN-CRT-02", "CMN-PIP-10", "Validate the command", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
         var branch = _mapper.Map<Branch>(command);
         var createdBranch = await _branchRepository.CreateAsync(branch, cancellationToken);
+        StepTrace.Step("BRN-CRT-03", "Insert the branch", [("id", createdBranch.Id)]);
         return _mapper.Map<CreateBranchResult>(createdBranch);
     }
 }

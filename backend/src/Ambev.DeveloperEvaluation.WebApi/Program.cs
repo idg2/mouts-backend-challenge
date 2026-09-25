@@ -17,7 +17,7 @@ namespace Ambev.DeveloperEvaluation.WebApi;
 
 public class Program
 {
-    // Work item: TD-006, TASK-033 (FEAT-016), TASK-034 (FEAT-016), TASK-038 (FEAT-006), BUG-012
+    // Work item: TD-006, TASK-033 (FEAT-016), TASK-034 (FEAT-016), TASK-038 (FEAT-006), BUG-012, TASK-046 (FEAT-017), TASK-047 (FEAT-017)
     public static void Main(string[] args)
     {
         try
@@ -28,17 +28,30 @@ public class Program
             builder.AddDefaultLogging();
 
             builder.Services.AddControllers();
+#if DEBUG
+            // Trace-only MVC filters (StepTrace). The action filter takes the lowest order so it runs before the
+            // ApiController model-state filter short-circuits a 400.
+            builder.Services.Configure<Microsoft.AspNetCore.Mvc.MvcOptions>(options =>
+            {
+                options.Filters.Add<Tracing.StepTraceActionFilter>(int.MinValue);
+                options.Filters.Add<Tracing.StepTraceResultFilter>();
+            });
+#endif
             builder.Services.AddEndpointsApiExplorer();
 
             builder.AddBasicHealthChecks();
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddDbContext<DefaultContext>(options =>
+            {
                 options.UseNpgsql(
                     builder.Configuration.GetConnectionString("DefaultConnection"),
                     b => b.MigrationsAssembly("Ambev.DeveloperEvaluation.ORM")
-                )
-            );
+                );
+#if DEBUG
+                options.AddInterceptors(new Ambev.DeveloperEvaluation.ORM.Tracing.StepTraceCommandInterceptor());
+#endif
+            });
 
             builder.Services.AddJwtAuthentication(builder.Configuration);
 
@@ -66,6 +79,9 @@ public class Program
             app.MigrateAndSeedAsync().GetAwaiter().GetResult();
 
             app.UseRequestLogging();
+#if DEBUG
+            app.UseMiddleware<Tracing.StepTraceMiddleware>();
+#endif
             app.UseMiddleware<ValidationExceptionMiddleware>();
 
             if (app.Environment.IsDevelopment())

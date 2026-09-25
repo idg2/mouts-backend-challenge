@@ -1,5 +1,7 @@
 using System.Text.Json;
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Events;
+using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -35,6 +37,7 @@ public class OutboxRelay : IOutboxRelay
         _logger = logger;
     }
 
+    // Work item: TASK-054 (FEAT-017)
     /// <summary>
     /// Publishes up to <paramref name="batchSize"/> pending rows, oldest first.
     /// </summary>
@@ -48,15 +51,22 @@ public class OutboxRelay : IOutboxRelay
             .OrderBy(message => message.Sequence)
             .Take(batchSize)
             .ToListAsync(cancellationToken);
+        StepTrace.Step("SAL-DSP-01", "Read up to BatchSize pending rows by Sequence",
+            [("batchSize", batchSize), ("pending", pending.Count), ("firstSequence", pending.FirstOrDefault()?.Sequence)]);
 
         var dispatched = 0;
         foreach (var message in pending)
         {
             try
             {
-                var type = IntegrationEventTypes.Find(message.Type)
-                    ?? throw new InvalidOperationException($"Outbox event type '{message.Type}' is not registered");
+                var type = IntegrationEventTypes.Find(message.Type);
+                StepTrace.Step("SAL-DSP-02", "Type registered?",
+                    [("rowId", message.Id), ("sequence", message.Sequence), ("eventType", message.Type), ("registered", type is not null)]);
+                if (type is null)
+                    throw new InvalidOperationException($"Outbox event type '{message.Type}' is not registered");
                 var integrationEvent = (IIntegrationEvent)JsonSerializer.Deserialize(message.Payload, type)!;
+                StepTrace.Step("SAL-DSP-03", "Deserialize the payload",
+                    [("rowId", message.Id), ("eventType", integrationEvent.GetType().Name), ("saleId", SaleEventIds.SaleIdOf(integrationEvent))]);
                 await _publisher.PublishAsync(integrationEvent, message.Id, cancellationToken);
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
@@ -64,12 +74,17 @@ public class OutboxRelay : IOutboxRelay
                 _logger.LogError(exception,
                     "Dispatch of outbox message {OutboxMessageId} ({OutboxMessageType}) failed; it and later messages wait for the next cycle",
                     message.Id, message.Type);
+                StepTrace.Step("SAL-DSP-07", "Log the failure and end the cycle",
+                    [("rowId", message.Id), ("sequence", message.Sequence), ("eventType", message.Type), ("error", exception), ("dispatched", dispatched)]);
                 break;
             }
 
             message.ProcessedAt = _timeProvider.GetUtcNow().UtcDateTime;
             await _context.SaveChangesAsync(cancellationToken);
+            StepTrace.Step("SAL-DSP-05", "Set ProcessedAt and save the row",
+                [("rowId", message.Id), ("sequence", message.Sequence), ("processedAt", message.ProcessedAt)]);
             dispatched++;
+            StepTrace.Step("SAL-DSP-06", "More rows?", [("dispatched", dispatched), ("pending", pending.Count), ("more", dispatched < pending.Count)]);
         }
 
         return dispatched;

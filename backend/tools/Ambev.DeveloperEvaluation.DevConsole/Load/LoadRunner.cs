@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 
-namespace Ambev.DeveloperEvaluation.LoadSimulator;
+namespace Ambev.DeveloperEvaluation.DevConsole.Load;
 
-// Work item: TASK-040 (FEAT-006)
+// Work item: TASK-040 (FEAT-006), TASK-044 (FEAT-017)
 /// <summary>
 /// One timed request: the profile that sent it, its outcome (status code or exception name), and its duration.
 /// </summary>
@@ -12,7 +12,7 @@ namespace Ambev.DeveloperEvaluation.LoadSimulator;
 /// <param name="Milliseconds">The request duration</param>
 public sealed record RequestSample(string Profile, string Outcome, double Milliseconds);
 
-// Work item: TASK-040 (FEAT-006)
+// Work item: TASK-040 (FEAT-006), TASK-044 (FEAT-017)
 /// <summary>
 /// Runs every loop of every profile at the same time and collects one sample per request.
 /// </summary>

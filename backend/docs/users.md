@@ -1,6 +1,6 @@
 # Users API
 
-Signs up, reads, and deletes users. Any user can then log in through the Auth API.
+Creates, reads, and deletes users; every call needs an Admin or Manager token. The API seeds the first Admin at startup.
 
 > Work item: TD-025 · Key: USR · Routes: `/api/users`
 
@@ -8,9 +8,9 @@ Signs up, reads, and deletes users. Any user can then log in through the Auth AP
 
 | Topic | Method | Route | Roles | Success | Errors |
 |---|---|---|---|---|---|
-| USR-CRT | POST | `/api/users` | anonymous | 201 | 400, 409 |
-| USR-GET | GET | `/api/users/{id}` | anonymous (BUG-012) | 200 | 400, 404 |
-| USR-DEL | DELETE | `/api/users/{id}` | anonymous (BUG-012) | 200 | 400, 404 |
+| USR-CRT | POST | `/api/users` | Admin, Manager | 201 | 400, 401, 403, 409 |
+| USR-GET | GET | `/api/users/{id}` | Admin, Manager | 200 | 400, 401, 403, 404 |
+| USR-DEL | DELETE | `/api/users/{id}` | Admin, Manager | 200 | 400, 401, 403, 404 |
 
 ## Data model
 
@@ -20,7 +20,7 @@ Signs up, reads, and deletes users. Any user can then log in through the Auth AP
 
 ## USR-CRT — Create a user
 
-Stores a new user with a hashed password. The caller chooses the status and the role.
+Stores a new user with a hashed password. The caller chooses the status and the role, Admin included.
 
 **Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Users/UsersController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Users/CreateUser/CreateUserHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/UserRepository.cs`
 
@@ -45,8 +45,7 @@ flowchart TD
 ```
 
 - USR-CRT-01: the e-mail must be valid; the password needs at least 8 characters with an uppercase letter, a lowercase letter, a digit, and one of `! ? * . @ # $ % ^ & + =`.
-- USR-CRT-05: two concurrent sign-ups with one e-mail both pass USR-CRT-03; the unique index turns the second into a 409.
-- USR-CRT-06: the caller may choose any role, Admin included (BUG-012).
+- USR-CRT-05: two concurrent creates with one e-mail both pass USR-CRT-03; the unique index turns the second into a 409.
 
 ## USR-GET — Get a user
 
@@ -88,11 +87,43 @@ flowchart TD
   DEL03 -->|no| E404
 ```
 
+## USR-SED — Seed the administrator
+
+Creates the first Admin before the API listens, since no anonymous call can create users. It runs on every start and skips when the user exists.
+
+**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Seeding/SeedingExtensions.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Seeding/AdminSeedSettings.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Seeding/AdminSeeder.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Program.cs`
+
+```mermaid
+flowchart TD
+  SED01{"USR-SED-01 Every Seed:Admin key set?"}
+  SED02["USR-SED-02 Apply pending migrations"]
+  SED03{"USR-SED-03 A user has the configured e-mail?"}
+  SED04["USR-SED-04 Create an active Admin, see USR-CRT"]
+  SED05["USR-SED-05 Log the new administrator id"]
+  SED06["USR-SED-06 Log the skip with the existing user id"]
+  STOP["Startup fails"]
+  SED01 -->|yes| SED02
+  SED01 -->|no| STOP
+  SED02 -->|applied| SED03
+  SED02 -->|PostgreSQL unreachable| STOP
+  SED03 -->|no| SED04
+  SED03 -->|yes| SED06
+  SED04 -->|created| SED05
+  SED04 -->|invalid values| STOP
+```
+
+- USR-SED-01: `Seed:Admin:Username`, `Email`, `Password`, and `Phone`, read before the app is built; the startup error names the missing key.
+- USR-SED-02: runs before the host starts, so the outbox relay and the endpoints never meet a database without its tables; the compose API waits for the PostgreSQL healthcheck.
+- USR-SED-03: only the e-mail is compared, so a restart skips the seed even after that user's role or password changed.
+- USR-SED-04: the values pass the same rules as any new user; a weak password or a bad phone stops startup.
+- USR-SED-05 and USR-SED-06: the log carries the user id, never the e-mail.
+
 ## Known limitations
 
-- All three endpoints accept anonymous requests, and sign-up lets the caller pick any role (BUG-012).
+- Admin and Manager have the same powers: either can create or delete any user, Admin included.
 - There is no list or update endpoint.
 - Deleting a user does not revoke its tokens.
+- Deleting the seeded administrator brings it back at the next start.
 
 ## See also
 

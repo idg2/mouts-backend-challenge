@@ -7,7 +7,7 @@ This guide takes you from a fresh clone to a running platform, then through conf
 1. [What runs where](#1-what-runs-where)
 2. [Prerequisites](#2-prerequisites)
 3. [Start the containers with make](#3-start-the-containers-with-make)
-4. [Create the database schema](#4-create-the-database-schema)
+4. [Database schema and the administrator](#4-database-schema-and-the-administrator)
 5. [Choose how to run the API](#5-choose-how-to-run-the-api)
 6. [First requests, end to end](#6-first-requests-end-to-end)
 7. [Configuration reference](#7-configuration-reference)
@@ -94,9 +94,11 @@ cd backend
 docker compose up -d ambev.developerevaluation.database ambev.developerevaluation.nosql
 ```
 
-## 4. Create the database schema
+## 4. Database schema and the administrator
 
-The API does not apply migrations on startup. Apply them once after the first `make dev-up`, and again whenever new migrations arrive or the `postgres-data` volume is recreated:
+Nothing to run by hand. Every time the API starts, before it listens, it applies the pending migrations and then creates the administrator from `Seed:Admin` ([§7](#7-configuration-reference)) unless a user already has that e-mail. After new migrations arrive or the `postgres-data` volume is recreated, start the API again. The API container waits for the PostgreSQL healthcheck before it starts.
+
+To apply the migrations without starting the API:
 
 ```bash
 cd backend
@@ -105,7 +107,7 @@ dotnet ef database update \
   --startup-project src/Ambev.DeveloperEvaluation.WebApi
 ```
 
-The command reads `ConnectionStrings:DefaultConnection` from `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettings.json`, which already points at the compose PostgreSQL on `localhost:5432`. Nothing needs to be restarted afterwards.
+The command reads `ConnectionStrings:DefaultConnection` from `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettings.json`, which already points at the compose PostgreSQL on `localhost:5432`.
 
 ## 5. Choose how to run the API
 
@@ -145,24 +147,26 @@ The examples use the container API. For Option B, set `BASE=http://localhost:511
 BASE=http://localhost:8080
 ```
 
-**Step 1: create a user.** `POST /api/users` is anonymous. `role`: 1 = Customer, 2 = Manager, 3 = Admin. `status`: 1 = Active. Write endpoints require the Admin or Manager role.
+**Step 1: log in as the administrator and keep the token.** The API created it at startup from `Seed:Admin` ([§4](#4-database-schema-and-the-administrator)); the credentials below are the development values in `appsettings.json`.
 
 ```bash
-curl -s -X POST $BASE/api/users -H 'Content-Type: application/json' -d '{
+TOKEN=$(curl -s -X POST $BASE/api/auth -H 'Content-Type: application/json' \
+  -d '{"email":"admin@example.com","password":"Adm1n@Pass"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['token'])")
+AUTH="Authorization: Bearer $TOKEN"
+```
+
+**Step 2 (optional): create more users.** There is no anonymous sign-up: every `/api/users` call needs an Admin or Manager token. `role`: 1 = Customer, 2 = Manager, 3 = Admin. `status`: 1 = Active. Write endpoints require the Admin or Manager role; a Customer can only read.
+
+```bash
+curl -s -X POST $BASE/api/users -H "$AUTH" -H 'Content-Type: application/json' -d '{
   "username": "manager", "password": "Str0ng@Pass", "phone": "+5511999998888",
   "email": "manager@example.com", "status": 1, "role": 2 }'
 ```
 
 The password needs at least 8 characters, with an uppercase letter, a lowercase letter, a digit, and one of `! ? * . @ # $ % ^ & + =`.
 
-**Step 2: log in and keep the token.**
-
-```bash
-TOKEN=$(curl -s -X POST $BASE/api/auth -H 'Content-Type: application/json' \
-  -d '{"email":"manager@example.com","password":"Str0ng@Pass"}' \
-  | python3 -c "import sys,json;print(json.load(sys.stdin)['data']['token'])")
-AUTH="Authorization: Bearer $TOKEN"
-```
+**No control over user roles.** Admin and Manager have the same powers everywhere. Either one can create a user with any role, Admin included, and delete any user, Admin included; nothing stops a Manager from promoting someone to Admin.
 
 Swagger does not have a JWT security scheme configured, so it cannot send the token. Use curl, as below, or any HTTP client that sends the `Authorization: Bearer <token>` header. Swagger is still useful to browse the routes and schemas.
 
@@ -238,6 +242,7 @@ Configuration comes from `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettin
 | `Rebus:MaxParallelism` | `20` | Queued messages processed at the same time. Keep it **below** the Npgsql pool size. |
 | `Outbox:PollingInterval` | `00:00:05` | Wait between outbox relay cycles; after a full batch the next cycle starts at once. A time span (hh:mm:ss) from `00:00:00.1` to `01:00:00`; a bare number is rejected, since .NET reads it as days. |
 | `Outbox:BatchSize` | `50` | Outbox rows one relay cycle sends. |
+| `Seed:Admin:Username` / `Email` / `Password` / `Phone` | `admin` / `admin@example.com` / `Adm1n@Pass` / `+5511999990000` | The administrator created at startup when no user has that e-mail ([§4](#4-database-schema-and-the-administrator)). The values must pass the user rules, or the API does not start. Replace the password outside development. |
 | `Serilog` section | Levels, console output, `/health` filter | EF Core and ASP.NET Core log at Warning, so SQL commands do not flood the log. |
 
 The API container overrides `DefaultConnection`, `LogStorage`, and `MessageBus` in `backend/docker-compose.yml` so they point at the service names instead of `localhost`.
@@ -322,7 +327,7 @@ The asynchronous mode turns the spike into a queue: the client gets `202` in mil
 
 `backend/tools/Ambev.DeveloperEvaluation.LoadSimulator` is a console app that talks to the API over HTTP only. Each run:
 
-1. Creates its own Manager user (random password) and logs in **once**.
+1. Logs in **once** as the administrator the API seeds ([§4](#4-database-schema-and-the-administrator)).
 2. Registers one customer, one branch, and three products for the run.
 3. Starts every loop of every profile at the same time. Each loop is a `while` that posts a three-item sale, times it, records the status code, and waits `PauseMilliseconds`. Concurrency equals the total number of loops.
 4. Prints, per profile and in total:
@@ -345,11 +350,13 @@ The settings are in `backend/tools/Ambev.DeveloperEvaluation.LoadSimulator/appse
 | `Simulator:DrainPollInterval` | `00:00:01` | How often it counts stored sales. |
 | `Simulator:RequestTimeout` | `00:01:40` | Client timeout per request; a timed-out request counts as unanswered. |
 
+The simulator also reads `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettings.json` and logs in with its `Seed:Admin:Email` and `Seed:Admin:Password`; override them with `--Seed:Admin:Email=<value>` and `--Seed:Admin:Password=<value>` when the API runs with other values.
+
 With the defaults, a run has 1,000 concurrent loops × 20 requests, which is 20,000 sales.
 
 ### Step by step
 
-**Step 1: bring the platform up and apply the schema** ([§3](#3-start-the-containers-with-make) and [§4](#4-create-the-database-schema)).
+**Step 1: bring the platform up** ([§3](#3-start-the-containers-with-make); the API applies the schema itself, [§4](#4-database-schema-and-the-administrator)).
 
 **Step 2: run exactly one API instance** ([§5](#5-choose-how-to-run-the-api)). For the most direct comparison, use Option B (`dotnet run`, port 5119, the simulator default) with the API container stopped.
 
@@ -468,7 +475,7 @@ Run these from `backend/`:
 | Stop everything | `docker compose stop` | Kept |
 | Start again | `make dev-up` from the repository root | Kept |
 | Remove the containers | `docker compose down` | Kept (named volumes) |
-| **Delete all data** | `docker compose down -v` | **PostgreSQL and MongoDB data erased.** Apply the schema again ([§4](#4-create-the-database-schema)). |
+| **Delete all data** | `docker compose down -v` | **PostgreSQL and MongoDB data erased.** The API recreates the schema and the administrator when it starts again ([§4](#4-database-schema-and-the-administrator)). |
 | Rebuild the API image after a code change | `docker compose build ambev.developerevaluation.webapi && docker compose up -d ambev.developerevaluation.webapi` | Kept |
 
 ## 13. Troubleshooting
@@ -477,12 +484,12 @@ Run these from `backend/`:
 |---|---|---|
 | API container `exited` right after `make dev-up` | MongoDB was still initializing when the API started; the Rebus transport needs MongoDB at startup | `cd backend && docker compose up -d ambev.developerevaluation.webapi` |
 | API exits naming a key, for example `ConnectionStrings:MessageBus is not configured` | Missing or invalid configuration | Set the key named in the message ([§7](#7-configuration-reference)) |
-| Requests fail with `relation "Sales" does not exist` | Schema not applied, or volume recreated | Apply the schema ([§4](#4-create-the-database-schema)) |
+| API exits at startup with a PostgreSQL connection error | PostgreSQL is unreachable; the API applies the migrations before it listens ([§4](#4-database-schema-and-the-administrator)) | Start PostgreSQL, then the API |
 | `address already in use` on 5432, 27017, 6379, or 8080 | Another service uses the port | Stop it, or change the port and the matching connection strings ([§7](#7-configuration-reference)) |
 | `dotnet run` fails because 5119 is in use | Another API instance on the host | Stop it; run one API instance at a time |
 | Queued sales never appear | The consumer is failing, or two API instances share the queue | Check the error queue and the logs ([§8](#8-asynchronous-sale-intake), [§10](#10-logs-and-observability)) |
-| `401` on every endpoint | Missing or expired token | Log in again ([§6](#6-first-requests-end-to-end), step 2) |
-| `403` on POST, PUT, or DELETE | The user's role is Customer | Use a Manager or Admin user |
+| `401` on every endpoint | Missing or expired token | Log in again ([§6](#6-first-requests-end-to-end), step 1) |
+| `403` on POST, PUT, or DELETE, or on any `/api/users` call | The user's role is Customer | Use a Manager or Admin user |
 | Simulator fails at setup with a validation message | API validation rejected the setup data | Read the message; it names the endpoint and the rule |
 | Sale events never appear in the log | The relay is failing, or rows wait behind a failing one | Run the pending-rows query ([§8](#8-asynchronous-sale-intake)) and look for Error logs from `OutboxRelay` |
 

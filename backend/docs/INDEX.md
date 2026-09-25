@@ -8,7 +8,7 @@ How each API of the DeveloperStore sales backend behaves, from the HTTP contract
 |---|---|---|
 | [conventions.md](conventions.md) | CMN | Authentication, request pipeline, transactions, responses and errors, list queries, health checks |
 | [auth.md](auth.md) | AUT | Login and token issue |
-| [users.md](users.md) | USR | User sign-up, read, and delete |
+| [users.md](users.md) | USR | User create, read, and delete for Admin and Manager; the administrator seed |
 | [customers.md](customers.md) | CUS | Customer registry |
 | [branches.md](branches.md) | BRN | Branch registry |
 | [products.md](products.md) | PRD | Product registry |
@@ -29,6 +29,7 @@ How each API of the DeveloperStore sales backend behaves, from the HTTP contract
 | [USR-CRT](users.md#usr-crt--create-a-user) | Create a user | users.md |
 | [USR-GET](users.md#usr-get--get-a-user) | Get a user | users.md |
 | [USR-DEL](users.md#usr-del--delete-a-user) | Delete a user | users.md |
+| [USR-SED](users.md#usr-sed--seed-the-administrator) | Seed the administrator | users.md |
 | [CUS-CRT](customers.md#cus-crt--create-a-customer) | Create a customer | customers.md |
 | [CUS-GET](customers.md#cus-get--get-a-customer) | Get a customer | customers.md |
 | [CUS-LST](customers.md#cus-lst--list-customers) | List customers | customers.md |

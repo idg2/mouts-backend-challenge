@@ -33,8 +33,8 @@ flowchart TD
 ```
 
 - CMN-AUT-02: the signature (HMAC-SHA256 with `Jwt:SecretKey`) and the lifetime are validated with zero clock skew; issuer and audience are not.
-- CMN-AUT-04: the sales, customers, branches, and products controllers require a token for every action; the auth and users controllers require none (users: BUG-012).
-- CMN-AUT-06: writes (POST, PUT, DELETE) require Admin or Manager; reads accept any authenticated role, Customer included.
+- CMN-AUT-04: the sales, customers, branches, products, and users controllers require a token for every action; the auth controller requires none.
+- CMN-AUT-06: writes (POST, PUT, DELETE) require Admin or Manager; reads accept any authenticated role, Customer included, except in the users API, where every call requires Admin or Manager.
 
 ## CMN-PIP — Request pipeline
 

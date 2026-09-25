@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AutoMapper;
 using Ambev.DeveloperEvaluation.WebApi.Common;
@@ -11,13 +12,18 @@ using Ambev.DeveloperEvaluation.Application.Users.DeleteUser;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Users;
 
+// Work item: BUG-012
 /// <summary>
 /// Controller for managing user operations
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = WriteRoles)]
 public class UsersController : BaseController
 {
+    // Work item: BUG-012
+    private const string WriteRoles = "Admin,Manager";
+
     private readonly IMediator _mediator;
     private readonly IMapper _mapper;
 

@@ -2,12 +2,16 @@ using System.Diagnostics;
 using Ambev.DeveloperEvaluation.LoadSimulator;
 using Microsoft.Extensions.Configuration;
 
-// Work item: TASK-040 (FEAT-006)
+// Work item: TASK-040 (FEAT-006), BUG-012
 // Load simulator: posts sales from concurrent loops in sync or async mode and prints latency, throughput, and,
 // in async mode, how long the queue takes to drain.
 try
 {
+    // The WebApi appsettings come first: the administrator the simulator logs in as is the one the API seeds.
+    var webApiDirectory = FindWebApiDirectory();
     var configuration = new ConfigurationBuilder()
+        .AddJsonFile(Path.Combine(webApiDirectory, "appsettings.json"), optional: false)
+        .AddJsonFile(Path.Combine(webApiDirectory, "appsettings.Development.json"), optional: true)
         .SetBasePath(AppContext.BaseDirectory)
         .AddJsonFile("appsettings.json", optional: false)
         .AddCommandLine(args)
@@ -22,7 +26,7 @@ try
         $"Run {runId}: {(settings.Async ? "async" : "sync")} mode, {loops} concurrent loops x " +
         $"{settings.RequestsPerLoop} requests against {settings.BaseUrl}, request timeout {settings.RequestTimeout}");
 
-    await api.AuthenticateAsNewManagerAsync(runId);
+    await api.AuthenticateAsync(settings.AdminEmail, settings.AdminPassword);
     var sale = await api.CreateSaleBodyAsync(runId);
     var baseline = await api.CountSalesAsync();
 
@@ -61,4 +65,17 @@ catch (Exception exception) when (exception is InvalidOperationException or Http
 {
     Console.Error.WriteLine(exception.Message);
     return 1;
+}
+
+// Work item: BUG-012
+// Walks up from the build output to the solution and returns the WebApi project directory.
+static string FindWebApiDirectory()
+{
+    var directory = new DirectoryInfo(AppContext.BaseDirectory);
+    while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "Ambev.DeveloperEvaluation.sln")))
+        directory = directory.Parent;
+
+    return directory is null
+        ? throw new InvalidOperationException("Could not locate Ambev.DeveloperEvaluation.sln from the simulator output directory")
+        : Path.Combine(directory.FullName, "src", "Ambev.DeveloperEvaluation.WebApi");
 }

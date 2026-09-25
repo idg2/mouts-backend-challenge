@@ -21,24 +21,14 @@ public sealed class ApiClient
         _http = http;
     }
 
+    // Work item: TASK-040 (FEAT-006), BUG-012
     /// <summary>
-    /// Registers a Manager user for this run with a random password, logs in once, and uses the token from then on.
+    /// Logs in once as the administrator the API seeds and uses the token from then on.
     /// </summary>
-    /// <param name="runId">The run id, used to make the e-mail and username unique</param>
-    public async Task AuthenticateAsNewManagerAsync(string runId)
+    /// <param name="email">The administrator's e-mail</param>
+    /// <param name="password">The administrator's password</param>
+    public async Task AuthenticateAsync(string email, string password)
     {
-        var email = $"loadsim-{runId}@example.com";
-        var password = $"Ls!9{Guid.NewGuid():N}";
-        await CreateAsync("api/users", new
-        {
-            username = $"loadsim-{runId}",
-            password,
-            phone = "+5511999999999",
-            email,
-            status = 1, // Active
-            role = 2 // Manager
-        }, "Create user");
-
         var login = await ReadAsync(await _http.PostAsJsonAsync("api/auth", new { email, password }), "Log in");
         var token = login.GetProperty("data").GetProperty("token").GetString();
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);

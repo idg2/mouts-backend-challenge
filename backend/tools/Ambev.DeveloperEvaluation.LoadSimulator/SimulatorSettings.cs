@@ -12,7 +12,7 @@ namespace Ambev.DeveloperEvaluation.LoadSimulator;
 /// <param name="PauseMilliseconds">The wait after each request of a loop</param>
 public sealed record LoadProfile(string Name, int Loops, int PauseMilliseconds);
 
-// Work item: TASK-040 (FEAT-006)
+// Work item: TASK-040 (FEAT-006), BUG-012
 /// <summary>
 /// The simulator configuration. Every value is required; a missing or invalid one stops the run naming its key.
 /// </summary>
@@ -23,6 +23,8 @@ public sealed record LoadProfile(string Name, int Loops, int PauseMilliseconds);
 /// <param name="DrainTimeout">How long to wait for the queue to drain in async mode</param>
 /// <param name="DrainPollInterval">How often to count the stored sales while draining</param>
 /// <param name="RequestTimeout">How long any API call may take before it counts as unanswered</param>
+/// <param name="AdminEmail">The e-mail of the administrator the API seeds, used to log in</param>
+/// <param name="AdminPassword">The password of the administrator the API seeds</param>
 public sealed record SimulatorSettings(
     Uri BaseUrl,
     bool Async,
@@ -30,8 +32,11 @@ public sealed record SimulatorSettings(
     IReadOnlyList<LoadProfile> Profiles,
     TimeSpan DrainTimeout,
     TimeSpan DrainPollInterval,
-    TimeSpan RequestTimeout)
+    TimeSpan RequestTimeout,
+    string AdminEmail,
+    string AdminPassword)
 {
+    // Work item: TASK-040 (FEAT-006), BUG-012
     /// <summary>
     /// Reads the settings, throwing <see cref="InvalidOperationException"/> naming the first missing or invalid key.
     /// </summary>
@@ -67,7 +72,9 @@ public sealed record SimulatorSettings(
             profiles,
             PositiveTimeSpan(configuration, "Simulator:DrainTimeout"),
             PositiveTimeSpan(configuration, "Simulator:DrainPollInterval"),
-            PositiveTimeSpan(configuration, "Simulator:RequestTimeout"));
+            PositiveTimeSpan(configuration, "Simulator:RequestTimeout"),
+            Required(configuration, "Seed:Admin:Email"),
+            Required(configuration, "Seed:Admin:Password"));
     }
 
     private static int Integer(IConfiguration configuration, string key, int minimum)

@@ -999,7 +999,7 @@
       "description": "UsersController has no [Authorize] attribute and the app sets no fallback authorization policy, so GET /api/users/{id} (confirmed: 200 without a token) and DELETE /api/users/{id} run without a token: anyone can read or delete any user. POST /api/users is the sign-up path used before any token exists, and the caller chooses the new user's role, Admin included; the fix must decide whether sign-up stays anonymous and which roles it may grant.",
       "parent": null,
       "moscow": "should",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-25",
       "updatedAt": "2026-09-25"
     },

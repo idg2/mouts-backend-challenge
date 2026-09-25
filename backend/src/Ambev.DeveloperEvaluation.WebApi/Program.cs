@@ -8,6 +8,7 @@ using Ambev.DeveloperEvaluation.IoC;
 using Ambev.DeveloperEvaluation.ORM;
 using Ambev.DeveloperEvaluation.WebApi.Messaging;
 using Ambev.DeveloperEvaluation.WebApi.Middleware;
+using Ambev.DeveloperEvaluation.WebApi.Seeding;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
@@ -16,7 +17,7 @@ namespace Ambev.DeveloperEvaluation.WebApi;
 
 public class Program
 {
-    // Work item: TD-006, TASK-033 (FEAT-016), TASK-034 (FEAT-016), TASK-038 (FEAT-006)
+    // Work item: TD-006, TASK-033 (FEAT-016), TASK-034 (FEAT-016), TASK-038 (FEAT-006), BUG-012
     public static void Main(string[] args)
     {
         try
@@ -45,6 +46,8 @@ public class Program
 
             builder.AddMessaging();
 
+            builder.AddAdminSeed();
+
             builder.Services.AddAutoMapper(typeof(Program).Assembly, typeof(ApplicationLayer).Assembly);
 
             builder.Services.AddMediatR(cfg =>
@@ -60,6 +63,8 @@ public class Program
             builder.Services.AddTransient(typeof(IPipelineBehavior<,>), typeof(TransactionBehavior<,>));
 
             var app = builder.Build();
+            app.MigrateAndSeedAsync().GetAwaiter().GetResult();
+
             app.UseRequestLogging();
             app.UseMiddleware<ValidationExceptionMiddleware>();
 

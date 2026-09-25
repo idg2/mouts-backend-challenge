@@ -980,6 +980,39 @@
       "status": "backlog",
       "createdAt": "2026-09-25",
       "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TD-019",
+      "type": "td",
+      "title": "Remove the unused UserRegisteredEvent",
+      "description": "Domain/Events/UserRegisteredEvent.cs comes from the original template and nothing references it: no code raises, publishes, or handles it, and no test uses it. Delete the file.",
+      "parent": null,
+      "moscow": "could",
+      "status": "backlog",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "BUG-012",
+      "type": "bug",
+      "title": "User endpoints accept anonymous requests",
+      "description": "UsersController has no [Authorize] attribute and the app sets no fallback authorization policy, so GET /api/users/{id} (confirmed: 200 without a token) and DELETE /api/users/{id} run without a token: anyone can read or delete any user. POST /api/users is the sign-up path used before any token exists, so the fix must decide whether it stays anonymous.",
+      "parent": null,
+      "moscow": "should",
+      "status": "backlog",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TD-020",
+      "type": "td",
+      "title": "Document the branching workflow in README_.md",
+      "description": "Add section 15 to README_.md stating the branching workflow: up to PR #11 changes were committed on dev and released to main through their own pull requests; from PR #12 on every change starts on a feature/<ITEM-ID> or bugfix/<ITEM-ID> branch and reaches dev through a pull request, and dev goes to main only as a release. Semantic commit prefixes.",
+      "parent": null,
+      "moscow": "could",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
     }
   ]
 }

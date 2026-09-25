@@ -5,6 +5,7 @@ using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Common.Security;
+using Ambev.DeveloperEvaluation.Common.Tracing;
 
 namespace Ambev.DeveloperEvaluation.Application.Users.CreateUser;
 
@@ -30,7 +31,7 @@ public class CreateUserHandler : IRequestHandler<CreateUserCommand, CreateUserRe
         _passwordHasher = passwordHasher;
     }
 
-    // Work item: BUG-003
+    // Work item: BUG-003, TASK-048 (FEAT-017)
     /// <summary>
     /// Handles the CreateUserCommand request
     /// </summary>
@@ -41,18 +42,22 @@ public class CreateUserHandler : IRequestHandler<CreateUserCommand, CreateUserRe
     {
         var validator = new CreateUserCommandValidator();
         var validationResult = await validator.ValidateAsync(command, cancellationToken);
+        StepTrace.Step("USR-CRT-02", "CMN-PIP-10", "Validate the command", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
         var existingUser = await _userRepository.GetByEmailAsync(command.Email, cancellationToken);
+        StepTrace.Step("USR-CRT-03", "E-mail already stored?", [("exists", existingUser != null), ("existingId", existingUser?.Id)]);
         if (existingUser != null)
             throw new DuplicateEntryException($"User with email {command.Email} already exists");
 
         var user = _mapper.Map<User>(command);
         user.Password = _passwordHasher.HashPassword(command.Password);
+        StepTrace.Step("USR-CRT-04", "Hash the password with BCrypt", [("hashed", !string.IsNullOrEmpty(user.Password)), ("role", user.Role), ("status", user.Status)]);
 
         var createdUser = await _userRepository.CreateAsync(user, cancellationToken);
+        StepTrace.Step("USR-CRT-05", "Insert the user", [("userId", createdUser.Id)]);
         var result = _mapper.Map<CreateUserResult>(createdUser);
         return result;
     }

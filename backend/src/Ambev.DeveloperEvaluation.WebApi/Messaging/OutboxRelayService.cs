@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.ORM.Outbox;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Messaging;
@@ -27,23 +28,34 @@ public class OutboxRelayService : BackgroundService
         _logger = logger;
     }
 
+    // Work item: TASK-054 (FEAT-017)
     /// <inheritdoc />
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        StepTrace.Step("SAL-RLY-01", "Host starts the relay after the bus",
+            [("batchSize", _settings.BatchSize), ("pollingInterval", _settings.PollingInterval)]);
         while (!stoppingToken.IsCancellationRequested)
         {
+            StepTrace.Step("SAL-RLY-02", "Stopping?", [("stopping", stoppingToken.IsCancellationRequested)]);
             try
             {
                 int dispatched;
                 await using (var scope = _scopeFactory.CreateAsyncScope())
                 {
                     var relay = scope.ServiceProvider.GetRequiredService<IOutboxRelay>();
+                    StepTrace.Step("SAL-RLY-03", "Create a DI scope and resolve the relay", [("relay", relay.GetType().Name)]);
+                    StepTrace.Step("SAL-RLY-04", "Run one dispatch cycle, see SAL-DSP", [("batchSize", _settings.BatchSize)]);
                     dispatched = await relay.DispatchPendingAsync(_settings.BatchSize, stoppingToken);
                 }
 
+                StepTrace.Step("SAL-RLY-05", "Full batch?",
+                    [("dispatched", dispatched), ("batchSize", _settings.BatchSize), ("full", dispatched >= _settings.BatchSize)]);
                 // A full batch means more rows may be waiting, so the next cycle starts at once.
                 if (dispatched < _settings.BatchSize)
+                {
+                    StepTrace.Step("SAL-RLY-06", "Wait Outbox:PollingInterval", [("pollingInterval", _settings.PollingInterval), ("afterFailure", false)]);
                     await Task.Delay(_settings.PollingInterval, stoppingToken);
+                }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -52,8 +64,10 @@ public class OutboxRelayService : BackgroundService
             catch (Exception exception)
             {
                 _logger.LogError(exception, "Outbox relay cycle failed; retrying after the polling interval");
+                StepTrace.Step("SAL-RLY-07", "Log the failure", [("error", exception)]);
                 try
                 {
+                    StepTrace.Step("SAL-RLY-06", "Wait Outbox:PollingInterval", [("pollingInterval", _settings.PollingInterval), ("afterFailure", true)]);
                     await Task.Delay(_settings.PollingInterval, stoppingToken);
                 }
                 catch (OperationCanceledException)

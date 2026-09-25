@@ -1,9 +1,9 @@
 using System.Globalization;
 using Microsoft.Extensions.Configuration;
 
-namespace Ambev.DeveloperEvaluation.LoadSimulator;
+namespace Ambev.DeveloperEvaluation.DevConsole.Load;
 
-// Work item: TASK-040 (FEAT-006)
+// Work item: TASK-040 (FEAT-006), TASK-044 (FEAT-017)
 /// <summary>
 /// One group of identical loops: how many run at the same time and how long each waits between requests.
 /// </summary>
@@ -12,7 +12,7 @@ namespace Ambev.DeveloperEvaluation.LoadSimulator;
 /// <param name="PauseMilliseconds">The wait after each request of a loop</param>
 public sealed record LoadProfile(string Name, int Loops, int PauseMilliseconds);
 
-// Work item: TASK-040 (FEAT-006), BUG-012
+// Work item: TASK-040 (FEAT-006), BUG-012, TASK-044 (FEAT-017)
 /// <summary>
 /// The simulator configuration. Every value is required; a missing or invalid one stops the run naming its key.
 /// </summary>
@@ -36,7 +36,7 @@ public sealed record SimulatorSettings(
     string AdminEmail,
     string AdminPassword)
 {
-    // Work item: TASK-040 (FEAT-006), BUG-012
+    // Work item: TASK-040 (FEAT-006), BUG-012, TASK-044 (FEAT-017)
     /// <summary>
     /// Reads the settings, throwing <see cref="InvalidOperationException"/> naming the first missing or invalid key.
     /// </summary>

@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Rebus.Handlers;
 using Rebus.Messages;
@@ -43,10 +44,16 @@ public class SaleEventLogHandler :
     /// <inheritdoc />
     public Task Handle(SaleDeleted message) => Log(nameof(SaleDeleted), message.SaleId);
 
+    // Work item: TASK-054 (FEAT-017)
     private Task Log(string eventType, Guid saleId)
     {
+        var messageId = MessageContext.Current.Headers[Headers.MessageId];
+        StepTrace.Step("SAL-CON-02", "Handle the event and read its message id",
+            [("eventType", eventType), ("messageId", messageId), ("saleId", saleId)]);
         _logger.LogInformation("Sale event {EventType} {MessageId} for sale {SaleId}",
-            eventType, MessageContext.Current.Headers[Headers.MessageId], saleId);
+            eventType, messageId, saleId);
+        StepTrace.Step("SAL-CON-03", "Log the event type, message id, and sale id",
+            [("eventType", eventType), ("messageId", messageId), ("saleId", saleId)]);
         return Task.CompletedTask;
     }
 }

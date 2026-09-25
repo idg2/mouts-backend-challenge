@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
@@ -28,7 +29,7 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomerCommand, Crea
         _mapper = mapper;
     }
 
-    // Work item: TASK-018 (FEAT-010), FEAT-012
+    // Work item: TASK-018 (FEAT-010), FEAT-012, TASK-049 (FEAT-017)
     /// <summary>
     /// Handles the CreateCustomerCommand request. The document is stored without mask and in upper case, and must
     /// not be in use.
@@ -40,17 +41,22 @@ public class CreateCustomerHandler : IRequestHandler<CreateCustomerCommand, Crea
     {
         var validator = new CreateCustomerValidator();
         var validationResult = await validator.ValidateAsync(command, cancellationToken);
+        StepTrace.Step("CUS-CRT-02", "CMN-PIP-10", "Validate the command and the CPF or CNPJ", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
         var document = DocumentNumber.Normalize(command.Document);
-        if (await _customerRepository.GetByDocumentAsync(document, cancellationToken) != null)
+        StepTrace.Step("CUS-CRT-03", "Normalize the document", [("normalized", document), ("length", document.Length)]);
+        var existing = await _customerRepository.GetByDocumentAsync(document, cancellationToken);
+        StepTrace.Step("CUS-CRT-04", "Document already stored?", [("document", document), ("exists", existing != null)]);
+        if (existing != null)
             throw new DuplicateEntryException($"Customer with document {document} already exists");
 
         var customer = _mapper.Map<Customer>(command);
         customer.Document = document;
         var createdCustomer = await _customerRepository.CreateAsync(customer, cancellationToken);
+        StepTrace.Step("CUS-CRT-05", "Insert the customer", [("id", createdCustomer.Id), ("document", createdCustomer.Document)]);
         return _mapper.Map<CreateCustomerResult>(createdCustomer);
     }
 }

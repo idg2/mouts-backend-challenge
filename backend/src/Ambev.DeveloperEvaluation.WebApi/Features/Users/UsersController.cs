@@ -9,6 +9,7 @@ using Ambev.DeveloperEvaluation.WebApi.Features.Users.DeleteUser;
 using Ambev.DeveloperEvaluation.Application.Users.CreateUser;
 using Ambev.DeveloperEvaluation.Application.Users.GetUser;
 using Ambev.DeveloperEvaluation.Application.Users.DeleteUser;
+using Ambev.DeveloperEvaluation.Common.Tracing;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Users;
 
@@ -38,6 +39,7 @@ public class UsersController : BaseController
         _mapper = mapper;
     }
 
+    // Work item: TASK-048 (FEAT-017)
     /// <summary>
     /// Creates a new user
     /// </summary>
@@ -51,12 +53,15 @@ public class UsersController : BaseController
     {
         var validator = new CreateUserRequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        StepTrace.Step("USR-CRT-01", "CMN-PIP-04", "Validate the request", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors);
 
         var command = _mapper.Map<CreateUserCommand>(request);
+        StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(CreateUserCommand))]);
         var response = await _mediator.Send(command, cancellationToken);
+        StepTrace.Step("USR-CRT-06", "CMN-PIP-06", "201 with id, name, email, phone, role, and status", [("userId", response.Id), ("role", response.Role), ("userStatus", response.Status)]);
 
         return Created(string.Empty, new ApiResponseWithData<CreateUserResponse>
         {
@@ -66,6 +71,7 @@ public class UsersController : BaseController
         });
     }
 
+    // Work item: TASK-048 (FEAT-017)
     /// <summary>
     /// Retrieves a user by their ID
     /// </summary>
@@ -81,12 +87,15 @@ public class UsersController : BaseController
         var request = new GetUserRequest { Id = id };
         var validator = new GetUserRequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        StepTrace.Step("USR-GET-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors);
 
         var command = _mapper.Map<GetUserCommand>(request.Id);
+        StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(GetUserCommand))]);
         var response = await _mediator.Send(command, cancellationToken);
+        StepTrace.Step("USR-GET-04", "CMN-PIP-06", "200 with the user", [("id", response.Id)]);
 
         return Ok(new ApiResponseWithData<GetUserResponse>
         {
@@ -96,6 +105,7 @@ public class UsersController : BaseController
         });
     }
 
+    // Work item: TASK-048 (FEAT-017)
     /// <summary>
     /// Deletes a user by their ID
     /// </summary>
@@ -111,12 +121,15 @@ public class UsersController : BaseController
         var request = new DeleteUserRequest { Id = id };
         var validator = new DeleteUserRequestValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
+        StepTrace.Step("USR-DEL-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             return BadRequest(validationResult.Errors);
 
         var command = _mapper.Map<DeleteUserCommand>(request.Id);
+        StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(DeleteUserCommand))]);
         await _mediator.Send(command, cancellationToken);
+        StepTrace.Step("USR-DEL-04", "CMN-PIP-06", "200", [("id", request.Id)]);
 
         return Ok(new ApiResponse
         {

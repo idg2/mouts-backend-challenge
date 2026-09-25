@@ -1,10 +1,11 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Ambev.DeveloperEvaluation.DevConsole;
 
-namespace Ambev.DeveloperEvaluation.LoadSimulator;
+namespace Ambev.DeveloperEvaluation.DevConsole.Load;
 
-// Work item: TASK-040 (FEAT-006)
+// Work item: TASK-040 (FEAT-006), TASK-044 (FEAT-017)
 /// <summary>
 /// The API calls the simulator makes. Setup calls fail loudly with the API's answer; sale posts return the status code.
 /// </summary>
@@ -21,7 +22,7 @@ public sealed class ApiClient
         _http = http;
     }
 
-    // Work item: TASK-040 (FEAT-006), BUG-012
+    // Work item: TASK-040 (FEAT-006), BUG-012, TASK-044 (FEAT-017)
     /// <summary>
     /// Logs in once as the administrator the API seeds and uses the token from then on.
     /// </summary>

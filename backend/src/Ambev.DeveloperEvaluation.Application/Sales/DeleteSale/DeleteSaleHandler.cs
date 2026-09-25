@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using FluentValidation;
@@ -28,7 +29,7 @@ public class DeleteSaleHandler : IRequestHandler<DeleteSaleCommand, DeleteSaleRe
         _outbox = outbox;
     }
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-029 (FEAT-004), TASK-052 (FEAT-017)
     /// <summary>
     /// Handles the DeleteSaleCommand request.
     /// </summary>
@@ -37,17 +38,21 @@ public class DeleteSaleHandler : IRequestHandler<DeleteSaleCommand, DeleteSaleRe
     /// <returns>The result of the delete operation</returns>
     public async Task<DeleteSaleResult> Handle(DeleteSaleCommand request, CancellationToken cancellationToken)
     {
+        StepTrace.Step("CMN-PIP-10", "Handler validates the command and runs the use case", [("request", nameof(DeleteSaleCommand)), ("saleId", request.Id)]);
         var validator = new DeleteSaleValidator();
         var validationResult = await validator.ValidateAsync(request, cancellationToken);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        StepTrace.Step("SAL-DEL-02", "Delete the sale, its items cascade", [("saleId", request.Id)]);
         var success = await _saleRepository.DeleteAsync(request.Id, cancellationToken);
+        StepTrace.Step("SAL-DEL-03", "Sale existed?", [("saleId", request.Id), ("existed", success)]);
         if (!success)
             throw new KeyNotFoundException($"Sale with ID {request.Id} not found");
 
         await _outbox.EnqueueAsync(new SaleDeleted(request.Id), cancellationToken);
+        StepTrace.Step("SAL-DEL-04", "Enqueue SaleDeleted", [("saleId", request.Id), ("eventType", nameof(SaleDeleted))]);
 
         return new DeleteSaleResult { Success = true };
     }

@@ -1,6 +1,6 @@
 # API Documentation
 
-How each API of the DeveloperStore sales backend behaves, from the HTTP contract to the internal flows. Every process has a key that a future trace console can print.
+How each API of the DeveloperStore sales backend behaves, from the HTTP contract to the internal flows. Every process step has a key that the trace console prints (see [TEMPLATE.md](TEMPLATE.md#keys)).
 
 ## Documents
 
@@ -68,4 +68,5 @@ Keys follow the rules in [TEMPLATE.md](TEMPLATE.md#keys). A step key's number ne
 
 - Swagger UI (`/swagger`, Development environment): the full request and response schemas.
 - [README_.md](../../README_.md): running, configuring, and operating the API.
+- [README_.md](../../README_.md#9-trace-console): running a documented flow with the trace console.
 - [.doc/general-api.md](../../.doc/general-api.md): the challenge's target conventions, which differ from the implemented ones where CMN-RSP says so.

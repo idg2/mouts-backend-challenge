@@ -1,6 +1,6 @@
-namespace Ambev.DeveloperEvaluation.LoadSimulator;
+namespace Ambev.DeveloperEvaluation.DevConsole;
 
-// Work item: TASK-040 (FEAT-006)
+// Work item: TASK-040 (FEAT-006), TASK-044 (FEAT-017)
 /// <summary>
 /// Generates valid CPF numbers, so each run registers its own customer (customer documents are unique).
 /// </summary>

@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentValidation;
@@ -25,7 +26,7 @@ public class ListBranchesHandler : IRequestHandler<ListBranchesCommand, ListBran
         _mapper = mapper;
     }
 
-    // Work item: TASK-025 (FEAT-011)
+    // Work item: TASK-025 (FEAT-011), TASK-050 (FEAT-017)
     /// <summary>
     /// Handles the ListBranchesCommand request.
     /// </summary>
@@ -34,6 +35,7 @@ public class ListBranchesHandler : IRequestHandler<ListBranchesCommand, ListBran
     /// <returns>The requested page of branches and the total count</returns>
     public async Task<ListBranchesResult> Handle(ListBranchesCommand command, CancellationToken cancellationToken)
     {
+        StepTrace.Step("CMN-PIP-10", "Handler validates the command and runs the use case", [("request", nameof(ListBranchesCommand)), ("page", command.Page), ("size", command.Size)]);
         var validator = new ListBranchesValidator();
         var validationResult = await validator.ValidateAsync(command, cancellationToken);
 
@@ -48,6 +50,7 @@ public class ListBranchesHandler : IRequestHandler<ListBranchesCommand, ListBran
             Order = command.Order
         };
         var (branches, totalCount) = await _branchRepository.ListAsync(query, cancellationToken);
+        StepTrace.Step("BRN-LST-03", "Query one page", [("page", query.Page), ("size", query.Size), ("filters", query.Filters.Count), ("order", query.Order.Count), ("count", branches.Count), ("total", totalCount)]);
 
         return new ListBranchesResult
         {

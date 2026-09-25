@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -69,7 +70,7 @@ public class SaleRepository : ISaleRepository
         return true;
     }
 
-    // Work item: BUG-008 (FEAT-010), TASK-025 (FEAT-011)
+    // Work item: BUG-008 (FEAT-010), TASK-025 (FEAT-011), TASK-047 (FEAT-017)
     /// <summary>
     /// Retrieves one page of sales, without their items, that match the query's filters, in the query's order or else by sale number. A page
     /// past the last one, including one whose offset does not fit an int, is empty
@@ -81,6 +82,9 @@ public class SaleRepository : ISaleRepository
             .ApplyOrder(query.Order, DefaultOrder);
         var totalCount = await rows.CountAsync(cancellationToken);
         var offset = (long)(query.Page - 1) * query.Size;
+        StepTrace.Step("CMN-LST-09", "Filter, order with Id as tiebreak, count, then page",
+            [("filters", query.Filters.Count), ("sortFields", query.Order.Count), ("total", totalCount), ("page", query.Page), ("size", query.Size),
+             ("pastEnd", offset >= totalCount)]);
         if (offset >= totalCount)
             return ([], totalCount);
 

@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
@@ -26,7 +27,7 @@ public class UpdateProductHandler : IRequestHandler<UpdateProductCommand, Update
         _mapper = mapper;
     }
 
-    // Work item: TASK-020 (FEAT-010), FEAT-013
+    // Work item: TASK-020 (FEAT-010), FEAT-013, TASK-051 (FEAT-017)
     /// <summary>
     /// Handles the UpdateProductCommand request. The code is stored trimmed and in upper case, and must not be used by
     /// another product.
@@ -38,16 +39,21 @@ public class UpdateProductHandler : IRequestHandler<UpdateProductCommand, Update
     {
         var validator = new UpdateProductValidator();
         var validationResult = await validator.ValidateAsync(command, cancellationToken);
+        StepTrace.Step("PRD-UPD-02", "CMN-PIP-10", "Validate the command", [("id", command.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
+        StepTrace.Step("PRD-UPD-03", "Load the product", [("id", command.Id)]);
         var product = await _productRepository.GetByIdAsync(command.Id, cancellationToken);
+        StepTrace.Step("PRD-UPD-04", "Product found?", [("id", command.Id), ("found", product != null)]);
         if (product == null)
             throw new KeyNotFoundException($"Product with ID {command.Id} not found");
 
         var code = command.Code.Trim().ToUpperInvariant();
+        StepTrace.Step("PRD-UPD-05", "Normalize the code", [("normalized", code)]);
         var productWithCode = await _productRepository.GetByCodeAsync(code, cancellationToken);
+        StepTrace.Step("PRD-UPD-06", "Code used by another product?", [("code", code), ("usedByOther", productWithCode != null && productWithCode.Id != product.Id), ("otherId", productWithCode?.Id)]);
         if (productWithCode != null && productWithCode.Id != product.Id)
             throw new DuplicateEntryException($"Product with code {code} already exists");
 
@@ -56,6 +62,7 @@ public class UpdateProductHandler : IRequestHandler<UpdateProductCommand, Update
         product.UnitPrice = command.UnitPrice;
 
         var updatedProduct = await _productRepository.UpdateAsync(product, cancellationToken);
+        StepTrace.Step("PRD-UPD-07", "Save the product", [("id", updatedProduct.Id), ("code", updatedProduct.Code)]);
         return _mapper.Map<UpdateProductResult>(updatedProduct);
     }
 }

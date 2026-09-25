@@ -1,4 +1,5 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
@@ -59,7 +60,7 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         _outbox = outbox;
     }
 
-    // Work item: TD-010 (FEAT-010), TASK-037 (FEAT-006), TASK-029 (FEAT-004)
+    // Work item: TD-010 (FEAT-010), TASK-037 (FEAT-006), TASK-029 (FEAT-004), TASK-052 (FEAT-017)
     /// <summary>
     /// Handles the CreateSaleCommand request.
     /// </summary>
@@ -70,6 +71,7 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
     {
         var validator = new CreateSaleValidator();
         var validationResult = await validator.ValidateAsync(command, cancellationToken);
+        StepTrace.Step("SAL-CRT-04", "CMN-PIP-10", "Validate the command", [("presetId", command.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
@@ -77,8 +79,12 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         if (command.Id is Guid presetId)
         {
             var stored = await _saleRepository.GetByIdAsync(presetId, cancellationToken);
+            StepTrace.Step("SAL-CRT-05", "Preset id already stored?", [("saleId", presetId), ("stored", stored != null)]);
             if (stored != null)
+            {
+                StepTrace.Step("SAL-CRT-06", "Return the stored sale, no new event", [("saleId", stored.Id), ("saleNumber", stored.SaleNumber)]);
                 return _mapper.Map<SaleResult>(stored);
+            }
         }
 
         var customer = await _customerRepository.GetByIdAsync(command.CustomerId, cancellationToken);
@@ -86,6 +92,7 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         var productIds = command.Items.Select(item => item.ProductId).Distinct().ToList();
         var products = (await _productRepository.GetByIdsAsync(productIds, cancellationToken))
             .ToDictionary(product => product.Id);
+        StepTrace.Step("SAL-CRT-07", "Load customer, branch, and products", [("customerFound", customer != null), ("branchFound", branch != null), ("productIds", productIds.Count), ("productsFound", products.Count)]);
 
         var failures = new List<ValidationFailure>();
         if (customer == null)
@@ -99,6 +106,7 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
                 failures.Add(ReferenceNotFound($"Items[{index}].ProductId", $"Product {productId} not found"));
         }
 
+        StepTrace.Step("SAL-CRT-08", "All references exist?", [("failures", failures.Count)]);
         if (customer == null || branch == null || failures.Count > 0)
             throw new ValidationException(failures);
 
@@ -131,9 +139,12 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
                 IsCancelled = false
             }).ToList()
         };
+        StepTrace.Step("SAL-CRT-09", "Build the sale with copied names and prices", [("presetId", command.Id), ("saleDate", sale.SaleDate), ("customerName", sale.CustomerName), ("branchName", sale.BranchName), ("items", sale.Items.Count), ("totalAmount", sale.TotalAmount)]);
 
         var createdSale = await _saleRepository.CreateAsync(sale, cancellationToken);
+        StepTrace.Step("SAL-CRT-10", "Insert the sale and its items", [("saleId", createdSale.Id), ("saleNumber", createdSale.SaleNumber), ("items", createdSale.Items.Count)]);
         await _outbox.EnqueueAsync(new SaleCreated(SaleSnapshot.From(createdSale)), cancellationToken);
+        StepTrace.Step("SAL-CRT-11", "Enqueue SaleCreated", [("saleId", createdSale.Id), ("saleNumber", createdSale.SaleNumber), ("eventType", nameof(SaleCreated))]);
         return _mapper.Map<SaleResult>(createdSale);
     }
 

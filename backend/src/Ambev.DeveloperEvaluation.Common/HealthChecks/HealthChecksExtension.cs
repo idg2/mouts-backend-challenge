@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using Ambev.DeveloperEvaluation.Common.Tracing;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,6 +18,7 @@ namespace Ambev.DeveloperEvaluation.Common.HealthChecks;
 /// </remarks>
 public static class HealthChecksExtension
 {
+    // Work item: TASK-047 (FEAT-017)
     /// <summary>
     /// Adds basic health checks to the <see cref="HealthCheckService"/> in the application's service collection.
     /// </summary>
@@ -43,8 +45,16 @@ public static class HealthChecksExtension
     public static void AddBasicHealthChecks(this WebApplicationBuilder builder)
     {
         builder.Services.AddHealthChecks()
-            .AddCheck("Liveness", () => HealthCheckResult.Healthy(), tags: ["liveness"])
-            .AddCheck("Readiness", () => HealthCheckResult.Healthy(), tags: ["readiness"]);
+            .AddCheck("Liveness", () =>
+            {
+                StepTrace.Step("CMN-HLT-01", "GET /health/live runs the Liveness check", [("check", "Liveness"), ("status", HealthStatus.Healthy)]);
+                return HealthCheckResult.Healthy();
+            }, tags: ["liveness"])
+            .AddCheck("Readiness", () =>
+            {
+                StepTrace.Step("CMN-HLT-02", "GET /health/ready runs the Readiness check", [("check", "Readiness"), ("status", HealthStatus.Healthy)]);
+                return HealthCheckResult.Healthy();
+            }, tags: ["readiness"]);
     }
 
     /// <summary>
@@ -87,6 +97,7 @@ public static class HealthChecksExtension
         logger.LogInformation("Health Check enabled at: '/health'");
     }
 
+    // Work item: TASK-047 (FEAT-017)
     /// <summary>
     /// Configures health check options for an ASP.NET Core web application.
     /// </summary>
@@ -112,6 +123,8 @@ public static class HealthChecksExtension
             },
             ResponseWriter = async (context, report) =>
             {
+                if (tag.Length == 0)
+                    StepTrace.Step("CMN-HLT-03", "GET /health matches no check", [("path", context.Request.Path.Value), ("checks", report.Entries.Count)]);
                 var result = new
                 {
                     status = report.Status.ToString(),
@@ -125,6 +138,8 @@ public static class HealthChecksExtension
                     }),
                 };
                 context.Response.ContentType = MediaTypeNames.Application.Json;
+                StepTrace.Step("CMN-HLT-04", "JSON with status and checks",
+                    [("tag", tag), ("status", report.Status), ("checks", report.Entries.Count), ("httpStatus", context.Response.StatusCode)]);
                 await context.Response.WriteAsJsonAsync(result);
             },
         };

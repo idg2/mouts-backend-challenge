@@ -1,3 +1,4 @@
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using AutoMapper;
 using FluentValidation;
@@ -25,7 +26,7 @@ public class ListProductsHandler : IRequestHandler<ListProductsCommand, ListProd
         _mapper = mapper;
     }
 
-    // Work item: TASK-025 (FEAT-011)
+    // Work item: TASK-025 (FEAT-011), TASK-051 (FEAT-017)
     /// <summary>
     /// Handles the ListProductsCommand request.
     /// </summary>
@@ -34,6 +35,7 @@ public class ListProductsHandler : IRequestHandler<ListProductsCommand, ListProd
     /// <returns>The requested page of products and the total count</returns>
     public async Task<ListProductsResult> Handle(ListProductsCommand command, CancellationToken cancellationToken)
     {
+        StepTrace.Step("CMN-PIP-10", "Handler validates the command and runs the use case", [("request", nameof(ListProductsCommand)), ("page", command.Page), ("size", command.Size)]);
         var validator = new ListProductsValidator();
         var validationResult = await validator.ValidateAsync(command, cancellationToken);
 
@@ -48,6 +50,7 @@ public class ListProductsHandler : IRequestHandler<ListProductsCommand, ListProd
             Order = command.Order
         };
         var (products, totalCount) = await _productRepository.ListAsync(query, cancellationToken);
+        StepTrace.Step("PRD-LST-03", "Query one page", [("page", query.Page), ("size", query.Size), ("filters", query.Filters.Count), ("order", query.Order.Count), ("count", products.Count), ("total", totalCount)]);
 
         return new ListProductsResult
         {

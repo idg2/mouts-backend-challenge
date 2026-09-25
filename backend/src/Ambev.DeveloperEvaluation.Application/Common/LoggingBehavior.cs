@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Exceptions;
 using FluentValidation;
 using MediatR;
@@ -24,6 +25,7 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
         _logger = logger;
     }
 
+    // Work item: TASK-046 (FEAT-017)
     /// <summary>
     /// Handles the request, logging Information on success, Warning on a rejection the API answers with 4xx,
     /// and Error on any other exception. Exceptions are always rethrown.
@@ -32,6 +34,7 @@ public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, 
     {
         var requestName = typeof(TRequest).Name;
         var stopwatch = Stopwatch.StartNew();
+        StepTrace.Step("CMN-PIP-07", "LoggingBehavior times the request", [("request", requestName)]);
         try
         {
             var response = await next();

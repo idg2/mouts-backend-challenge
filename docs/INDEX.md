@@ -73,6 +73,6 @@ Keys follow the rules in [TEMPLATE.md](TEMPLATE.md#keys). A step key's number ne
 ## Where else to look
 
 - Swagger UI (`/swagger`, Development environment): the full request and response schemas.
-- [README_.md](../../README_.md): running, configuring, and operating the API.
-- [README_.md](../../README_.md#9-trace-console): running a documented flow with the trace console.
-- [.doc/general-api.md](../../.doc/general-api.md): the challenge's target conventions, which differ from the implemented ones where CMN-RSP says so.
+- [README.md](../README.md): running, configuring, and operating the API.
+- [README.md](../README.md#9-trace-console): running a documented flow with the trace console.
+- [.doc/general-api.md](../.doc/general-api.md): the challenge's target conventions, which differ from the implemented ones where CMN-RSP says so.

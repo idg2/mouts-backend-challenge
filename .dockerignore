@@ -8,6 +8,10 @@
 **/.toolstarget
 **/.vs
 **/.vscode
+**/.idea
+.claude
+.superpowers
+docs-private
 **/*.*proj.user
 **/*.dbmdl
 **/*.jfm

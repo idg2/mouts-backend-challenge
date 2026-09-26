@@ -8,7 +8,7 @@ What every API shares: authentication, the request path, transactions, responses
 
 Every request passes through JWT bearer authentication; controllers decide with `[Authorize]` whether a token is required and which roles may write.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.Common/Security/AuthenticationExtension.cs`, `backend/src/Ambev.DeveloperEvaluation.Common/Security/JwtTokenGenerator.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Program.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.Common/Security/AuthenticationExtension.cs`, `src/Ambev.DeveloperEvaluation.Common/Security/JwtTokenGenerator.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Program.cs`
 
 ```mermaid
 flowchart TD
@@ -40,7 +40,7 @@ flowchart TD
 
 Every endpoint follows the same path from middleware to repository. The API documents refer to this topic instead of redrawing it.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Program.cs`, `backend/src/Ambev.DeveloperEvaluation.Common/Logging/LoggingExtension.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Middleware/ValidationExceptionMiddleware.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Common/LoggingBehavior.cs`, `backend/src/Ambev.DeveloperEvaluation.Common/Validation/ValidationBehavior.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Common/TransactionBehavior.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Program.cs`, `src/Ambev.DeveloperEvaluation.Common/Logging/LoggingExtension.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Middleware/ValidationExceptionMiddleware.cs`, `src/Ambev.DeveloperEvaluation.Application/Common/LoggingBehavior.cs`, `src/Ambev.DeveloperEvaluation.Common/Validation/ValidationBehavior.cs`, `src/Ambev.DeveloperEvaluation.Application/Common/TransactionBehavior.cs`
 
 ```mermaid
 sequenceDiagram
@@ -79,7 +79,7 @@ sequenceDiagram
 
 Every write command runs inside one database transaction, so all of its saves commit or roll back together. Reads and login run without one.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.Application/Common/TransactionBehavior.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Common/ITransactionalCommand.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/UnitOfWork.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.Application/Common/TransactionBehavior.cs`, `src/Ambev.DeveloperEvaluation.Application/Common/ITransactionalCommand.cs`, `src/Ambev.DeveloperEvaluation.ORM/UnitOfWork.cs`
 
 ```mermaid
 flowchart TD
@@ -102,9 +102,9 @@ flowchart TD
 
 ## CMN-RSP — Responses and errors
 
-Successful responses share one envelope; every error, wherever the request stopped, has the `{ type, error, detail }` body of [general-api.md](../../.doc/general-api.md): `type` is the category, `error` is the code of the first failure (the type itself when the category has no codes), and `detail` is a string holding a JSON array with one message per failure, never empty.
+Successful responses share one envelope; every error, wherever the request stopped, has the `{ type, error, detail }` body of [general-api.md](../.doc/general-api.md): `type` is the category, `error` is the code of the first failure (the type itself when the category has no codes), and `detail` is a string holding a JSON array with one message per failure, never empty.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/ErrorResponse.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Middleware/ValidationExceptionMiddleware.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/BaseController.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/ModelStateErrorResponse.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/StatusCodeErrorResponse.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/ApiResponse.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/PaginatedResponse.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Common/ErrorResponse.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Middleware/ValidationExceptionMiddleware.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/BaseController.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/ModelStateErrorResponse.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/StatusCodeErrorResponse.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/ApiResponse.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/PaginatedResponse.cs`
 
 ```mermaid
 flowchart TD
@@ -155,7 +155,7 @@ flowchart TD
 
 Every list endpoint turns its query string into filters, an order, and a page. Field names are the response's JSON names, case-insensitive.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/ListQueryParser.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/ListQueryExtensions.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleReadStore.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/PaginatedList.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Common/ListQueryParser.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/ListQueryExtensions.cs`, `src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleReadStore.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/PaginatedList.cs`
 
 ```mermaid
 flowchart TD
@@ -191,7 +191,7 @@ flowchart TD
 
 Three anonymous endpoints report whether the process is up. They do not probe PostgreSQL or MongoDB.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.Common/HealthChecks/HealthChecksExtension.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.Common/HealthChecks/HealthChecksExtension.cs`
 
 ```mermaid
 flowchart TD
@@ -216,5 +216,5 @@ flowchart TD
 ## See also
 
 - [INDEX.md](INDEX.md)
-- [README_.md](../../README_.md): running and configuring the API
-- [general-api.md](../../.doc/general-api.md): the challenge's target conventions
+- [README.md](../README.md): running and configuring the API
+- [general-api.md](../.doc/general-api.md): the challenge's target conventions

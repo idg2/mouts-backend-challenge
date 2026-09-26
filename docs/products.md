@@ -24,7 +24,7 @@ The product catalog. Sales reference products by id and copy their description a
 
 Stores a new product. The code is trimmed and uppercased first, so codes are unique regardless of case.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Products/ProductsController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Products/CreateProduct/CreateProductHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/ProductRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Products/ProductsController.cs`, `src/Ambev.DeveloperEvaluation.Application/Products/CreateProduct/CreateProductHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/ProductRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -52,7 +52,7 @@ flowchart TD
 
 Returns one product by id.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Products/ProductsController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Products/GetProduct/GetProductHandler.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Products/ProductsController.cs`, `src/Ambev.DeveloperEvaluation.Application/Products/GetProduct/GetProductHandler.cs`
 
 ```mermaid
 flowchart TD
@@ -72,7 +72,7 @@ flowchart TD
 
 Returns products one page at a time with the list conventions of CMN-LST.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Products/ProductsController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Products/ListProducts/ListProductsHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/ProductRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Products/ProductsController.cs`, `src/Ambev.DeveloperEvaluation.Application/Products/ListProducts/ListProductsHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/ProductRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -94,7 +94,7 @@ flowchart TD
 
 Replaces a product's code, description, and unit price. Sales keep the description and price they copied.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Products/ProductsController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Products/UpdateProduct/UpdateProductHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/ProductRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Products/ProductsController.cs`, `src/Ambev.DeveloperEvaluation.Application/Products/UpdateProduct/UpdateProductHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/ProductRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -127,7 +127,7 @@ flowchart TD
 
 Deletes one product by id. Sale items that reference it are untouched.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Products/ProductsController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Products/DeleteProduct/DeleteProductHandler.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Products/ProductsController.cs`, `src/Ambev.DeveloperEvaluation.Application/Products/DeleteProduct/DeleteProductHandler.cs`
 
 ```mermaid
 flowchart TD

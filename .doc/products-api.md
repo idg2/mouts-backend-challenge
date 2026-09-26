@@ -1,4 +1,4 @@
-[Back to README](../README.md)
+[Back to the challenge](../CHALLENGE.md)
 
 ### Products
 

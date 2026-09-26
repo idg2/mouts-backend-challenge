@@ -669,7 +669,7 @@ sequenceDiagram
   end
 ```
 
-- SAL-BUS-01: the queue lives in the database named by `ConnectionStrings:MessageBus` (`developer_evaluation_bus`); the transport creates its index when the bus starts, so the API does not start without MongoDB (TD-011).
+- SAL-BUS-01: the queue lives in the database named by `ConnectionStrings:MessageBus` (`developer_evaluation_bus`); the transport creates its index when the bus starts, so the API does not start without MongoDB; the compose API waits for the MongoDB healthcheck (TD-011).
 - SAL-BUS-02: `Rebus:Workers` is 1 and `Rebus:MaxParallelism` is 20, which must stay below the Npgsql pool size.
 - SAL-BUS-03: each message gets its own DI scope and so its own `DefaultContext`; `CreateSaleCommand` and the five events share the queue.
 - SAL-BUS-06: 5 delivery attempts is the Rebus default, and nothing overrides it.
@@ -764,7 +764,7 @@ This topic is an operations guide, so it has no step keys of its own; the failur
 - A row that always fails to dispatch blocks every later row.
 - Processed outbox rows are never deleted.
 - A shutdown during a relay cycle can send one event twice (TD-016).
-- The API does not start while MongoDB is unreachable (TD-011).
+- The API does not start while MongoDB is unreachable; the compose API waits for the MongoDB healthcheck, and `dotnet run` needs MongoDB up first (TD-011).
 - Reads are eventual: a written sale is visible to SAL-GET and SAL-LST only after its event is projected (SAL-PRJ), normally within `Outbox:PollingInterval`.
 - The read model is never rebuilt from PostgreSQL; sales written before the projection existed are not in it.
 - BSON dates keep milliseconds, so `saleDate` read through SAL-GET or SAL-LST may differ from the value the POST or PUT response carried by less than a millisecond.

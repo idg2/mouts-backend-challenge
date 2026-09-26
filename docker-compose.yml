@@ -22,7 +22,7 @@ services:
       ambev.developerevaluation.database:
         condition: service_healthy
       ambev.developerevaluation.nosql:
-        condition: service_started
+        condition: service_healthy
 
   ambev.developerevaluation.database:
     container_name: ambev_developer_evaluation_database
@@ -50,6 +50,13 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: ev@luAt10n
     ports:
       - "27017:27017"
+    # Pings through the container hostname, not localhost: on a fresh volume the image's init step runs a temporary
+    # mongod bound to 127.0.0.1 only, so a localhost ping would report healthy before the real server starts.
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --host \"$$(hostname)\" --eval \"db.adminCommand('ping').ok\""]
+      interval: 2s
+      timeout: 5s
+      retries: 30
     volumes:
       - mongo-data:/data/db
 

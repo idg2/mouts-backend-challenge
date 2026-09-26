@@ -84,7 +84,7 @@ API       http://0.0.0.0:8080/swagger
 docker compose ps
 ```
 
-All four services should be `running`. If the API container is `exited`, see [§14](#14-troubleshooting): the API does not start while MongoDB is still initializing.
+All four services should be `running`. The API container waits for the PostgreSQL and MongoDB healthchecks, so on a fresh clone it starts a few seconds after the databases.
 
 To start only the databases, for example when you run the API with `dotnet run`, use:
 
@@ -577,7 +577,6 @@ Run these from the repository root:
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| API container `exited` right after `make dev-up` | MongoDB was still initializing when the API started; the Rebus transport needs MongoDB at startup | `docker compose up -d ambev.developerevaluation.webapi` |
 | API exits naming a key, for example `ConnectionStrings:MessageBus is not configured` | Missing or invalid configuration | Set the key named in the message ([§7](#7-configuration-reference)) |
 | API exits at startup with a PostgreSQL connection error | PostgreSQL is unreachable; the API applies the migrations before it listens ([§4](#4-database-schema-and-the-administrator)) | Start PostgreSQL, then the API |
 | `address already in use` on 5433, 27017, 6380, or 8080 | Another service uses the port | Stop it, or change the port and the matching connection strings ([§7](#7-configuration-reference)) |

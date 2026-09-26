@@ -900,9 +900,9 @@
       "description": "Since FEAT-006 the Rebus MongoDB transport creates its queue index at startup, so the API (synchronous endpoints included) does not start while MongoDB is unreachable. Add a MongoDB healthcheck with depends_on condition service_healthy, or restart: on-failure on the API service, so a cold compose start on a fresh mongo-data volume cannot fail.",
       "parent": null,
       "moscow": "should",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-26"
     },
     {
       "id": "TD-012",

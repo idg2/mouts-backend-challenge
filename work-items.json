@@ -932,10 +932,10 @@
       "title": "JWT security scheme in Swagger",
       "description": "AddSwaggerGen has no bearer security definition, so Swagger UI cannot send the token and every protected endpoint answers 401 from it. Add the JWT security definition and requirement so Swagger can be used end to end.",
       "parent": null,
-      "moscow": "could",
-      "status": "backlog",
+      "moscow": "should",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-26"
     },
     {
       "id": "TD-015",
@@ -1671,6 +1671,28 @@
       "parent": null,
       "moscow": "should",
       "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "BUG-013",
+      "type": "bug",
+      "title": "Empty Location header on 201 Created",
+      "description": "The six create endpoints (users, customers, branches, products, discount policies, sales) answer Created(string.Empty, ...), so the 201 carries an empty Location header. They now answer CreatedAtAction pointing at the GET by id of the created resource, as the 202 of the queued sale already does with AcceptedAtAction.",
+      "parent": null,
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TD-040",
+      "type": "td",
+      "title": "Optimistic concurrency on sale updates",
+      "description": "PUT /api/sales/{id} replaces the whole sale with no concurrency token, so two clients editing the same sale produce a silent lost update. Candidate design: PostgreSQL xmin as the EF concurrency token, exposed as ETag on GET, 201, and PUT (carried to the read model by the snapshot), optional If-Match on PUT answering 412 on mismatch and 409 on a race. Left out of the challenge scope by the owner on 2026-09-26 (evaluation gap N7).",
+      "parent": null,
+      "moscow": "could",
+      "status": "backlog",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26"
     }

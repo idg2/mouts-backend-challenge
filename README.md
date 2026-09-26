@@ -164,7 +164,7 @@ The password needs at least 8 characters, with an uppercase letter, a lowercase 
 
 **No control over user roles.** Admin and Manager have the same powers everywhere. Either one can create a user with any role, Admin included, and delete any user, Admin included; nothing stops a Manager from promoting someone to Admin.
 
-Swagger does not have a JWT security scheme configured, so it cannot send the token. Use curl, as below, or any HTTP client that sends the `Authorization: Bearer <token>` header. Swagger is still useful to browse the routes and schemas.
+To use Swagger, copy `data.token` from the login response, click **Authorize** at the top of the Swagger page, and paste the token without the `Bearer ` prefix; every request from Swagger then carries it. The steps below use curl, which sends the `Authorization: Bearer <token>` header itself.
 
 **Step 3: register a customer, a branch, and a product.** Customers need a valid CPF or CNPJ, and it must be unique. Product codes are unique too.
 
@@ -280,7 +280,7 @@ The internals (queue, transactional outbox, relay, and consumers, with diagrams 
 
 | Request | What happens | Response |
 |---|---|---|
-| No `Prefer` header, or a header without `respond-async` | The sale is validated and stored in the request's own transaction | `201` with the sale, or `400` |
+| No `Prefer` header, or a header without `respond-async` | The sale is validated and stored in the request's own transaction | `201` with the sale and a `Location` pointing at it, or `400` |
 | `Prefer: respond-async` | The body is validated, the id is generated, and the command is queued in MongoDB | `202` with `{ id }`, `Location`, and `Preference-Applied`, or `400` |
 
 How a queued sale is processed:

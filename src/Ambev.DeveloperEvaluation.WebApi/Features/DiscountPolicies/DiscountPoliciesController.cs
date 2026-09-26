@@ -47,7 +47,7 @@ public class DiscountPoliciesController : BaseController
         _mapper = mapper;
     }
 
-    // Work item: TASK-071 (FEAT-018)
+    // Work item: TASK-071 (FEAT-018), BUG-013
     /// <summary>
     /// Creates a discount policy. It applies to sales dated from ValidFrom, which may not be in the past
     /// </summary>
@@ -73,7 +73,7 @@ public class DiscountPoliciesController : BaseController
         var response = await _mediator.Send(command, cancellationToken);
         StepTrace.Step("DSC-CRT-05", "CMN-PIP-06", "201 with the policy", [("id", response.Id), ("tiers", response.Tiers.Count)]);
 
-        return Created(string.Empty, new ApiResponseWithData<DiscountPolicyResult>
+        return CreatedAtAction(nameof(GetDiscountPolicy), new { id = response.Id }, new ApiResponseWithData<DiscountPolicyResult>
         {
             Success = true,
             Message = "Discount policy created successfully",

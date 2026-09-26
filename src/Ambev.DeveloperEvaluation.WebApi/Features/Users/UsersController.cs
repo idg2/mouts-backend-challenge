@@ -39,7 +39,7 @@ public class UsersController : BaseController
         _mapper = mapper;
     }
 
-    // Work item: TASK-048 (FEAT-017), TASK-071 (FEAT-018)
+    // Work item: TASK-048 (FEAT-017), TASK-071 (FEAT-018), BUG-013
     /// <summary>
     /// Creates a new user
     /// </summary>
@@ -63,7 +63,7 @@ public class UsersController : BaseController
         var response = await _mediator.Send(command, cancellationToken);
         StepTrace.Step("USR-CRT-06", "CMN-PIP-06", "201 with id, name, email, phone, role, and status", [("userId", response.Id), ("role", response.Role), ("userStatus", response.Status)]);
 
-        return Created(string.Empty, new ApiResponseWithData<CreateUserResponse>
+        return CreatedAtAction(nameof(GetUser), new { id = response.Id }, new ApiResponseWithData<CreateUserResponse>
         {
             Success = true,
             Message = "User created successfully",

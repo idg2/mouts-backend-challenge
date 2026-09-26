@@ -13,6 +13,7 @@ public sealed class SaleCreateScenario : IScenario
     /// <inheritdoc />
     public string Description => "synchronous create, SaleCreated through outbox, relay, and consumer; 400s";
 
+    // Work item: TASK-058 (FEAT-017), TASK-065 (FEAT-001)
     /// <inheritdoc />
     public async Task RunAsync(ScenarioContext context)
     {
@@ -28,7 +29,7 @@ public sealed class SaleCreateScenario : IScenario
         await context.AwaitAsync("SAL-CON-04", ("saleId", saleId), ("eventType", "SaleCreated"));
 
         await context.SendAsync(HttpMethod.Post, "/api/sales",
-            new { customerId = references.CustomerId, branchId = references.BranchId, totalAmount = 0m, items = Array.Empty<object>() });
+            new { customerId = references.CustomerId, branchId = references.BranchId, items = Array.Empty<object>() });
         await context.SendAsync(HttpMethod.Post, "/api/sales", SaleFixtures.SaleBody(references, productOverride: Guid.NewGuid()));
     }
 }

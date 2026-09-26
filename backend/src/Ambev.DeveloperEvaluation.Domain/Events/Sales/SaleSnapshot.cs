@@ -2,7 +2,7 @@ using Ambev.DeveloperEvaluation.Domain.Entities;
 
 namespace Ambev.DeveloperEvaluation.Domain.Events.Sales;
 
-// Work item: TASK-028 (FEAT-004)
+// Work item: TASK-028 (FEAT-004), TASK-062 (FEAT-001)
 /// <summary>
 /// The full state of a sale after a write, carried by <see cref="SaleCreated"/> and <see cref="SaleModified"/>
 /// so a consumer can apply it any number of times with the same result.
@@ -29,6 +29,7 @@ public sealed record SaleSnapshot(
     bool IsCancelled,
     IReadOnlyList<SaleSnapshotItem> Items)
 {
+    // Work item: TASK-062 (FEAT-001)
     /// <summary>
     /// Takes a snapshot of a saved sale.
     /// </summary>
@@ -56,6 +57,9 @@ public sealed record SaleSnapshot(
                 item.DiscountPercentage,
                 item.DiscountAmount,
                 item.TotalAmount,
-                item.IsCancelled))
+                item.IsCancelled,
+                item.RequestedDiscountPercentage,
+                item.DiscountPolicyId,
+                item.DiscountCeilingPercentage))
             .ToList());
 }

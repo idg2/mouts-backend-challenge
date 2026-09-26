@@ -1,6 +1,6 @@
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales.UpdateSale;
 
-// Work item: TASK-022 (FEAT-010)
+// Work item: TASK-022 (FEAT-010), TASK-064 (FEAT-001)
 /// <summary>
 /// Represents a request to update a sale. The item list is complete: items sent with an id are updated,
 /// items without id are added, and existing items that are not sent are removed.
@@ -21,11 +21,6 @@ public class UpdateSaleRequest
     /// Gets or sets the branch id.
     /// </summary>
     public Guid BranchId { get; set; }
-
-    /// <summary>
-    /// Gets or sets the sale total, stored as received.
-    /// </summary>
-    public decimal TotalAmount { get; set; }
 
     /// <summary>
     /// Gets or sets whether the sale is cancelled.

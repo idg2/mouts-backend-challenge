@@ -4,7 +4,7 @@ using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
 
-// Work item: TASK-021 (FEAT-010), TD-006
+// Work item: TASK-021 (FEAT-010), TD-006, TASK-064 (FEAT-001)
 /// <summary>
 /// Command for creating a new sale with its items.
 /// </summary>
@@ -26,11 +26,6 @@ public class CreateSaleCommand : IRequest<SaleResult>, ITransactionalCommand
     /// Gets or sets the branch id.
     /// </summary>
     public Guid BranchId { get; set; }
-
-    /// <summary>
-    /// Gets or sets the sale total, stored as received.
-    /// </summary>
-    public decimal TotalAmount { get; set; }
 
     /// <summary>
     /// Gets or sets the sale items.

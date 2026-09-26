@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Integration;
 
-// Work item: BUG-008 (FEAT-010), TD-010 (FEAT-010)
+// Work item: BUG-008 (FEAT-010), TD-010 (FEAT-010), TASK-062 (FEAT-001)
 /// <summary>
 /// Creates a throwaway PostgreSQL database with every migration applied and drops it after the tests.
 /// The server comes from <c>ConnectionStrings:DefaultConnection</c>, read from the WebApi appsettings and
@@ -19,28 +19,13 @@ public sealed class PostgresFixture : IAsyncLifetime
     /// </summary>
     public string ConnectionString { get; private set; } = string.Empty;
 
+    // Work item: TASK-062 (FEAT-001)
     /// <summary>
     /// Builds the connection string for a new database and applies the migrations to it.
     /// </summary>
     public async Task InitializeAsync()
     {
-        var webApiDirectory = FindWebApiDirectory();
-        var configuration = new ConfigurationBuilder()
-            .AddJsonFile(Path.Combine(webApiDirectory, "appsettings.json"), optional: false)
-            .AddJsonFile(Path.Combine(webApiDirectory, "appsettings.Development.json"), optional: true)
-            .AddEnvironmentVariables()
-            .Build();
-
-        var baseConnection = configuration.GetConnectionString("DefaultConnection");
-        if (string.IsNullOrWhiteSpace(baseConnection))
-            throw new InvalidOperationException(
-                "ConnectionStrings:DefaultConnection is not configured. Set it in the WebApi appsettings " +
-                "or via the ConnectionStrings__DefaultConnection environment variable.");
-
-        ConnectionString = new NpgsqlConnectionStringBuilder(baseConnection)
-        {
-            Database = $"integration_{Guid.NewGuid():N}"
-        }.ConnectionString;
+        ConnectionString = NewDatabaseConnectionString();
 
         await using var context = CreateContext();
         await context.Database.MigrateAsync();
@@ -59,6 +44,32 @@ public sealed class PostgresFixture : IAsyncLifetime
     {
         await using var context = CreateContext();
         await context.Database.EnsureDeletedAsync();
+    }
+
+    // Work item: TASK-062 (FEAT-001)
+    /// <summary>
+    /// Returns the connection string of a new, not yet created database on the configured server.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">ConnectionStrings:DefaultConnection is not configured</exception>
+    internal static string NewDatabaseConnectionString()
+    {
+        var webApiDirectory = FindWebApiDirectory();
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile(Path.Combine(webApiDirectory, "appsettings.json"), optional: false)
+            .AddJsonFile(Path.Combine(webApiDirectory, "appsettings.Development.json"), optional: true)
+            .AddEnvironmentVariables()
+            .Build();
+
+        var baseConnection = configuration.GetConnectionString("DefaultConnection");
+        if (string.IsNullOrWhiteSpace(baseConnection))
+            throw new InvalidOperationException(
+                "ConnectionStrings:DefaultConnection is not configured. Set it in the WebApi appsettings " +
+                "or via the ConnectionStrings__DefaultConnection environment variable.");
+
+        return new NpgsqlConnectionStringBuilder(baseConnection)
+        {
+            Database = $"integration_{Guid.NewGuid():N}"
+        }.ConnectionString;
     }
 
     // Work item: TASK-033 (FEAT-016)

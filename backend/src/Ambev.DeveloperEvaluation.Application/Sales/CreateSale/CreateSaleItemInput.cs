@@ -1,8 +1,9 @@
 namespace Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
 
-// Work item: TASK-021 (FEAT-010)
+// Work item: TASK-021 (FEAT-010), TASK-064 (FEAT-001)
 /// <summary>
-/// One item of a <see cref="CreateSaleCommand"/>.
+/// One item of a <see cref="CreateSaleCommand"/>. The discount amount and the total are computed from the discount
+/// policies.
 /// </summary>
 public class CreateSaleItemInput
 {
@@ -16,18 +17,9 @@ public class CreateSaleItemInput
     /// </summary>
     public int Quantity { get; set; }
 
+    // Work item: TASK-064 (FEAT-001)
     /// <summary>
-    /// Gets or sets the discount percentage, stored as received.
+    /// Gets or sets the requested discount percentage, or null to receive the ceiling of the product's total.
     /// </summary>
-    public decimal DiscountPercentage { get; set; }
-
-    /// <summary>
-    /// Gets or sets the discount amount, stored as received.
-    /// </summary>
-    public decimal DiscountAmount { get; set; }
-
-    /// <summary>
-    /// Gets or sets the item total, stored as received.
-    /// </summary>
-    public decimal TotalAmount { get; set; }
+    public decimal? DiscountPercentage { get; set; }
 }

@@ -1,6 +1,6 @@
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales.Common;
 
-// Work item: TASK-021 (FEAT-010)
+// Work item: TASK-021 (FEAT-010), TASK-064 (FEAT-001)
 /// <summary>
 /// API response model for a sale with its items, returned by create, get, and update.
 /// </summary>
@@ -41,8 +41,9 @@ public class SaleResponse
     /// </summary>
     public string BranchName { get; set; } = string.Empty;
 
+    // Work item: TASK-064 (FEAT-001)
     /// <summary>
-    /// The sale total, as received.
+    /// The sale total: the sum of the totals of the active items.
     /// </summary>
     public decimal TotalAmount { get; set; }
 

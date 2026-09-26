@@ -12,14 +12,16 @@ namespace Ambev.DeveloperEvaluation.Unit.Application.Common;
 /// </summary>
 public class TransactionalCommandsTests
 {
-    private static readonly string[] WritePrefixes = ["Create", "Update", "Delete"];
+    // Work item: TD-006, TD-032
+    private static readonly string[] WritePrefixes = ["Create", "Update", "Delete", "Disable"];
 
     private static readonly IEnumerable<Type> Commands = typeof(ApplicationLayer).Assembly.GetTypes()
         .Where(type => type.IsClass && !type.IsAbstract && type.Name.EndsWith("Command")
             && type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IRequest<>)));
 
+    // Work item: TD-006, TD-032
     /// <summary>
-    /// Tests that every create, update, and delete command runs in a transaction.
+    /// Tests that every create, update, delete, and disable command runs in a transaction.
     /// </summary>
     [Fact(DisplayName = "Given the write commands When checking their markers Then all are transactional")]
     public void Given_WriteCommands_When_CheckingMarkers_Then_AllAreTransactional()

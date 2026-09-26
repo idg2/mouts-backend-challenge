@@ -1,6 +1,6 @@
 namespace Ambev.DeveloperEvaluation.Application.Sales.Common;
 
-// Work item: TASK-021 (FEAT-010)
+// Work item: TASK-021 (FEAT-010), TASK-064 (FEAT-001), TASK-066 (FEAT-001)
 /// <summary>
 /// One item of a <see cref="SaleResult"/>.
 /// </summary>
@@ -31,18 +31,39 @@ public class SaleItemResult
     /// </summary>
     public int Quantity { get; set; }
 
+    // Work item: TASK-066 (FEAT-001)
     /// <summary>
-    /// The discount percentage, as received.
+    /// The discount the client asked for, in percent, or null when the ceiling was applied.
+    /// </summary>
+    public decimal? RequestedDiscountPercentage { get; set; }
+
+    // Work item: TASK-064 (FEAT-001)
+    /// <summary>
+    /// The applied discount percentage.
     /// </summary>
     public decimal DiscountPercentage { get; set; }
 
+    // Work item: TASK-064 (FEAT-001)
     /// <summary>
-    /// The discount amount, as received.
+    /// The id of the discount policy that priced the item.
+    /// </summary>
+    public Guid DiscountPolicyId { get; set; }
+
+    // Work item: TASK-064 (FEAT-001)
+    /// <summary>
+    /// The highest discount percentage the policy allowed for the product's total.
+    /// </summary>
+    public decimal DiscountCeilingPercentage { get; set; }
+
+    // Work item: TASK-064 (FEAT-001)
+    /// <summary>
+    /// The discount amount, computed from the discount policy.
     /// </summary>
     public decimal DiscountAmount { get; set; }
 
+    // Work item: TASK-064 (FEAT-001)
     /// <summary>
-    /// The item total, as received.
+    /// The item total, computed from the discount policy.
     /// </summary>
     public decimal TotalAmount { get; set; }
 

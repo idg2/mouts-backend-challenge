@@ -14,6 +14,7 @@ public static class StepKeys
 
     private sealed record Entry(string Topic, string? Begin = null, string? Commit = null, string? Rollback = null);
 
+    // Work item: TASK-063 (FEAT-001), TD-032
     private static readonly IReadOnlyDictionary<string, Entry> Table = new Dictionary<string, Entry>
     {
         ["AuthenticateUserCommand"] = new("AUT-LGN"),
@@ -39,7 +40,11 @@ public static class StepKeys
         ["GetSaleCommand"] = new("SAL-GET"),
         ["ListSalesCommand"] = new("SAL-LST"),
         ["UpdateSaleCommand"] = new("SAL-UPD", Commit: "SAL-UPD-16"),
-        ["DeleteSaleCommand"] = new("SAL-DEL", Commit: "SAL-DEL-05")
+        ["DeleteSaleCommand"] = new("SAL-DEL", Commit: "SAL-DEL-05"),
+        ["CreateDiscountPolicyCommand"] = new("DSC-CRT"),
+        ["GetDiscountPolicyCommand"] = new("DSC-GET"),
+        ["ListDiscountPoliciesCommand"] = new("DSC-LST"),
+        ["DisableDiscountPoliciesCommand"] = new("DSC-DIS")
     };
 
     /// <summary>

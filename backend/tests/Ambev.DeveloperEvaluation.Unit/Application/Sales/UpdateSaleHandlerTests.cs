@@ -1,8 +1,11 @@
+using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Events;
 using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
+using Ambev.DeveloperEvaluation.Domain.Services;
+using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using AutoMapper;
 using FluentAssertions;
 using FluentValidation;
@@ -11,10 +14,11 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.Application.Sales;
 
-// Work item: TASK-022 (FEAT-010)
+// Work item: TASK-022 (FEAT-010), TASK-064 (FEAT-001)
 /// <summary>
 /// Contains unit tests for the <see cref="UpdateSaleHandler"/> class.
-/// Tests cover which copied values are kept and which are refreshed from the catalogs.
+/// Tests cover which copied values are kept and which are refreshed from the catalogs, and the repricing from the
+/// discount policies at the stored sale date.
 /// </summary>
 public class UpdateSaleHandlerTests
 {
@@ -31,7 +35,13 @@ public class UpdateSaleHandlerTests
     // Work item: TASK-029 (FEAT-004)
     private readonly List<IIntegrationEvent> _enqueued = [];
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-064 (FEAT-001)
+    private readonly IDiscountPolicyRepository _discountPolicies = Substitute.For<IDiscountPolicyRepository>();
+
+    // Work item: TASK-064 (FEAT-001)
+    private readonly DiscountPolicy _readme = DiscountPolicyTestData.Create();
+
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     /// <summary>
     /// Initializes the test dependencies.
     /// </summary>
@@ -46,9 +56,14 @@ public class UpdateSaleHandlerTests
         _outbox = Substitute.For<IOutbox>();
         _outbox.When(outbox => outbox.EnqueueAsync(Arg.Any<IIntegrationEvent>(), Arg.Any<CancellationToken>()))
             .Do(call => _enqueued.Add(call.Arg<IIntegrationEvent>()));
-        _handler = new UpdateSaleHandler(_saleRepository, _customerRepository, _branchRepository, _productRepository, _mapper, _outbox);
+        _discountPolicies.GetApplicableAsync(Arg.Any<Guid>(), Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DiscountPolicy> { _readme });
+        _handler = new UpdateSaleHandler(
+            _saleRepository, _customerRepository, _branchRepository, _productRepository, _mapper, _outbox,
+            new DiscountPolicyResolver(_discountPolicies));
     }
 
+    // Work item: TASK-062 (FEAT-001), TASK-064 (FEAT-001)
     /// <summary>
     /// Tests that an item with the same product keeps its copy (and can be cancelled), an item whose product
     /// changed copies the new product, and a new item copies its product; only changed or new products are loaded.
@@ -61,12 +76,12 @@ public class UpdateSaleHandlerTests
         var kept = new SaleItem
         {
             Id = Guid.NewGuid(), ProductId = beerId, ProductDescription = "Beer 350ml", UnitPrice = 10m,
-            Quantity = 5, DiscountPercentage = 10m, DiscountAmount = 5m, TotalAmount = 45m
+            Quantity = 5, DiscountPolicyId = _readme.Id, DiscountPercentage = 10m, DiscountAmount = 5m, TotalAmount = 45m
         };
         var replaced = new SaleItem
         {
             Id = Guid.NewGuid(), ProductId = Guid.NewGuid(), ProductDescription = "Soda 2L", UnitPrice = 5m,
-            Quantity = 2, TotalAmount = 10m
+            Quantity = 2, DiscountPolicyId = _readme.Id, TotalAmount = 10m
         };
         var sale = NewSale(kept, replaced);
         var water = new Product { Id = Guid.NewGuid(), Description = "Water 500ml", UnitPrice = 3m };
@@ -79,16 +94,11 @@ public class UpdateSaleHandlerTests
             Id = sale.Id,
             CustomerId = sale.CustomerId,
             BranchId = sale.BranchId,
-            TotalAmount = 61m,
             Items =
             [
-                new UpdateSaleItemInput
-                {
-                    Id = kept.Id, ProductId = beerId, Quantity = 6, DiscountPercentage = 10m,
-                    DiscountAmount = 6m, TotalAmount = 54m, IsCancelled = true
-                },
-                new UpdateSaleItemInput { Id = replaced.Id, ProductId = water.Id, Quantity = 1, TotalAmount = 3m },
-                new UpdateSaleItemInput { ProductId = juice.Id, Quantity = 1, TotalAmount = 4m }
+                new UpdateSaleItemInput { Id = kept.Id, ProductId = beerId, Quantity = 6, DiscountPercentage = 10m, IsCancelled = true },
+                new UpdateSaleItemInput { Id = replaced.Id, ProductId = water.Id, Quantity = 1 },
+                new UpdateSaleItemInput { ProductId = juice.Id, Quantity = 1 }
             ]
         };
 
@@ -101,9 +111,10 @@ public class UpdateSaleHandlerTests
         keptItem.Should().BeSameAs(kept);
         keptItem.ProductDescription.Should().Be("Beer 350ml");
         keptItem.UnitPrice.Should().Be(10m);
-        keptItem.Quantity.Should().Be(6);
-        keptItem.DiscountAmount.Should().Be(6m);
-        keptItem.TotalAmount.Should().Be(54m);
+        keptItem.Quantity.Should().Be(5);
+        keptItem.RequestedDiscountPercentage.Should().BeNull();
+        keptItem.DiscountAmount.Should().Be(5m);
+        keptItem.TotalAmount.Should().Be(45m);
         keptItem.IsCancelled.Should().BeTrue();
         var replacedItem = sale.Items.Single(item => item.Id == replaced.Id);
         replacedItem.ProductId.Should().Be(water.Id);
@@ -119,9 +130,11 @@ public class UpdateSaleHandlerTests
         await _saleRepository.Received(1).UpdateAsync(sale, Arg.Any<CancellationToken>());
     }
 
+    // Work item: TASK-064 (FEAT-001), TASK-066 (FEAT-001)
     /// <summary>
     /// Tests that the sale number and date never change, the customer name is kept when the customer id is
-    /// unchanged, and the branch name is refreshed when the branch id changes.
+    /// unchanged, and the branch name is refreshed when the branch id changes; the policies are resolved for the new
+    /// branch at the stored sale date.
     /// </summary>
     [Fact(DisplayName = "Given header changes When updating sale Then keeps number and date and refreshes changed references")]
     public async Task Given_HeaderChanges_When_Handled_Then_KeepsNumberAndDateAndRefreshesChangedReferences()
@@ -142,9 +155,8 @@ public class UpdateSaleHandlerTests
             Id = sale.Id,
             CustomerId = sale.CustomerId,
             BranchId = uptown.Id,
-            TotalAmount = 99m,
             IsCancelled = true,
-            Items = [new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 5, TotalAmount = 50m }]
+            Items = [new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 5 }]
         };
 
         // Act
@@ -156,10 +168,12 @@ public class UpdateSaleHandlerTests
         sale.CustomerName.Should().Be("Acme Market");
         sale.BranchId.Should().Be(uptown.Id);
         sale.BranchName.Should().Be("Uptown");
-        sale.TotalAmount.Should().Be(99m);
+        sale.TotalAmount.Should().Be(45m);
         sale.IsCancelled.Should().BeTrue();
         await _customerRepository.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _productRepository.DidNotReceive().GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>());
+        await _discountPolicies.Received(1).GetApplicableAsync(
+            uptown.Id, Arg.Any<IReadOnlyCollection<Guid>>(), saleDate, Arg.Any<CancellationToken>());
     }
 
     // Work item: TD-007 (FEAT-010)
@@ -227,16 +241,16 @@ public class UpdateSaleHandlerTests
         await _saleRepository.DidNotReceive().UpdateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
     }
 
+    // Work item: TASK-064 (FEAT-001)
     private static UpdateSaleCommand ValidCommand(Sale sale) => new()
     {
         Id = sale.Id,
         CustomerId = sale.CustomerId,
         BranchId = sale.BranchId,
-        TotalAmount = 10m,
-        Items = [new UpdateSaleItemInput { ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m }]
+        Items = [new UpdateSaleItemInput { ProductId = Guid.NewGuid(), Quantity = 1 }]
     };
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     /// <summary>
     /// Tests that an update that does not cancel the sale or any item, including one that un-cancels the sale,
     /// enqueues only SaleModified with the sale after the update.
@@ -251,7 +265,7 @@ public class UpdateSaleHandlerTests
         var sale = NewSale(item);
         sale.IsCancelled = saleWasCancelled;
         _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
-        var command = UpdateCommand(sale, isCancelled: false, new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 3, TotalAmount = 30m });
+        var command = UpdateCommand(sale, isCancelled: false, new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 3 });
 
         // Act
         await _handler.Handle(command, CancellationToken.None);
@@ -263,7 +277,7 @@ public class UpdateSaleHandlerTests
         modified.Sale.Items.Should().ContainSingle().Which.Quantity.Should().Be(3);
     }
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     /// <summary>
     /// Tests that cancelling an active sale enqueues SaleModified and then SaleCancelled.
     /// </summary>
@@ -274,7 +288,7 @@ public class UpdateSaleHandlerTests
         var item = new SaleItem { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m };
         var sale = NewSale(item);
         _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
-        var command = UpdateCommand(sale, isCancelled: true, new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 1, TotalAmount = 10m });
+        var command = UpdateCommand(sale, isCancelled: true, new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 1 });
 
         // Act
         await _handler.Handle(command, CancellationToken.None);
@@ -284,7 +298,7 @@ public class UpdateSaleHandlerTests
         _enqueued[1].Should().Be(new SaleCancelled(sale.Id));
     }
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     /// <summary>
     /// Tests that ItemCancelled is enqueued only for existing items that were active and are now cancelled, in the
     /// order of the incoming item list; an item already cancelled and a new item sent cancelled enqueue nothing.
@@ -305,10 +319,10 @@ public class UpdateSaleHandlerTests
         _productRepository.GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(new List<Product> { water });
         var command = UpdateCommand(sale, isCancelled: false,
-            new UpdateSaleItemInput { Id = second.Id, ProductId = second.ProductId, Quantity = 1, TotalAmount = 10m, IsCancelled = true },
-            new UpdateSaleItemInput { Id = first.Id, ProductId = first.ProductId, Quantity = 1, TotalAmount = 10m, IsCancelled = true },
-            new UpdateSaleItemInput { Id = alreadyCancelled.Id, ProductId = alreadyCancelled.ProductId, Quantity = 1, TotalAmount = 10m, IsCancelled = true },
-            new UpdateSaleItemInput { ProductId = water.Id, Quantity = 1, TotalAmount = 3m, IsCancelled = true });
+            new UpdateSaleItemInput { Id = second.Id, ProductId = second.ProductId, Quantity = 1, IsCancelled = true },
+            new UpdateSaleItemInput { Id = first.Id, ProductId = first.ProductId, Quantity = 1, IsCancelled = true },
+            new UpdateSaleItemInput { Id = alreadyCancelled.Id, ProductId = alreadyCancelled.ProductId, Quantity = 1, IsCancelled = true },
+            new UpdateSaleItemInput { ProductId = water.Id, Quantity = 1, IsCancelled = true });
 
         // Act
         await _handler.Handle(command, CancellationToken.None);
@@ -321,7 +335,7 @@ public class UpdateSaleHandlerTests
             new ItemCancelled(sale.Id, first.Id, first.ProductId));
     }
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     /// <summary>
     /// Tests that an update cancelling an item and the sale together enqueues SaleModified, then ItemCancelled,
     /// then SaleCancelled.
@@ -334,7 +348,7 @@ public class UpdateSaleHandlerTests
         var sale = NewSale(item);
         _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
         var command = UpdateCommand(sale, isCancelled: true,
-            new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 1, TotalAmount = 10m, IsCancelled = true });
+            new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 1, IsCancelled = true });
 
         // Act
         await _handler.Handle(command, CancellationToken.None);
@@ -343,7 +357,7 @@ public class UpdateSaleHandlerTests
         _enqueued.Select(e => e.GetType()).Should().Equal(typeof(SaleModified), typeof(ItemCancelled), typeof(SaleCancelled));
     }
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     /// <summary>
     /// Tests that an update of an unknown sale enqueues nothing.
     /// </summary>
@@ -353,7 +367,7 @@ public class UpdateSaleHandlerTests
         // Arrange
         var sale = NewSale(new SaleItem { Id = Guid.NewGuid(), ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m });
         var command = UpdateCommand(sale, isCancelled: false,
-            new UpdateSaleItemInput { ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m });
+            new UpdateSaleItemInput { ProductId = Guid.NewGuid(), Quantity = 1 });
 
         // Act
         var act = () => _handler.Handle(command, CancellationToken.None);
@@ -363,13 +377,146 @@ public class UpdateSaleHandlerTests
         _enqueued.Should().BeEmpty();
     }
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-064 (FEAT-001)
+    /// <summary>
+    /// Tests that cancelling one of three lines of four units drops the other two to the 10% tier when they ask for no
+    /// discount, and that the cancelled line keeps its 20% snapshot out of the total.
+    /// </summary>
+    [Fact(DisplayName = "Given one of three lines cancelled When updating sale Then the remaining lines drop to ten percent")]
+    public async Task Given_LineCancelled_When_Handled_Then_RemainingLinesDropToTenPercent()
+    {
+        // Arrange
+        var (sale, items) = PricedSaleOfThreeLines();
+        _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        var command = UpdateCommand(sale, isCancelled: false,
+            new UpdateSaleItemInput { Id = items[0].Id, ProductId = items[0].ProductId, Quantity = 4, IsCancelled = true },
+            new UpdateSaleItemInput { Id = items[1].Id, ProductId = items[1].ProductId, Quantity = 4 },
+            new UpdateSaleItemInput { Id = items[2].Id, ProductId = items[2].ProductId, Quantity = 4 });
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        items[0].DiscountPercentage.Should().Be(20m);
+        items[0].TotalAmount.Should().Be(32m);
+        items.Skip(1).Should().AllSatisfy(item =>
+        {
+            item.DiscountCeilingPercentage.Should().Be(10m);
+            item.DiscountPercentage.Should().Be(10m);
+            item.DiscountAmount.Should().Be(4m);
+            item.TotalAmount.Should().Be(36m);
+        });
+        sale.TotalAmount.Should().Be(72m);
+    }
+
+    // Work item: TASK-064 (FEAT-001)
+    /// <summary>
+    /// Tests that a remaining line that still asks for the old 20% after the cancellation is rejected, and nothing is saved.
+    /// </summary>
+    [Fact(DisplayName = "Given a line cancelled and the old ceiling still requested When updating sale Then DiscountAboveAllowed")]
+    public async Task Given_LineCancelledAndOldCeilingRequested_When_Handled_Then_DiscountAboveAllowed()
+    {
+        // Arrange
+        var (sale, items) = PricedSaleOfThreeLines();
+        _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        var command = UpdateCommand(sale, isCancelled: false,
+            new UpdateSaleItemInput { Id = items[0].Id, ProductId = items[0].ProductId, Quantity = 4, IsCancelled = true },
+            new UpdateSaleItemInput { Id = items[1].Id, ProductId = items[1].ProductId, Quantity = 4, DiscountPercentage = 20m },
+            new UpdateSaleItemInput { Id = items[2].Id, ProductId = items[2].ProductId, Quantity = 4 });
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        var exception = await act.Should().ThrowAsync<ValidationException>();
+        exception.Which.Errors.Should().ContainSingle(error =>
+            error.PropertyName == "Items[1].DiscountPercentage" && error.ErrorCode == SaleDiscountRules.DiscountAboveAllowed);
+        await _saleRepository.DidNotReceive().UpdateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
+        _enqueued.Should().BeEmpty();
+    }
+
+    // Work item: TASK-064 (FEAT-001)
+    /// <summary>
+    /// Tests that an update resolves the policies at the stored sale date and for the branch the command sends.
+    /// </summary>
+    [Fact(DisplayName = "Given a stored sale When updating sale Then resolves the policies at the stored sale date")]
+    public async Task Given_StoredSale_When_Handled_Then_ResolvesAtTheStoredSaleDate()
+    {
+        // Arrange
+        var item = new SaleItem { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, UnitPrice = 10m, DiscountPolicyId = _readme.Id };
+        var sale = NewSale(item);
+        _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        var command = UpdateCommand(sale, isCancelled: false, new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 2 });
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await _discountPolicies.Received(1).GetApplicableAsync(
+            sale.BranchId,
+            Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 1 && ids.Contains(item.ProductId)),
+            new DateTime(2026, 9, 20, 10, 0, 0, DateTimeKind.Utc),
+            Arg.Any<CancellationToken>());
+    }
+
+    // Work item: TASK-064 (FEAT-001)
+    /// <summary>
+    /// Tests that an existing item sent as cancelled with another product id keeps its stored product: the other
+    /// product is neither loaded nor reported, the policies and the rules use the stored product, and ItemCancelled
+    /// carries it.
+    /// </summary>
+    [Fact(DisplayName = "Given an item cancelled with another product id When updating sale Then the stored product is used")]
+    public async Task Given_ItemCancelledWithAnotherProductId_When_Handled_Then_StoredProductIsUsed()
+    {
+        // Arrange
+        var (sale, items) = PricedSaleOfThreeLines();
+        var storedProductId = items[0].ProductId;
+        var unknownProductId = Guid.NewGuid();
+        _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
+        var command = UpdateCommand(sale, isCancelled: false,
+            new UpdateSaleItemInput { Id = items[0].Id, ProductId = unknownProductId, Quantity = 4, IsCancelled = true },
+            new UpdateSaleItemInput { Id = items[1].Id, ProductId = storedProductId, Quantity = 4 },
+            new UpdateSaleItemInput { Id = items[2].Id, ProductId = storedProductId, Quantity = 4 });
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        items[0].ProductId.Should().Be(storedProductId);
+        items[0].IsCancelled.Should().BeTrue();
+        await _productRepository.DidNotReceive().GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>());
+        await _discountPolicies.Received(1).GetApplicableAsync(
+            sale.BranchId,
+            Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 1 && ids.Contains(storedProductId)),
+            Arg.Any<DateTime>(),
+            Arg.Any<CancellationToken>());
+        _enqueued.Should().ContainSingle(e => e is ItemCancelled)
+            .Which.Should().Be(new ItemCancelled(sale.Id, items[0].Id, storedProductId));
+    }
+
+    // Work item: TASK-064 (FEAT-001)
+    private (Sale Sale, IReadOnlyList<SaleItem> Items) PricedSaleOfThreeLines()
+    {
+        var productId = Guid.NewGuid();
+        var items = Enumerable.Range(1, 3)
+            .Select(line => new SaleItem
+            {
+                Id = Guid.NewGuid(), LineNumber = line, ProductId = productId, ProductDescription = "Beer 350ml", UnitPrice = 10m,
+                Quantity = 4, DiscountPolicyId = _readme.Id, DiscountCeilingPercentage = 20m, DiscountPercentage = 20m,
+                DiscountAmount = 8m, TotalAmount = 32m
+            })
+            .ToList();
+        var sale = NewSale(items.ToArray());
+        sale.TotalAmount = 96m;
+        return (sale, items);
+    }
+
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     private static UpdateSaleCommand UpdateCommand(Sale sale, bool isCancelled, params UpdateSaleItemInput[] items) => new()
     {
         Id = sale.Id,
         CustomerId = sale.CustomerId,
         BranchId = sale.BranchId,
-        TotalAmount = items.Sum(item => item.TotalAmount),
         IsCancelled = isCancelled,
         Items = items.ToList()
     };

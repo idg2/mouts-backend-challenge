@@ -96,7 +96,7 @@ flowchart TD
   TXN05 -->|yes| TXN07
 ```
 
-- CMN-TXN-01: the create and delete commands of users and the create, update, and delete commands of customers, branches, products, and sales implement it.
+- CMN-TXN-01: the create and delete commands of users, the create, update, and delete commands of customers, branches, products, and sales, and the create command of discount policies implement it.
 - CMN-TXN-04: repository saves inside the handler join this transaction, so a sale and its outbox rows commit together (SAL-OBW).
 - CMN-TXN-07: the rollback ignores the request's cancellation, so an aborted request still releases the transaction.
 
@@ -165,7 +165,7 @@ flowchart TD
 ```
 
 - CMN-LST-03: each `_min` or `_max` key appears once; a date given as `yyyy-MM-dd` in `_max` includes the whole day.
-- CMN-LST-05: text fields match case-insensitively with `*` allowed only at the start or the end; other types match exactly; a day matches the whole day; a repeated key matches any of its values, up to 50.
+- CMN-LST-05: text fields match case-insensitively with `*` allowed only at the start or the end; other types match exactly, and a nullable id field matches an id, never null; a day matches the whole day; a repeated key matches any of its values, up to 50.
 - CMN-LST-07: a bad filter or order throws `ValidationException` and gets the envelope (CMN-RSP-06); a bad `_page` or `_size` fails in CMN-LST-08 and gets the raw failure list (CMN-RSP-04).
 - CMN-LST-08: `_page` is at least 1 and `_size` is from 1 to 100 (defaults 1 and 10).
 - CMN-LST-09: a page past the end returns an empty list with the real total count.

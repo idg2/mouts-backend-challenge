@@ -33,8 +33,10 @@ public static class SaleFixtures
         return new SaleReferences(customerId, branchId, productIds);
     }
 
+    // Work item: TASK-058 (FEAT-017), TASK-065 (FEAT-001)
     /// <summary>
-    /// Builds a sale body with the given number of items, two units each, no discount.
+    /// Builds a sale body with the given number of items, two units each, and no requested discount: two units are
+    /// below the first tier of the default policy, so every line is priced at 0% and totals 20.
     /// </summary>
     /// <param name="references">The references</param>
     /// <param name="items">How many of the three products to include</param>
@@ -46,14 +48,27 @@ public static class SaleFixtures
             .Select((productId, index) => new
             {
                 productId = index == 0 && productOverride is Guid replacement ? replacement : productId,
-                quantity = 2,
-                discountPercentage = 0m,
-                discountAmount = 0m,
-                totalAmount = 20m
+                quantity = 2
             })
             .ToList();
-        return new { customerId = references.CustomerId, branchId = references.BranchId, totalAmount = 20m * lines.Count, items = lines };
+        return new { customerId = references.CustomerId, branchId = references.BranchId, items = lines };
     }
+
+    // Work item: TASK-065 (FEAT-001)
+    /// <summary>
+    /// Builds a sale body from explicit lines. A null discount is sent as null and asks for the ceiling.
+    /// </summary>
+    /// <param name="references">The customer and branch of the sale</param>
+    /// <param name="lines">The product, quantity, and requested discount of each line</param>
+    /// <returns>The body, shaped as CreateSaleRequest</returns>
+    public static object LinesBody(SaleReferences references, params (Guid ProductId, int Quantity, decimal? DiscountPercentage)[] lines) => new
+    {
+        customerId = references.CustomerId,
+        branchId = references.BranchId,
+        items = lines
+            .Select(line => new { productId = line.ProductId, quantity = line.Quantity, discountPercentage = line.DiscountPercentage })
+            .ToList()
+    };
 
     private static async Task<Guid> CreateAsync(ScenarioContext context, string route, object body)
     {

@@ -39,4 +39,40 @@ public class SaleProfileTests
         // Assert
         result.Items.Select(i => i.Quantity).Should().Equal(10, 20, 30);
     }
+
+    // Work item: TASK-064 (FEAT-001), TASK-066 (FEAT-001)
+    /// <summary>
+    /// Tests that the item result carries the requested discount and the discount snapshot: policy, ceiling, and
+    /// applied percentage.
+    /// </summary>
+    [Fact(DisplayName = "Given a priced item When mapping a sale Then the result carries the discount snapshot")]
+    public void Given_PricedItem_When_MappingSale_Then_ResultCarriesDiscountSnapshot()
+    {
+        // Arrange
+        var policyId = Guid.NewGuid();
+        var sale = new Sale
+        {
+            Id = Guid.NewGuid(),
+            Items =
+            [
+                new SaleItem
+                {
+                    Id = Guid.NewGuid(), LineNumber = 1, Quantity = 5, UnitPrice = 10m, DiscountPolicyId = policyId,
+                    DiscountCeilingPercentage = 10m, DiscountPercentage = 5m, DiscountAmount = 2.5m, TotalAmount = 47.5m,
+                    RequestedDiscountPercentage = 7.5m
+                }
+            ]
+        };
+
+        // Act
+        var item = _mapper.Map<SaleResult>(sale).Items.Single();
+
+        // Assert
+        item.RequestedDiscountPercentage.Should().Be(7.5m);
+        item.DiscountPolicyId.Should().Be(policyId);
+        item.DiscountCeilingPercentage.Should().Be(10m);
+        item.DiscountPercentage.Should().Be(5m);
+        item.DiscountAmount.Should().Be(2.5m);
+        item.TotalAmount.Should().Be(47.5m);
+    }
 }

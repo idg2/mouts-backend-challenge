@@ -39,6 +39,9 @@ erDiagram
     string ProductDescription
     numeric UnitPrice
     int Quantity
+    numeric RequestedDiscountPercentage
+    uuid DiscountPolicyId
+    numeric DiscountCeilingPercentage
     numeric DiscountPercentage
     numeric DiscountAmount
     numeric TotalAmount
@@ -55,9 +58,10 @@ erDiagram
 ```
 
 - `SaleNumber` comes from the `SaleNumbers` sequence and is unique; `Id` defaults to `gen_random_uuid()` unless the command presets it (SAL-ASY).
-- Money columns are `numeric(18,2)` and `DiscountPercentage` is `numeric(5,2)`; the validators reject more than two decimals.
-- Check constraints guard the stored values: positive line number, unit price, and quantity; discount percentage from 0 to 100; no negative amount.
+- Money columns are `numeric(18,2)` and the three percentages are `numeric(5,2)`; the validators reject more than two decimals.
+- Check constraints guard the stored values: positive line number, unit price, and quantity; every percentage from 0 to 100, the requested one also null; no negative amount.
 - `CustomerName`, `BranchName`, `ProductDescription`, and `UnitPrice` are copies taken when the sale or the item is written; no foreign key points to customers, branches, or products.
+- `RequestedDiscountPercentage` is what the client asked for (null for the ceiling); `DiscountPolicyId` and `DiscountCeilingPercentage` snapshot the discount policy that priced the item, without a foreign key (see discount-policies.md); `DiscountAmount`, `TotalAmount`, and `Sales.TotalAmount` are computed (SAL-CRT-16). Items stored before the discount policies point to the default policy, with their stored percentage as the ceiling.
 - `LineNumber` orders the items, and deleting a sale deletes its items.
 - `OutboxMessages.ProcessedAt` is null while a row is pending; the partial index `IX_OutboxMessages_Pending` on `Sequence` covers only pending rows.
 
@@ -93,9 +97,9 @@ flowchart LR
 
 ## SAL-CRT — Create a sale
 
-`POST /api/sales` without `Prefer: respond-async` stores the sale in the request's transaction and records SaleCreated in the outbox. The same handler also runs queued sales (SAL-ASY).
+`POST /api/sales` without `Prefer: respond-async` prices the items from the discount policies, stores the sale in the request's transaction, and records SaleCreated in the outbox. The same handler also runs queued sales (SAL-ASY).
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/PreferHeader.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/CreateSale/CreateSaleHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
+**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/PreferHeader.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/CreateSale/CreateSaleHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/Common/SaleDiscountRules.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Services/DiscountPolicyResolver.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Entities/Sale.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -107,7 +111,10 @@ flowchart TD
   CRT06["SAL-CRT-06 Return the stored sale, no new event"]
   CRT07["SAL-CRT-07 Load customer, branch, and products"]
   CRT08{"SAL-CRT-08 All references exist?"}
+  CRT14["SAL-CRT-14 Resolve the discount policies at the sale date"]
+  CRT15{"SAL-CRT-15 Discount rules respected?"}
   CRT09["SAL-CRT-09 Build the sale with copied names and prices"]
+  CRT16["SAL-CRT-16 Apply the discounts per product total"]
   CRT10["SAL-CRT-10 Insert the sale and its items"]
   CRT11["SAL-CRT-11 Enqueue SaleCreated"]
   CRT12["SAL-CRT-12 Commit"]
@@ -123,8 +130,10 @@ flowchart TD
   CRT04 -->|fail| E400
   CRT05 -->|yes| CRT06 --> CRT12
   CRT05 -->|no| CRT07 --> CRT08
-  CRT08 -->|yes| CRT09 --> CRT10 --> CRT11 --> CRT12
+  CRT08 -->|yes| CRT14 --> CRT15
   CRT08 -->|no| E400
+  CRT15 -->|yes| CRT09 --> CRT16 --> CRT10 --> CRT11 --> CRT12
+  CRT15 -->|no| E400
   CRT12 -->|synchronous request| CRT13
   CRT12 -->|queued command| BACK
 ```
@@ -136,6 +145,7 @@ sequenceDiagram
   participant T as TransactionBehavior
   participant H as CreateSaleHandler
   participant R as Repositories
+  participant S as Sale
   participant O as OutboxWriter
   participant P as PostgreSQL
   C->>K: POST /api/sales
@@ -149,7 +159,10 @@ sequenceDiagram
     H-->>T: SAL-CRT-06 Return the stored sale, no new event
   else new sale
     H->>R: SAL-CRT-07 Load customer, branch, and products
-    H->>H: SAL-CRT-09 Build the sale with copied names and prices
+    H->>R: SAL-CRT-14 Resolve the discount policies at the sale date
+    H->>H: SAL-CRT-15 Discount rules respected?
+    H->>S: SAL-CRT-09 Build the sale with copied names and prices
+    H->>S: SAL-CRT-16 Apply the discounts per product total
     H->>R: SAL-CRT-10 Insert the sale and its items
     R->>P: INSERT Sales and SaleItems
     H->>O: SAL-CRT-11 Enqueue SaleCreated
@@ -161,9 +174,13 @@ sequenceDiagram
   K-->>C: SAL-CRT-13 201 with the sale
 ```
 
-- SAL-CRT-01: customer and branch ids are required, and there is at least one item; the quantity is above zero; the discount percentage is from 0 to 100; amounts are zero or more; money has at most two decimals.
+- SAL-CRT-01: customer and branch ids are required, and there is at least one item; the quantity is above zero; the discount percentage, when sent, is from 0 to 100 with at most two decimals. The body carries no amounts: `discountAmount` and `totalAmount` are computed.
+- SAL-CRT-01: `discountAmount` and `totalAmount` sent by older clients are ignored; an explicit `discountPercentage: 0` asks for 0% and gets no discount even at 4 units or more; omit the field to receive the ceiling.
 - SAL-CRT-05: only a queued command carries a preset id; a synchronous request never does (TD-012).
-- SAL-CRT-09: the sale date is the server's UTC time truncated to microseconds; line numbers follow the request order; discounts and totals are stored as received, and nothing is computed.
+- SAL-CRT-09: the sale date is the server's UTC time truncated to microseconds; line numbers follow the request order; each item keeps the requested discount percentage, or null when none was sent.
+- SAL-CRT-14: one query loads every policy in effect at the sale date (disabled policies are ignored) whose product is one of the sale's products or null and whose branch is the sale's branch or null; per product the most specific scope wins (product and branch, product, branch, default), then the latest `validFrom`, then the latest `createdAt`, then the highest id.
+- SAL-CRT-15: the quantities of a product's lines are summed. Above the policy maximum every line of the product fails with `QuantityLimitExceeded`; otherwise a line whose requested discount is above the ceiling of the total's tier fails with `DiscountAboveAllowed` (below the first tier the ceiling is 0, so a discount on fewer than 4 units fails with the default policy); a line whose product has no policy fails with `NoDiscountPolicy`. Each failure is one 400 entry with `error` set to the code.
+- SAL-CRT-16: every line of a product gets the ceiling of the product's total, or its requested discount when lower; the discount amount is quantity times unit price times the percentage, rounded to cents with midpoints away from zero; the item total is the gross minus the discount, and the sale total the sum of the item totals. Each item stores the policy id and the ceiling; the responses return each item's `requestedDiscountPercentage`, `discountPolicyId`, and `discountCeilingPercentage`.
 - SAL-CRT-10: the sale number comes from the `SaleNumbers` sequence.
 - SAL-CRT-12: the sale and its SaleCreated row become visible together, or neither does (CMN-TXN).
 
@@ -215,9 +232,9 @@ sequenceDiagram
   end
 ```
 
-- SAL-ASY-02: only SAL-CRT-01 runs before queueing; an unknown customer, branch, or product is found by the worker and ends in the error queue (SAL-ERR).
+- SAL-ASY-02: only SAL-CRT-01 runs before queueing; an unknown customer, branch, or product, or a sale that breaks a discount rule (SAL-CRT-15), is found by the worker and ends in the error queue (SAL-ERR).
 - SAL-ASY-03: `Prefer` is a comma-separated list; `respond-async` is matched case-insensitively and parameters after `;` are ignored. `GET /api/sales/{id}` answers 404 until the worker stores the sale; a sale the worker rejects is never stored and answers 404 for good, so the client cannot tell it from one still queued.
-- SAL-ASY-05: the command then runs SAL-CRT-04 to SAL-CRT-12 (it enters MediatR here, not at SAL-CRT-03, and gets no 201), so the stored sale also gets SaleCreated; a redelivered command ends at SAL-CRT-06.
+- SAL-ASY-05: the command then runs SAL-CRT-04 to SAL-CRT-12, discounts included (SAL-CRT-14 to SAL-CRT-16); it enters MediatR here, not at SAL-CRT-03, and gets no 201, so the stored sale also gets SaleCreated; a redelivered command ends at SAL-CRT-06.
 
 ## SAL-GET — Get a sale
 
@@ -265,9 +282,9 @@ flowchart TD
 
 ## SAL-UPD — Update a sale
 
-Replaces the sale's header values and item list in one transaction. Items are matched by id, and events describe the transitions the update caused.
+Replaces the sale's header values and item list in one transaction and prices the items again at the stored sale date. Items are matched by id, and events describe the transitions the update caused.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/UpdateSale/UpdateSaleHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Entities/Sale.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
+**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/UpdateSale/UpdateSaleHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/Common/SaleDiscountRules.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Services/DiscountPolicyResolver.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Entities/Sale.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -279,8 +296,11 @@ flowchart TD
   UPD06{"SAL-UPD-06 Every item id belongs to the sale?"}
   UPD07["SAL-UPD-07 Load products of new items and changed products"]
   UPD08{"SAL-UPD-08 Changed customer, branch, and products exist?"}
+  UPD18["SAL-UPD-18 Resolve the discount policies at the sale date"]
+  UPD19{"SAL-UPD-19 Discount rules respected?"}
   UPD09["SAL-UPD-09 Apply header values and copy new names"]
   UPD10["SAL-UPD-10 SyncItems removes, updates, adds, and renumbers"]
+  UPD20["SAL-UPD-20 Apply the discounts per product total"]
   UPD11["SAL-UPD-11 Save the sale and its items"]
   UPD12["SAL-UPD-12 Enqueue SaleModified"]
   UPD13["SAL-UPD-13 Enqueue ItemCancelled per item turned cancelled"]
@@ -298,8 +318,10 @@ flowchart TD
   UPD04 -->|no| E404
   UPD06 -->|yes| UPD07 --> UPD08
   UPD06 -->|no| E400
-  UPD08 -->|yes| UPD09 --> UPD10 --> UPD11 --> UPD12 --> UPD13 --> UPD14
+  UPD08 -->|yes| UPD18 --> UPD19
   UPD08 -->|no| E400
+  UPD19 -->|yes| UPD09 --> UPD10 --> UPD20 --> UPD11 --> UPD12 --> UPD13 --> UPD14
+  UPD19 -->|no| E400
   UPD14 -->|yes| UPD15 --> UPD16
   UPD14 -->|no| UPD16
   UPD16 --> UPD17
@@ -321,8 +343,11 @@ sequenceDiagram
   H->>R: SAL-UPD-03 Load the sale with its items
   H->>R: SAL-UPD-07 Load products of new items and changed products
   H->>R: SAL-UPD-08 Changed customer, branch, and products exist?
+  H->>R: SAL-UPD-18 Resolve the discount policies at the sale date
+  H->>H: SAL-UPD-19 Discount rules respected?
   H->>S: SAL-UPD-09 Apply header values and copy new names
   H->>S: SAL-UPD-10 SyncItems removes, updates, adds, and renumbers
+  H->>S: SAL-UPD-20 Apply the discounts per product total
   H->>R: SAL-UPD-11 Save the sale and its items
   R->>P: UPDATE, INSERT, and DELETE rows
   H->>O: SAL-UPD-12 Enqueue SaleModified
@@ -339,8 +364,12 @@ sequenceDiagram
 
 - SAL-UPD-06: an item without an id is new; an id from another sale is rejected, not moved.
 - SAL-UPD-07: a kept item keeps its copied description and unit price, even if the catalog changed since.
-- SAL-UPD-09: the sale number and date never change; totals, discounts, and `IsCancelled` are stored as received.
-- SAL-UPD-10: items missing from the request are deleted and emit no event; line numbers follow the request order.
+- SAL-UPD-18: the policies are the ones in effect at the stored sale date, never the current date, for the branch the request sends; a policy created after the sale never reprices it, but a policy disabled since (DSC-DIS) no longer applies, so the next one in precedence prices the sale.
+- SAL-UPD-19: the checks of SAL-CRT-15 over the request's items; a cancelled item counts toward no product total and its requested discount is not checked. Each request states every active item's requested discount again, which the responses return as `requestedDiscountPercentage`: an active item sent without one receives the ceiling.
+- SAL-UPD-09: the sale number and date never change; `IsCancelled` is stored as received; the totals come from SAL-UPD-20.
+- SAL-UPD-10: items missing from the request are deleted and emit no event; line numbers follow the request order; an active kept item takes the request's quantity, requested discount, and cancelled flag, and keeps its discount values until SAL-UPD-20.
+- SAL-UPD-10: a kept item sent as cancelled keeps the values it was priced with (product, description, unit price, quantity, requested discount, and discount snapshot) and only its flag is applied, so SAL-UPD-07 does not load its product and SAL-UPD-19 and SAL-UPD-13 use its stored product.
+- SAL-UPD-20: active items are priced as in SAL-CRT-16, so cancelling a line can lower the tier of the other lines of its product; a cancelled item keeps the values it was last priced with, an item sent already cancelled is stored with its policy and no discount, and cancelled items are left out of the sale total.
 - SAL-UPD-13: an item that was already cancelled emits nothing again, a new item sent already cancelled emits nothing, and cancelling the whole sale emits SaleCancelled without an ItemCancelled for each item; un-cancelling a sale or an item is accepted and emits only SaleModified.
 
 ## SAL-DEL — Delete a sale
@@ -440,6 +469,9 @@ classDiagram
     decimal DiscountAmount
     decimal TotalAmount
     bool IsCancelled
+    decimal RequestedDiscountPercentage
+    Guid DiscountPolicyId
+    decimal DiscountCeilingPercentage
   }
   IIntegrationEvent <|.. SaleCreated
   IIntegrationEvent <|.. SaleModified
@@ -461,6 +493,7 @@ classDiagram
 
 - The type name stored with each event is the record's name; `IntegrationEventTypes` accepts only these five (SAL-OBW-03, SAL-DSP-02).
 - The snapshot carries every header field and every item, cancelled ones included, in line order.
+- Each snapshot item carries the discount snapshot (SAL-CRT-16); `RequestedDiscountPercentage` is null when none was requested, and a payload written before the discount policies reads back with null, an empty policy id, and a zero ceiling.
 - Two snapshots with equal values do not compare equal (TD-017).
 
 ## SAL-OBW — Outbox write
@@ -686,7 +719,7 @@ SELECT "Sequence", "Type", "Id", "OccurredAt" FROM "OutboxMessages" WHERE "Proce
 
 This topic is an operations guide, so it has no step keys of its own; the failure points are SAL-BUS-05, SAL-BUS-06, and SAL-DSP-07.
 
-- The common case is a queued sale with an unknown customer, branch, or product: 202, then one attempt, then the error queue.
+- The common case is a queued sale with an unknown customer, branch, or product, or one that breaks a discount rule: 202, then one attempt, then the error queue.
 - The log also shows `Moving message with ID ... to error queue "error"`, and the document keeps the original body and headers plus an `rbs2-error-details` header.
 - Nothing moves a message back from the error queue; a fixed sale must be sent again.
 - A pending row clears on its own when the cause was transient, such as MongoDB being down.

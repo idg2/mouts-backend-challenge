@@ -26,6 +26,9 @@ public class DefaultContext : DbContext
     // Work item: TASK-028 (FEAT-004)
     public DbSet<OutboxMessage> OutboxMessages { get; set; }
 
+    // Work item: TASK-061 (FEAT-001)
+    public DbSet<DiscountPolicy> DiscountPolicies { get; set; }
+
     public DefaultContext(DbContextOptions<DefaultContext> options) : base(options)
     {
     }

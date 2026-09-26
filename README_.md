@@ -183,11 +183,11 @@ PRODUCT=$(curl -s -X POST $BASE/api/products -H "$AUTH" -H 'Content-Type: applic
   -d '{"code":"BEER-350","description":"Beer 350ml","unitPrice":5}' | id)
 ```
 
-**Step 4: create a sale synchronously.** The response is `201` with the stored sale.
+**Step 4: create a sale synchronously.** The response is `201` with the stored sale. The server prices the items from the discount policies (the seeded default policy is the README rule: 4 to 9 units of one product get 10%, 10 to 20 get 20%, more than 20 is refused), so the body carries no amounts; send `discountPercentage` on an item only to ask for less than the ceiling.
 
 ```bash
-SALE="{\"customerId\":\"$CUSTOMER\",\"branchId\":\"$BRANCH\",\"totalAmount\":10,
-  \"items\":[{\"productId\":\"$PRODUCT\",\"quantity\":2,\"discountPercentage\":0,\"discountAmount\":0,\"totalAmount\":10}]}"
+SALE="{\"customerId\":\"$CUSTOMER\",\"branchId\":\"$BRANCH\",
+  \"items\":[{\"productId\":\"$PRODUCT\",\"quantity\":4}]}"
 curl -s -X POST $BASE/api/sales -H "$AUTH" -H 'Content-Type: application/json' -d "$SALE"
 ```
 
@@ -356,7 +356,7 @@ rm trace.txt
 
 The console reads the API's configuration in the API's order (the WebApi `appsettings.json`, `appsettings.Development.json`, the WebApi user secrets, environment variables), then its own `appsettings.json`, then the command line. It forwards the command-line pairs, the resolved connection strings, and the `Seed:Admin` credentials to the hosted API, so the wipe, the login, and the API always use the same databases and administrator.
 
-Scenarios: `conventions`, `auth`, `users`, `customers`, `branches`, `products`, `sale-create`, `sale-async`, `sale-update`, `sale-delete`, `sale-list`, and `all`.
+Scenarios: `conventions`, `auth`, `users`, `customers`, `branches`, `products`, `discount-policy`, `sale-create`, `sale-async`, `sale-update`, `sale-delete`, `sale-list`, `sale-discount`, and `all`.
 
 - Each request and response is printed with `password`, `token`, and a rejected password's `attemptedValue` and `formattedMessagePlaceholderValues` masked as `***`; a body that looks like JSON but does not parse prints as `[unparsed body]`.
 - A failing scenario prints `!!! scenario <name> failed: ...`; the run goes on with the next scenario and exits 1.

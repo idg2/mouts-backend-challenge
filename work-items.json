@@ -1,6 +1,6 @@
 {
   "meta": {
-    "updatedAt": "2026-09-25",
+    "updatedAt": "2026-09-26",
     "types": [
       "epic",
       "feature",
@@ -39,12 +39,12 @@
       "id": "FEAT-001",
       "type": "feature",
       "title": "Discount policy matrix",
-      "description": "Replace the hardcoded README discount rules with immutable, scoped, time-bound discount policies managed via API, and expose POST /api/sales/quote that applies them.",
+      "description": "Replace the hardcoded README discount rules with append-only, scoped, time-bound discount policies managed through /api/discount-policies, and price every sale item from the policy in effect at the sale date.",
       "parent": "EPIC-001",
       "moscow": "must",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "FEAT-002",
@@ -182,122 +182,122 @@
       "id": "TASK-002",
       "type": "task",
       "title": "DiscountTier, DiscountDecision, InvalidStateException",
-      "description": "Value objects for tiers and evaluation results, plus the exception that maps to 409.",
+      "description": "Value objects for tiers and evaluation results, plus the exception that maps to 409. Cancelled by amendment A22 (2026-09-25): the plan of 2026-09-23 is superseded by docs/superpowers/plans/2026-09-25-discount-policy-matrix-v2.md (TASK-060 to TASK-066).",
       "parent": "FEAT-001",
       "moscow": "must",
-      "status": "todo",
+      "status": "cancelled",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-003",
       "type": "task",
       "title": "DiscountPolicy aggregate",
-      "description": "Aggregate with Create, Close, CanBeDeleted, IsInEffectAt, and Evaluate, enforcing its invariants.",
+      "description": "Aggregate with Create, Close, CanBeDeleted, IsInEffectAt, and Evaluate, enforcing its invariants. Cancelled by amendment A22 (2026-09-25): the plan of 2026-09-23 is superseded by docs/superpowers/plans/2026-09-25-discount-policy-matrix-v2.md (TASK-060 to TASK-066).",
       "parent": "FEAT-001",
       "moscow": "must",
-      "status": "todo",
+      "status": "cancelled",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-004",
       "type": "task",
       "title": "Repository contract and DiscountPolicyResolver",
-      "description": "IDiscountPolicyRepository and the domain service that picks the most specific policy per product.",
+      "description": "IDiscountPolicyRepository and the domain service that picks the most specific policy per product. Cancelled by amendment A22 (2026-09-25): the plan of 2026-09-23 is superseded by docs/superpowers/plans/2026-09-25-discount-policy-matrix-v2.md (TASK-060 to TASK-066).",
       "parent": "FEAT-001",
       "moscow": "must",
-      "status": "todo",
+      "status": "cancelled",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-005",
       "type": "task",
       "title": "Sale and SaleItem with ApplyDiscounts",
-      "description": "In-memory Sale and SaleItem that evaluate per-product totals and store the discount snapshot on each line.",
+      "description": "In-memory Sale and SaleItem that evaluate per-product totals and store the discount snapshot on each line. Cancelled by amendment A22 (2026-09-25): the plan of 2026-09-23 is superseded by docs/superpowers/plans/2026-09-25-discount-policy-matrix-v2.md (TASK-060 to TASK-066).",
       "parent": "FEAT-001",
       "moscow": "must",
-      "status": "todo",
+      "status": "cancelled",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-006",
       "type": "task",
       "title": "Persistence: mapping, seed migration, repository, integration tests",
-      "description": "EF Core mapping for policies and tiers, seed migration with the README default policy, the repository, and PostgreSQL integration tests.",
+      "description": "EF Core mapping for policies and tiers, seed migration with the README default policy, the repository, and PostgreSQL integration tests. Cancelled by amendment A22 (2026-09-25): the plan of 2026-09-23 is superseded by docs/superpowers/plans/2026-09-25-discount-policy-matrix-v2.md (TASK-060 to TASK-066).",
       "parent": "FEAT-001",
       "moscow": "must",
-      "status": "todo",
+      "status": "cancelled",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-007",
       "type": "task",
       "title": "Error handling middleware and business error codes",
-      "description": "Replace ValidationExceptionMiddleware with a middleware that maps failures to 400/404/409/422 in the general-api.md error format.",
+      "description": "Replace ValidationExceptionMiddleware with a middleware that maps failures to 400/404/409/422 in the general-api.md error format. Cancelled by amendment A22 (2026-09-25): the plan of 2026-09-23 is superseded by docs/superpowers/plans/2026-09-25-discount-policy-matrix-v2.md (TASK-060 to TASK-066).",
       "parent": "FEAT-001",
       "moscow": "must",
-      "status": "todo",
+      "status": "cancelled",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-008",
       "type": "task",
       "title": "Create discount policy",
-      "description": "POST /api/discount-policies through Application and API layers, plus the functional test infrastructure.",
+      "description": "POST /api/discount-policies through Application and API layers, plus the functional test infrastructure. Cancelled by amendment A22 (2026-09-25): the plan of 2026-09-23 is superseded by docs/superpowers/plans/2026-09-25-discount-policy-matrix-v2.md (TASK-060 to TASK-066).",
       "parent": "FEAT-001",
       "moscow": "must",
-      "status": "todo",
+      "status": "cancelled",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-009",
       "type": "task",
       "title": "Get and list discount policies",
-      "description": "GET by id and a paginated, filtered, ordered list of discount policies.",
+      "description": "GET by id and a paginated, filtered, ordered list of discount policies. Cancelled by amendment A22 (2026-09-25): the plan of 2026-09-23 is superseded by docs/superpowers/plans/2026-09-25-discount-policy-matrix-v2.md (TASK-060 to TASK-066).",
       "parent": "FEAT-001",
       "moscow": "must",
-      "status": "todo",
+      "status": "cancelled",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-010",
       "type": "task",
       "title": "Sale discount rules and POST /api/sales/quote",
-      "description": "Sale validators (QuantityLimitExceeded, DiscountAboveAllowed, NoDiscountPolicy) and the stateless quote endpoint.",
+      "description": "Sale validators (QuantityLimitExceeded, DiscountAboveAllowed, NoDiscountPolicy) and the stateless quote endpoint. Cancelled by amendment A22 (2026-09-25): the plan of 2026-09-23 is superseded by docs/superpowers/plans/2026-09-25-discount-policy-matrix-v2.md (TASK-060 to TASK-066).",
       "parent": "FEAT-001",
       "moscow": "must",
-      "status": "todo",
+      "status": "cancelled",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-011",
       "type": "task",
       "title": "Close and delete discount policies",
-      "description": "POST /api/discount-policies/{id}/close and DELETE /api/discount-policies/{id} with their lifecycle rules.",
+      "description": "POST /api/discount-policies/{id}/close and DELETE /api/discount-policies/{id} with their lifecycle rules. Cancelled by amendment A22 (2026-09-25): the plan of 2026-09-23 is superseded by docs/superpowers/plans/2026-09-25-discount-policy-matrix-v2.md (TASK-060 to TASK-066).",
       "parent": "FEAT-001",
       "moscow": "must",
-      "status": "todo",
+      "status": "cancelled",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-012",
       "type": "task",
       "title": "Full verification",
-      "description": "Clean build, full test suite, no pending model changes, and one commit per task.",
+      "description": "Clean build, full test suite, no pending model changes, and one commit per task. Cancelled by amendment A22 (2026-09-25): the plan of 2026-09-23 is superseded by docs/superpowers/plans/2026-09-25-discount-policy-matrix-v2.md (TASK-060 to TASK-066).",
       "parent": "FEAT-001",
       "moscow": "must",
-      "status": "todo",
+      "status": "cancelled",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TASK-013",
@@ -523,12 +523,12 @@
       "id": "TD-001",
       "type": "td",
       "title": "Database-level discount policy overlap protection",
-      "description": "PostgreSQL exclusion constraint on tstzrange(ValidFrom, ValidTo) per scope (btree_gist, COALESCE on nullable scope columns) to close the concurrent-create race (spec E5).",
+      "description": "PostgreSQL exclusion constraint on tstzrange(ValidFrom, ValidTo) per scope (btree_gist, COALESCE on nullable scope columns) to close the concurrent-create race (spec E5). Cancelled by amendment A14 (2026-09-25): overlap is allowed and resolved by precedence.",
       "parent": "FEAT-001",
       "moscow": "should",
-      "status": "backlog",
+      "status": "cancelled",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-25"
     },
     {
       "id": "TD-002",
@@ -1340,6 +1340,149 @@
       "description": "README_.md §9 (Trace console): the scratch-database command redirects the output to trace.txt and prints the exit code, followed by the checks for a good run (the last summary line and no !!! lines) and the commands that drop the two scratch databases.",
       "parent": null,
       "moscow": "could",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TD-032",
+      "type": "td",
+      "title": "Disable discount policies",
+      "description": "Replaces the edit path: POST /api/discount-policies/disable (Admin, Manager) takes a list of policy ids and marks them with DisabledAt, all or nothing (an unknown id answers 404 and nothing is written); a disabled policy leaves the resolution (IsInEffectAt and GetApplicableAsync require DisabledAt null) while stored sale snapshots stay; GET by id and the list show disabledAt, and the list hides disabled policies unless includeDisabled=true. Not reversible: to bring a rule back, create a new policy. Spec amendment A24.",
+      "parent": "FEAT-001",
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TD-033",
+      "type": "td",
+      "title": "Audit columns on every PostgreSQL table",
+      "description": "Add InsertedDate, UpdatedDate, and LastUser as a standard on every PostgreSQL table (Users, Customers, Branches, Products, Sales, SaleItems, OutboxMessages, DiscountPolicies, DiscountTiers), filled by DefaultContext.SaveChanges from TimeProvider and the current user, with one migration that backfills existing rows. Users already has CreatedAt/UpdatedAt; decide whether they are renamed or kept as aliases.",
+      "parent": null,
+      "moscow": "could",
+      "status": "backlog",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TD-034",
+      "type": "td",
+      "title": "Request-validator 400 bodies use the raw FluentValidation array",
+      "description": "Every controller (FEAT-010 and the discount policy feature) returns BadRequest(validationResult.Errors) from the request validators, a raw array, while handler-level rejections go through ValidationExceptionMiddleware as { success, message, errors[{ error, detail }] }. Unify on the middleware envelope for all controllers.",
+      "parent": "FEAT-001",
+      "moscow": "should",
+      "status": "backlog",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TD-035",
+      "type": "td",
+      "title": "SaleItems snapshot columns: drop the migration defaults and bound computed amounts",
+      "description": "AddSaleItemDiscountSnapshot leaves DEFAULT '00000000-0000-0000-0000-000000000000' / DEFAULT 0 on DiscountPolicyId and DiscountCeilingPercentage, so a raw insert that omits them gets an empty policy id. The computed DiscountAmount/TotalAmount are no longer range-checked before PostgreSQL's numeric(18,2), so an extreme unit price ends in a 500. Drop the defaults (or add CHECK (\"DiscountPolicyId\" <> '00000000-0000-0000-0000-000000000000')) and reject amounts above the column range as 400.",
+      "parent": "FEAT-001",
+      "moscow": "could",
+      "status": "backlog",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TD-036",
+      "type": "td",
+      "title": "DevConsole: shared helper for the create-Customer-and-login block",
+      "description": "AuthScenario, ConventionsScenario, and DiscountPolicyScenario each inline the same create-Customer-and-login block; move it to ScenarioContext.",
+      "parent": "FEAT-001",
+      "moscow": "could",
+      "status": "backlog",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TD-037",
+      "type": "td",
+      "title": "FEAT-001 review leftovers: tests and docs polish",
+      "description": "A test pinning the tier OrderBy(MinQuantity) in DiscountPolicyProfile; a DiscountTier.FindSetViolation doc stating that per-range checks are the caller's; the invalid-set theory in DiscountTierTests asserting the violation message, not only NotBeNull; truncating client ValidFrom/ValidTo to microseconds in CreateDiscountPolicyHandler so the 201 body equals a later GET; a SaleResponseProfile test for discountPolicyId, discountCeilingPercentage, and requestedDiscountPercentage. Also: the XML summary of RequestedDiscountPercentage says \"null when the ceiling was applied\" where it means the client sent none. From the TD-032 review: two concurrent disables of the same policy can overwrite the first DisabledAt (a conditional ExecuteUpdate WHERE DisabledAt IS NULL or a concurrency token would keep the first instant); the includeDisabled parsing of the list action (garbage, repeated key, case) has no automated test; when a field filter and includeDisabled are both invalid only the parser failures are returned; the listing integration test sets DisabledAt before CreatedAt, a state the API cannot produce.",
+      "parent": "FEAT-001",
+      "moscow": "could",
+      "status": "backlog",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TASK-060",
+      "type": "task",
+      "title": "Domain: tiers, decision, policy, resolver",
+      "description": "Plan task 1 of FEAT-001 (v2, path B): Domain: tiers, decision, policy, resolver.",
+      "parent": "FEAT-001",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-061",
+      "type": "task",
+      "title": "Persistence: mapping, seed migration, repository",
+      "description": "Plan task 2 of FEAT-001 (v2, path B): Persistence: mapping, seed migration, repository.",
+      "parent": "FEAT-001",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-062",
+      "type": "task",
+      "title": "Sale and SaleItem with ApplyDiscounts",
+      "description": "Plan task 3 of FEAT-001 (v2, path B): Sale and SaleItem with ApplyDiscounts.",
+      "parent": "FEAT-001",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-063",
+      "type": "task",
+      "title": "Discount policy endpoints, docs, and trace",
+      "description": "Plan task 4 of FEAT-001 (v2, path B): Discount policy endpoints, docs, and trace.",
+      "parent": "FEAT-001",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-064",
+      "type": "task",
+      "title": "Sale handlers and contract",
+      "description": "Plan task 5 of FEAT-001 (v2, path B): Sale handlers and contract.",
+      "parent": "FEAT-001",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-065",
+      "type": "task",
+      "title": "Console scenarios and full verification",
+      "description": "Plan task 6 of FEAT-001 (v2, path B): Console scenarios and full verification.",
+      "parent": "FEAT-001",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-25",
+      "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "TASK-066",
+      "type": "task",
+      "title": "Work items, implementation log, handoff",
+      "description": "Plan task 7 of FEAT-001 (v2, path B): Work items, implementation log, handoff.",
+      "parent": "FEAT-001",
+      "moscow": "must",
       "status": "done",
       "createdAt": "2026-09-25",
       "updatedAt": "2026-09-25"

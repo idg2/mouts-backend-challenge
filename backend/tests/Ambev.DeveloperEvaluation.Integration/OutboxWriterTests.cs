@@ -64,6 +64,7 @@ public class OutboxWriterTests : IClassFixture<PostgresFixture>
         Assert.Equal(before, await CountAsync());
     }
 
+    // Work item: TASK-062 (FEAT-001)
     /// <summary>
     /// Tests that committed events are stored pending, with increasing sequence in enqueue order, and that the
     /// payload deserializes back to the same values, including decimals and a UTC date with milliseconds.
@@ -75,7 +76,7 @@ public class OutboxWriterTests : IClassFixture<PostgresFixture>
         var snapshot = new SaleSnapshot(
             Guid.NewGuid(), 42, new DateTime(2026, 9, 24, 13, 45, 30, 123, DateTimeKind.Utc),
             Guid.NewGuid(), "Acme Market", Guid.NewGuid(), "Downtown", 21.98m, false,
-            [new SaleSnapshotItem(Guid.NewGuid(), 1, Guid.NewGuid(), "Beer 350ml", 10.99m, 2, 0m, 0m, 21.98m, false)]);
+            [new SaleSnapshotItem(Guid.NewGuid(), 1, Guid.NewGuid(), "Beer 350ml", 10.99m, 2, 0m, 0m, 21.98m, false, 7.5m, Guid.NewGuid(), 0m)]);
         long lastSequence;
         await using (var reader = _fixture.CreateContext())
             lastSequence = await reader.OutboxMessages.MaxAsync(message => (long?)message.Sequence) ?? 0;
@@ -103,6 +104,7 @@ public class OutboxWriterTests : IClassFixture<PostgresFixture>
             JsonSerializer.Deserialize(rows[0].Payload, IntegrationEventTypes.Find(rows[0].Type)!));
         Assert.Equal(snapshot with { Items = created.Sale.Items }, created.Sale);
         Assert.Equal(snapshot.Items, created.Sale.Items);
+        Assert.Equal(7.5m, created.Sale.Items[0].RequestedDiscountPercentage);
         Assert.Equal(DateTimeKind.Utc, created.Sale.SaleDate.Kind);
         var cancelled = Assert.IsType<SaleCancelled>(
             JsonSerializer.Deserialize(rows[1].Payload, IntegrationEventTypes.Find(rows[1].Type)!));

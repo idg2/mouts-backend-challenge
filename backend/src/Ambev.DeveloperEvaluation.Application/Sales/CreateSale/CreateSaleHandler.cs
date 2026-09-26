@@ -3,6 +3,7 @@ using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
+using Ambev.DeveloperEvaluation.Domain.Services;
 using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
@@ -10,14 +11,15 @@ using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.CreateSale;
 
-// Work item: TASK-021 (FEAT-010)
+// Work item: TASK-021 (FEAT-010), TASK-064 (FEAT-001)
 /// <summary>
 /// Handler for processing CreateSaleCommand requests.
 /// </summary>
 /// <remarks>
 /// Customer, branch, and products are external identities: the handler loads them to reject unknown ids and
-/// copies the customer name, branch name, product description, and unit price into the sale. Discount and
-/// total values are stored as received; nothing is calculated.
+/// copies the customer name, branch name, product description, and unit price into the sale. The discounts come from
+/// the discount policies in effect at the sale date: the handler resolves them once, rejects every violation of their
+/// rules as a validation failure, and lets <see cref="Sale.ApplyDiscounts"/> price the items and total the sale.
 /// </remarks>
 public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
 {
@@ -31,7 +33,10 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
     // Work item: TASK-029 (FEAT-004)
     private readonly IOutbox _outbox;
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-064 (FEAT-001)
+    private readonly DiscountPolicyResolver _discountPolicyResolver;
+
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     /// <summary>
     /// Initializes a new instance of CreateSaleHandler.
     /// </summary>
@@ -42,6 +47,7 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
     /// <param name="mapper">The AutoMapper instance</param>
     /// <param name="timeProvider">The source of the sale date</param>
     /// <param name="outbox">The outbox the sale events are recorded in</param>
+    /// <param name="discountPolicyResolver">Picks the discount policy of each product at the sale date</param>
     public CreateSaleHandler(
         ISaleRepository saleRepository,
         ICustomerRepository customerRepository,
@@ -49,7 +55,8 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         IProductRepository productRepository,
         IMapper mapper,
         TimeProvider timeProvider,
-        IOutbox outbox)
+        IOutbox outbox,
+        DiscountPolicyResolver discountPolicyResolver)
     {
         _saleRepository = saleRepository;
         _customerRepository = customerRepository;
@@ -58,9 +65,10 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         _mapper = mapper;
         _timeProvider = timeProvider;
         _outbox = outbox;
+        _discountPolicyResolver = discountPolicyResolver;
     }
 
-    // Work item: TD-010 (FEAT-010), TASK-037 (FEAT-006), TASK-029 (FEAT-004), TASK-052 (FEAT-017)
+    // Work item: TD-010 (FEAT-010), TASK-037 (FEAT-006), TASK-029 (FEAT-004), TASK-052 (FEAT-017), TASK-064 (FEAT-001)
     /// <summary>
     /// Handles the CreateSaleCommand request.
     /// </summary>
@@ -111,9 +119,21 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
             throw new ValidationException(failures);
 
         // PostgreSQL stores microseconds: truncating here keeps the SaleCreated snapshot and the response equal to
-        // what a later read returns.
+        // what a later read returns. The policies are those in effect at this same instant (A2, D9).
         var now = _timeProvider.GetUtcNow().UtcDateTime;
         var saleDate = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerMicrosecond));
+
+        var policies = await _discountPolicyResolver.ResolveAsync(branch.Id, productIds, saleDate, cancellationToken);
+        StepTrace.Step("SAL-CRT-14", "Resolve the discount policies at the sale date",
+            [("branchId", branch.Id), ("saleDate", saleDate), ("productIds", productIds.Count), ("resolved", policies.Count)]);
+
+        var lines = command.Items
+            .Select(item => new SaleDiscountLine(item.ProductId, item.Quantity, item.DiscountPercentage, IsCancelled: false))
+            .ToList();
+        var discountFailures = SaleDiscountRules.Check(lines, branch.Id, saleDate, policies);
+        StepTrace.Step("SAL-CRT-15", "Discount rules respected?", [("lines", lines.Count), ("failures", discountFailures.Count)]);
+        if (discountFailures.Count > 0)
+            throw new ValidationException(discountFailures);
 
         var sale = new Sale
         {
@@ -124,7 +144,6 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
             CustomerName = customer.Name,
             BranchId = branch.Id,
             BranchName = branch.Name,
-            TotalAmount = command.TotalAmount,
             IsCancelled = false,
             Items = command.Items.Select((item, index) => new SaleItem
             {
@@ -133,13 +152,14 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
                 ProductDescription = products[item.ProductId].Description,
                 UnitPrice = products[item.ProductId].UnitPrice,
                 Quantity = item.Quantity,
-                DiscountPercentage = item.DiscountPercentage,
-                DiscountAmount = item.DiscountAmount,
-                TotalAmount = item.TotalAmount,
+                RequestedDiscountPercentage = item.DiscountPercentage,
                 IsCancelled = false
             }).ToList()
         };
-        StepTrace.Step("SAL-CRT-09", "Build the sale with copied names and prices", [("presetId", command.Id), ("saleDate", sale.SaleDate), ("customerName", sale.CustomerName), ("branchName", sale.BranchName), ("items", sale.Items.Count), ("totalAmount", sale.TotalAmount)]);
+        StepTrace.Step("SAL-CRT-09", "Build the sale with copied names and prices", [("presetId", command.Id), ("saleDate", sale.SaleDate), ("customerName", sale.CustomerName), ("branchName", sale.BranchName), ("items", sale.Items.Count)]);
+
+        sale.ApplyDiscounts(policies);
+        StepTrace.Step("SAL-CRT-16", "Apply the discounts per product total", [("items", sale.Items.Count), ("totalAmount", sale.TotalAmount)]);
 
         var createdSale = await _saleRepository.CreateAsync(sale, cancellationToken);
         StepTrace.Step("SAL-CRT-10", "Insert the sale and its items", [("saleId", createdSale.Id), ("saleNumber", createdSale.SaleNumber), ("items", createdSale.Items.Count)]);

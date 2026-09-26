@@ -10,7 +10,7 @@ namespace Ambev.DeveloperEvaluation.ORM.Mapping;
 /// </summary>
 public class SaleItemConfiguration : IEntityTypeConfiguration<SaleItem>
 {
-    // Work item: TD-010 (FEAT-010)
+    // Work item: TD-010 (FEAT-010), TASK-062 (FEAT-001)
     /// <summary>
     /// Configures the SaleItems table
     /// </summary>
@@ -25,6 +25,10 @@ public class SaleItemConfiguration : IEntityTypeConfiguration<SaleItem>
             t.HasCheckConstraint("CK_SaleItems_DiscountPercentage", "\"DiscountPercentage\" >= 0 AND \"DiscountPercentage\" <= 100");
             t.HasCheckConstraint("CK_SaleItems_DiscountAmount", "\"DiscountAmount\" >= 0");
             t.HasCheckConstraint("CK_SaleItems_TotalAmount", "\"TotalAmount\" >= 0");
+            t.HasCheckConstraint("CK_SaleItems_RequestedDiscountPercentage",
+                "\"RequestedDiscountPercentage\" IS NULL OR (\"RequestedDiscountPercentage\" >= 0 AND \"RequestedDiscountPercentage\" <= 100)");
+            t.HasCheckConstraint("CK_SaleItems_DiscountCeilingPercentage",
+                "\"DiscountCeilingPercentage\" >= 0 AND \"DiscountCeilingPercentage\" <= 100");
         });
 
         builder.HasKey(i => i.Id);
@@ -35,5 +39,8 @@ public class SaleItemConfiguration : IEntityTypeConfiguration<SaleItem>
         builder.Property(i => i.DiscountPercentage).HasColumnType("numeric(5,2)");
         builder.Property(i => i.DiscountAmount).HasColumnType("numeric(18,2)");
         builder.Property(i => i.TotalAmount).HasColumnType("numeric(18,2)");
+        builder.Property(i => i.RequestedDiscountPercentage).HasColumnType("numeric(5,2)");
+        builder.Property(i => i.DiscountPolicyId).HasColumnType("uuid");
+        builder.Property(i => i.DiscountCeilingPercentage).HasColumnType("numeric(5,2)");
     }
 }

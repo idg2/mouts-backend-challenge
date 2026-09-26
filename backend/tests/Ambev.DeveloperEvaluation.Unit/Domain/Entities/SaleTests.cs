@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities;
 
-// Work item: TASK-015 (FEAT-010)
+// Work item: TASK-015 (FEAT-010), TASK-062 (FEAT-001)
 /// <summary>
 /// Contains unit tests for the Sale entity class.
 /// Tests cover validation and the item synchronization used by sale updates.
@@ -69,10 +69,12 @@ public class SaleTests
         Assert.Contains(second, sale.Items);
     }
 
+    // Work item: TASK-062 (FEAT-001)
     /// <summary>
-    /// Tests that an incoming item with an existing id updates that item in place.
+    /// Tests that an active incoming item with an existing id updates the copied values of that item in place and
+    /// leaves its discount snapshot and totals for ApplyDiscounts, which reprices every active item.
     /// </summary>
-    [Fact(DisplayName = "SyncItems should update the existing item with the same id")]
+    [Fact(DisplayName = "SyncItems should update the existing item with the same id and keep its discount snapshot")]
     public void Given_ExistingItemId_When_Synced_Then_ExistingItemIsUpdated()
     {
         // Arrange
@@ -80,9 +82,9 @@ public class SaleTests
         var sale = NewSale(existing);
         var incoming = NewItem(existing.Id);
         incoming.Quantity = 7;
-        incoming.DiscountAmount = 7m;
-        incoming.TotalAmount = 63m;
-        incoming.IsCancelled = true;
+        incoming.RequestedDiscountPercentage = 5m;
+        incoming.DiscountAmount = 99m;
+        incoming.TotalAmount = 99m;
 
         // Act
         sale.SyncItems([incoming]);
@@ -91,9 +93,80 @@ public class SaleTests
         var item = Assert.Single(sale.Items);
         Assert.Same(existing, item);
         Assert.Equal(7, item.Quantity);
-        Assert.Equal(7m, item.DiscountAmount);
-        Assert.Equal(63m, item.TotalAmount);
+        Assert.Equal(5m, item.RequestedDiscountPercentage);
+        Assert.Equal(5m, item.DiscountAmount);
+        Assert.Equal(45m, item.TotalAmount);
+        Assert.False(item.IsCancelled);
+    }
+
+    // Work item: TASK-062 (FEAT-001)
+    /// <summary>
+    /// Tests that a cancelled incoming line copies only the cancelled flag, so a priced item keeps the product,
+    /// price, quantity, requested discount, and totals it was priced with.
+    /// </summary>
+    [Fact(DisplayName = "SyncItems should copy only the cancelled flag from a cancelled line")]
+    public void Given_CancelledLine_When_Synced_Then_OnlyTheFlagIsCopied()
+    {
+        // Arrange
+        var existing = NewItem(Guid.NewGuid());
+        var productId = existing.ProductId;
+        var sale = NewSale(existing);
+        var incoming = NewItem(existing.Id);
+        incoming.ProductDescription = "Soda 2L";
+        incoming.UnitPrice = 20m;
+        incoming.Quantity = 9;
+        incoming.RequestedDiscountPercentage = 3m;
+        incoming.DiscountAmount = 99m;
+        incoming.TotalAmount = 99m;
+        incoming.IsCancelled = true;
+
+        // Act
+        sale.SyncItems([incoming]);
+
+        // Assert
+        var item = Assert.Single(sale.Items);
+        Assert.Same(existing, item);
         Assert.True(item.IsCancelled);
+        Assert.Equal(productId, item.ProductId);
+        Assert.Equal("Beer 350ml", item.ProductDescription);
+        Assert.Equal(10m, item.UnitPrice);
+        Assert.Equal(5, item.Quantity);
+        Assert.Null(item.RequestedDiscountPercentage);
+        Assert.Equal(10m, item.DiscountPercentage);
+        Assert.Equal(5m, item.DiscountAmount);
+        Assert.Equal(45m, item.TotalAmount);
+    }
+
+    // Work item: TASK-062 (FEAT-001)
+    /// <summary>
+    /// Tests that an active incoming line reactivates a cancelled item and copies every value, leaving the discount
+    /// snapshot and totals for ApplyDiscounts.
+    /// </summary>
+    [Fact(DisplayName = "SyncItems should copy every value from an active line onto a cancelled item")]
+    public void Given_ActiveLineOntoCancelledItem_When_Synced_Then_EverythingIsCopied()
+    {
+        // Arrange
+        var existing = NewItem(Guid.NewGuid());
+        existing.IsCancelled = true;
+        var sale = NewSale(existing);
+        var incoming = NewItem(existing.Id);
+        incoming.ProductDescription = "Soda 2L";
+        incoming.UnitPrice = 20m;
+        incoming.Quantity = 9;
+        incoming.RequestedDiscountPercentage = 3m;
+
+        // Act
+        sale.SyncItems([incoming]);
+
+        // Assert
+        var item = Assert.Single(sale.Items);
+        Assert.Same(existing, item);
+        Assert.False(item.IsCancelled);
+        Assert.Equal(incoming.ProductId, item.ProductId);
+        Assert.Equal("Soda 2L", item.ProductDescription);
+        Assert.Equal(20m, item.UnitPrice);
+        Assert.Equal(9, item.Quantity);
+        Assert.Equal(3m, item.RequestedDiscountPercentage);
     }
 
     /// <summary>
@@ -159,7 +232,7 @@ public class SaleTests
         Assert.False(result.IsValid);
     }
 
-    // Work item: BUG-009 (FEAT-010)
+    // Work item: BUG-009 (FEAT-010), TASK-062 (FEAT-001)
     /// <summary>
     /// Tests that sale and item amounts that do not fit numeric(18,2), and percentages that do not fit
     /// numeric(5,2), are rejected.
@@ -170,6 +243,8 @@ public class SaleTests
     [InlineData("Items[0].DiscountAmount", "5.555")]
     [InlineData("Items[0].TotalAmount", "12345678901234567")]
     [InlineData("Items[0].DiscountPercentage", "12.345")]
+    [InlineData("Items[0].RequestedDiscountPercentage", "12.345")]
+    [InlineData("Items[0].DiscountCeilingPercentage", "12.345")]
     public void Given_AmountBeyondPrecision_When_Validated_Then_ShouldReturnInvalid(string property, string value)
     {
         // Arrange
@@ -183,7 +258,47 @@ public class SaleTests
             case "Items[0].DiscountAmount": item.DiscountAmount = amount; break;
             case "Items[0].TotalAmount": item.TotalAmount = amount; break;
             case "Items[0].DiscountPercentage": item.DiscountPercentage = amount; break;
+            case "Items[0].RequestedDiscountPercentage": item.RequestedDiscountPercentage = amount; break;
+            case "Items[0].DiscountCeilingPercentage": item.DiscountCeilingPercentage = amount; break;
         }
+
+        // Act
+        var result = sale.Validate();
+
+        // Assert
+        Assert.False(result.IsValid);
+    }
+
+    // Work item: TASK-062 (FEAT-001)
+    /// <summary>
+    /// Tests that an item without the policy that priced it is rejected.
+    /// </summary>
+    [Fact(DisplayName = "Validation should fail for an item without a discount policy")]
+    public void Given_ItemWithoutPolicy_When_Validated_Then_ShouldReturnInvalid()
+    {
+        // Arrange
+        var item = NewItem(Guid.NewGuid());
+        item.DiscountPolicyId = Guid.Empty;
+        var sale = NewSale(item);
+
+        // Act
+        var result = sale.Validate();
+
+        // Assert
+        Assert.False(result.IsValid);
+    }
+
+    // Work item: TASK-062 (FEAT-001)
+    /// <summary>
+    /// Tests that an applied discount above the ceiling is rejected.
+    /// </summary>
+    [Fact(DisplayName = "Validation should fail for an applied discount above the ceiling")]
+    public void Given_AppliedAboveCeiling_When_Validated_Then_ShouldReturnInvalid()
+    {
+        // Arrange
+        var item = NewItem(Guid.NewGuid());
+        item.DiscountCeilingPercentage = 5m;
+        var sale = NewSale(item);
 
         // Act
         var result = sale.Validate();
@@ -205,6 +320,7 @@ public class SaleTests
         Items = items.ToList()
     };
 
+    // Work item: TASK-062 (FEAT-001)
     private static SaleItem NewItem(Guid id) => new()
     {
         Id = id,
@@ -213,6 +329,8 @@ public class SaleTests
         ProductDescription = "Beer 350ml",
         UnitPrice = 10m,
         Quantity = 5,
+        DiscountPolicyId = Guid.NewGuid(),
+        DiscountCeilingPercentage = 10m,
         DiscountPercentage = 10m,
         DiscountAmount = 5m,
         TotalAmount = 45m

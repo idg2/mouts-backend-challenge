@@ -22,7 +22,7 @@ Creates, reads, and deletes users; every call needs an Admin or Manager token. T
 
 Stores a new user with a hashed password. The caller chooses the status and the role, Admin included.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Users/UsersController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Users/CreateUser/CreateUserHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/UserRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Users/UsersController.cs`, `src/Ambev.DeveloperEvaluation.Application/Users/CreateUser/CreateUserHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/UserRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -51,7 +51,7 @@ flowchart TD
 
 Returns one user by id, without the password.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Users/UsersController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Users/GetUser/GetUserHandler.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Users/UsersController.cs`, `src/Ambev.DeveloperEvaluation.Application/Users/GetUser/GetUserHandler.cs`
 
 ```mermaid
 flowchart TD
@@ -71,7 +71,7 @@ flowchart TD
 
 Deletes one user by id. Tokens already issued to it stay valid until they expire.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Users/UsersController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Users/DeleteUser/DeleteUserHandler.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Users/UsersController.cs`, `src/Ambev.DeveloperEvaluation.Application/Users/DeleteUser/DeleteUserHandler.cs`
 
 ```mermaid
 flowchart TD
@@ -91,7 +91,7 @@ flowchart TD
 
 Creates the first Admin before the API listens, since no anonymous call can create users. It runs on every start and skips when the user exists.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Seeding/SeedingExtensions.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Seeding/AdminSeedSettings.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Seeding/AdminSeeder.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Program.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Seeding/SeedingExtensions.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Seeding/AdminSeedSettings.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Seeding/AdminSeeder.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Program.cs`
 
 ```mermaid
 flowchart TD

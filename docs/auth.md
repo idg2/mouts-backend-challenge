@@ -18,7 +18,7 @@ Reads `Users` (see [users.md](users.md#data-model)): `Email`, the BCrypt `Passwo
 
 Checks the credentials and the user's status, then issues a token valid for 8 hours. Every failure answers 401 without saying which check failed.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Auth/AuthController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Auth/AuthenticateUser/AuthenticateUserHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.Common/Security/JwtTokenGenerator.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Auth/AuthController.cs`, `src/Ambev.DeveloperEvaluation.Application/Auth/AuthenticateUser/AuthenticateUserHandler.cs`, `src/Ambev.DeveloperEvaluation.Common/Security/JwtTokenGenerator.cs`
 
 ```mermaid
 flowchart TD

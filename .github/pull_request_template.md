@@ -44,7 +44,7 @@
 - [ ] Every new type and every changed member has its `// Work item:` comment
 - [ ] Follows the existing layer pattern (Request/Validator/Response/Profile in WebApi; Command/Handler/Validator/Result/Profile in Application)
 - [ ] XML doc comments on public members; file-scoped namespaces
-- [ ] `backend/docs/` updated when an endpoint or internal flow changes
+- [ ] `docs/` updated when an endpoint or internal flow changes
 - [ ] Build has no new warnings
 
 ## Follow-ups

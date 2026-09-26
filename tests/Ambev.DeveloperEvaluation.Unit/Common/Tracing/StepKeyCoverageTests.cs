@@ -4,9 +4,9 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.Common.Tracing;
 
-// Work item: TASK-043 (FEAT-017)
+// Work item: TASK-043 (FEAT-017), TD-038
 /// <summary>
-/// Keeps the step keys of backend/docs and the StepTrace calls of src equal, in both directions.
+/// Keeps the step keys of docs and the StepTrace calls of src equal, in both directions.
 /// </summary>
 public class StepKeyCoverageTests
 {
@@ -50,7 +50,7 @@ public class StepKeyCoverageTests
         var unknown = TracedKeys().Except(documented).Order().ToList();
 
         // Assert
-        unknown.Should().BeEmpty($"a traced key must exist in backend/docs; unknown: {string.Join(", ", unknown)}");
+        unknown.Should().BeEmpty($"a traced key must exist in docs; unknown: {string.Join(", ", unknown)}");
     }
 
     private static HashSet<string> KeysIn(string text) =>

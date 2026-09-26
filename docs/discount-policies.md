@@ -49,7 +49,7 @@ erDiagram
 
 Stores a new policy. Policies are never edited afterwards, only disabled (DSC-DIS): a new rule is a new policy, which wins over an older one of the same scope once it starts.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/DiscountPolicies/DiscountPoliciesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/DiscountPolicies/CreateDiscountPolicy/CreateDiscountPolicyHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/DiscountPolicyRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/DiscountPolicies/DiscountPoliciesController.cs`, `src/Ambev.DeveloperEvaluation.Application/DiscountPolicies/CreateDiscountPolicy/CreateDiscountPolicyHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/DiscountPolicyRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -75,7 +75,7 @@ flowchart TD
 
 Returns one policy with its tiers.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/DiscountPolicies/DiscountPoliciesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/DiscountPolicies/GetDiscountPolicy/GetDiscountPolicyHandler.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/DiscountPolicies/DiscountPoliciesController.cs`, `src/Ambev.DeveloperEvaluation.Application/DiscountPolicies/GetDiscountPolicy/GetDiscountPolicyHandler.cs`
 
 ```mermaid
 flowchart TD
@@ -97,7 +97,7 @@ flowchart TD
 
 Returns policies one page at a time, each with its tiers, with the list conventions of CMN-LST.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/DiscountPolicies/DiscountPoliciesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/DiscountPolicies/ListDiscountPolicies/ListDiscountPoliciesHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/DiscountPolicyRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/DiscountPolicies/DiscountPoliciesController.cs`, `src/Ambev.DeveloperEvaluation.Application/DiscountPolicies/ListDiscountPolicies/ListDiscountPoliciesHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/DiscountPolicyRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -119,7 +119,7 @@ flowchart TD
 
 Takes policies out of the resolution of sales, all or nothing. It is the only change a policy accepts after creation; the discounts already stored on sale items stay as they are.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/DiscountPolicies/DiscountPoliciesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/DiscountPolicies/DisableDiscountPolicies/DisableDiscountPoliciesHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/DiscountPolicyRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/DiscountPolicies/DiscountPoliciesController.cs`, `src/Ambev.DeveloperEvaluation.Application/DiscountPolicies/DisableDiscountPolicies/DisableDiscountPoliciesHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/DiscountPolicyRepository.cs`
 
 ```mermaid
 flowchart TD

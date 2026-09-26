@@ -1,3 +1,6 @@
+# Pinned so the stack keeps the containers and the named volumes it had when this file lived in backend/.
+name: backend
+
 services:
   ambev.developerevaluation.webapi:
     container_name: ambev_developer_evaluation_webapi

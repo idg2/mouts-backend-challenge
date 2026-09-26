@@ -22,7 +22,7 @@ The branch registry. Sales reference branches by id and copy their name.
 
 Stores a new branch. Names are not unique, so the same request twice creates two branches.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Branches/BranchesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Branches/CreateBranch/CreateBranchHandler.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Branches/BranchesController.cs`, `src/Ambev.DeveloperEvaluation.Application/Branches/CreateBranch/CreateBranchHandler.cs`
 
 ```mermaid
 flowchart TD
@@ -41,7 +41,7 @@ flowchart TD
 
 Returns one branch by id.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Branches/BranchesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Branches/GetBranch/GetBranchHandler.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Branches/BranchesController.cs`, `src/Ambev.DeveloperEvaluation.Application/Branches/GetBranch/GetBranchHandler.cs`
 
 ```mermaid
 flowchart TD
@@ -61,7 +61,7 @@ flowchart TD
 
 Returns branches one page at a time with the list conventions of CMN-LST.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Branches/BranchesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Branches/ListBranches/ListBranchesHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/BranchRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Branches/BranchesController.cs`, `src/Ambev.DeveloperEvaluation.Application/Branches/ListBranches/ListBranchesHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/BranchRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -83,7 +83,7 @@ flowchart TD
 
 Renames a branch. Sales keep the name they copied when they were written.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Branches/BranchesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Branches/UpdateBranch/UpdateBranchHandler.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Branches/BranchesController.cs`, `src/Ambev.DeveloperEvaluation.Application/Branches/UpdateBranch/UpdateBranchHandler.cs`
 
 ```mermaid
 flowchart TD
@@ -107,7 +107,7 @@ flowchart TD
 
 Deletes one branch by id. Sales that reference it are untouched.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Branches/BranchesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Branches/DeleteBranch/DeleteBranchHandler.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Branches/BranchesController.cs`, `src/Ambev.DeveloperEvaluation.Application/Branches/DeleteBranch/DeleteBranchHandler.cs`
 
 ```mermaid
 flowchart TD

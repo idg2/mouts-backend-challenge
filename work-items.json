@@ -1651,6 +1651,17 @@
       "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TD-038",
+      "type": "td",
+      "title": "Repository layout at the root: src/, tests/, README.md",
+      "description": "Moves the .NET solution out of backend/ to the repository root so the layout matches .doc/project-structure.md (src/, tests/, README.md at the root). The API documentation backend/docs becomes docs/; the local-only planning folder docs/ becomes docs-private/. The challenge statement README.md becomes CHALLENGE.md and the guide README_.md becomes README.md. Paths in code messages, scripts, the Makefile, the PR template, and the docs follow; docker-compose.yml pins the compose project name so the running stack and its volumes keep working.",
+      "parent": null,
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
     }
   ]
 }

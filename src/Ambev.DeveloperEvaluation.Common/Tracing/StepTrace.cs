@@ -5,9 +5,9 @@ using System.Runtime.CompilerServices;
 
 namespace Ambev.DeveloperEvaluation.Common.Tracing;
 
-// Work item: TASK-042 (FEAT-017)
+// Work item: TASK-042 (FEAT-017), TD-038
 /// <summary>
-/// Prints one line per step key documented in backend/docs. Every Step call is compiled away in Release, together
+/// Prints one line per step key documented in docs. Every Step call is compiled away in Release, together
 /// with its arguments, and in Debug nothing happens until a sink is installed, so only the trace console sees lines.
 /// </summary>
 public static class StepTrace

@@ -13,11 +13,12 @@ namespace Ambev.DeveloperEvaluation.DevConsole.Trace;
 /// </summary>
 public static class DatabaseWipe
 {
+    // Work item: TASK-056 (FEAT-017), TD-038
     /// <summary>
     /// The message printed when PostgreSQL refuses the drop because other sessions hold the database.
     /// </summary>
     public const string HeldMessage =
-        "The PostgreSQL database is in use by other sessions, so it was not dropped. Stop the API first: from backend, " +
+        "The PostgreSQL database is in use by other sessions, so it was not dropped. Stop the API first: from the repository root, " +
         "run \"docker compose stop ambev.developerevaluation.webapi\" and stop any \"dotnet run\" of the WebApi, then run the console again.";
 
     private const string PostgresInUse = "55006";

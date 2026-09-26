@@ -71,7 +71,7 @@ erDiagram
 
 The API writes sales and their events to PostgreSQL in one transaction. A relay moves the events to a MongoDB queue that also carries queued sales, and workers in the same API consume both: one logs the events, the other projects them into a MongoDB collection that the get and list endpoints read.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingExtensions.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingExtensions.cs`
 
 ```mermaid
 flowchart LR
@@ -105,7 +105,7 @@ flowchart LR
 
 `POST /api/sales` without `Prefer: respond-async` prices the items from the discount policies, stores the sale in the request's transaction, and records SaleCreated in the outbox. The same handler also runs queued sales (SAL-ASY).
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/PreferHeader.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/CreateSale/CreateSaleHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/Common/SaleDiscountRules.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Services/DiscountPolicyResolver.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Entities/Sale.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/PreferHeader.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/CreateSale/CreateSaleHandler.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/Common/SaleDiscountRules.cs`, `src/Ambev.DeveloperEvaluation.Domain/Services/DiscountPolicyResolver.cs`, `src/Ambev.DeveloperEvaluation.Domain/Entities/Sale.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -194,7 +194,7 @@ sequenceDiagram
 
 With `Prefer: respond-async` the API validates the body, queues the command, and answers 202 at once. A Rebus worker in the same process stores the sale later through the SAL-CRT handler.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/CreateSaleMessageHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingExtensions.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Messaging/CreateSaleMessageHandler.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingExtensions.cs`
 
 ```mermaid
 flowchart TD
@@ -246,7 +246,7 @@ sequenceDiagram
 
 Returns one sale with its items in line order.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/GetSale/GetSaleHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleReadStore.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/GetSale/GetSaleHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleReadStore.cs`
 
 ```mermaid
 flowchart TD
@@ -268,7 +268,7 @@ flowchart TD
 
 Returns sale headers one page at a time, without items, with the list conventions of CMN-LST.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/ListSales/ListSalesHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleReadStore.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/ListSales/ListSalesHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleReadStore.cs`
 
 ```mermaid
 flowchart TD
@@ -290,7 +290,7 @@ flowchart TD
 
 Replaces the sale's header values and item list in one transaction and prices the items again at the stored sale date. Items are matched by id, and events describe the transitions the update caused.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/UpdateSale/UpdateSaleHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/Common/SaleDiscountRules.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Services/DiscountPolicyResolver.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Entities/Sale.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/UpdateSale/UpdateSaleHandler.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/Common/SaleDiscountRules.cs`, `src/Ambev.DeveloperEvaluation.Domain/Services/DiscountPolicyResolver.cs`, `src/Ambev.DeveloperEvaluation.Domain/Entities/Sale.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -382,7 +382,7 @@ sequenceDiagram
 
 Deletes the sale and its items and records SaleDeleted in the same transaction.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/DeleteSale/DeleteSaleHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/DeleteSale/DeleteSaleHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -429,7 +429,7 @@ sequenceDiagram
 
 Five integration events describe sale writes. They are recorded in the outbox (SAL-OBW), dispatched by the relay (SAL-DSP), and logged by the consumer (SAL-CON).
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.Domain/Events/Sales/SaleSnapshot.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Events/IntegrationEventTypes.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.Domain/Events/Sales/SaleSnapshot.cs`, `src/Ambev.DeveloperEvaluation.Domain/Events/IntegrationEventTypes.cs`
 
 ```mermaid
 classDiagram
@@ -506,7 +506,7 @@ classDiagram
 
 Recording an event is a row insert in the command's own transaction, so the event exists exactly when the sale write commits.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.ORM/Outbox/OutboxWriter.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Events/IntegrationEventTypes.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Mapping/OutboxMessageConfiguration.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.ORM/Outbox/OutboxWriter.cs`, `src/Ambev.DeveloperEvaluation.Domain/Events/IntegrationEventTypes.cs`, `src/Ambev.DeveloperEvaluation.ORM/Mapping/OutboxMessageConfiguration.cs`
 
 ```mermaid
 sequenceDiagram
@@ -537,7 +537,7 @@ sequenceDiagram
 
 A background service in the API runs dispatch cycles for as long as the API runs: back to back while batches are full, every `Outbox:PollingInterval` otherwise.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/OutboxRelayService.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingExtensions.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingSettings.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Messaging/OutboxRelayService.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingExtensions.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingSettings.cs`
 
 ```mermaid
 flowchart TD
@@ -567,7 +567,7 @@ flowchart TD
 
 One cycle publishes pending rows in `Sequence` order and marks each one processed. The first failure ends the cycle, so no event overtakes an earlier one.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.ORM/Outbox/OutboxRelay.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/RebusEventPublisher.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Events/IntegrationEventTypes.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.ORM/Outbox/OutboxRelay.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Messaging/RebusEventPublisher.cs`, `src/Ambev.DeveloperEvaluation.Domain/Events/IntegrationEventTypes.cs`
 
 ```mermaid
 flowchart TD
@@ -623,7 +623,7 @@ sequenceDiagram
 
 Rebus moves messages through a MongoDB collection that works as the queue. Queued sales and sale events share the `sales-intake` queue, which workers inside the API consume.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingExtensions.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingSettings.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettings.json`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingExtensions.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingSettings.cs`, `src/Ambev.DeveloperEvaluation.WebApi/appsettings.json`
 
 ```mermaid
 stateDiagram-v2
@@ -678,7 +678,7 @@ sequenceDiagram
 
 `SaleEventLogHandler` consumes the five events and writes one log line per event. `SaleProjectionHandler` (SAL-PRJ) consumes the same events; a throw in either handler fails the message for both.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/SaleEventLogHandler.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Messaging/SaleEventLogHandler.cs`
 
 ```mermaid
 sequenceDiagram
@@ -700,7 +700,7 @@ sequenceDiagram
 
 `SaleProjectionHandler` keeps the MongoDB sales collection that SAL-GET and SAL-LST read. Every write is ordered by the outbox sequence the relay sends as a header, so events of one sale handled in parallel, or delivered again, never leave an older state.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/SaleProjectionHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleReadStore.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleDocument.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Messaging/SaleProjectionHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleReadStore.cs`, `src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleDocument.cs`
 
 ```mermaid
 sequenceDiagram
@@ -725,7 +725,7 @@ sequenceDiagram
 
 Asynchronous failures surface in two places: a message in the `error` queue, which is never reprocessed, or an outbox row that stays pending, which every cycle retries and which blocks later rows while its cause persists.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingExtensions.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Outbox/OutboxRelay.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingExtensions.cs`, `src/Ambev.DeveloperEvaluation.ORM/Outbox/OutboxRelay.cs`
 
 ```mermaid
 flowchart TD
@@ -773,5 +773,5 @@ This topic is an operations guide, so it has no step keys of its own; the failur
 
 - [conventions.md](conventions.md#cmn-txn--transactions): the transaction every write runs in
 - [conventions.md](conventions.md#cmn-lst--list-queries): filters, order, and pages
-- [README_.md](../../README_.md#8-asynchronous-sale-intake): how to call the asynchronous intake and watch the events
+- [README.md](../README.md#8-asynchronous-sale-intake): how to call the asynchronous intake and watch the events
 - [INDEX.md](INDEX.md)

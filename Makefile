@@ -1,5 +1,4 @@
 # Local stack: Postgres, MongoDB, Redis, and the WebApi container.
-BACKEND_DIR := backend
 COMPOSE := docker compose
 DEV_SERVICES := \
 	ambev.developerevaluation.database \
@@ -10,7 +9,6 @@ DEV_SERVICES := \
 .PHONY: dev-up
 
 dev-up:
-	cd $(BACKEND_DIR) && \
 	$(COMPOSE) up -d $(DEV_SERVICES) && \
 	printf 'Postgres  %s\n' "$$($(COMPOSE) port ambev.developerevaluation.database 5432)" && \
 	printf 'MongoDB   %s\n' "$$($(COMPOSE) port ambev.developerevaluation.nosql 27017)" && \

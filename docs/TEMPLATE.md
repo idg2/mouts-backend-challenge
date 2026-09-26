@@ -1,6 +1,6 @@
 # Documentation Template
 
-Every document in `backend/docs/` follows this structure, so readers find the same things in the same places. `conventions.md` uses it without the Endpoints and Data model sections.
+Every document in `docs/` follows this structure, so readers find the same things in the same places. `conventions.md` uses it without the Endpoints and Data model sections.
 
 ## Keys
 
@@ -12,7 +12,7 @@ Every document in `backend/docs/` follows this structure, so readers find the sa
 - The same point uses the same step key in the topic's flowchart and in its sequence diagram.
 - Keys never change. A new step takes the next free number of its area, even between existing steps, and a removed step's number is never reused.
 - Each area belongs to one document, and [INDEX.md](INDEX.md) registers every topic.
-- The trace console prints these keys: from `backend`, `dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- t <scenario>` hosts the API in process and prints one line per step, `HH:mm:ss.ffffff  T022  SAL-CRT-04 CMN-PIP-10  Validate the command  presetId=null valid=True errors=0  CreateSaleHandler.cs:74` (a shared line prints every key it carries). It wipes the development databases first; see [README_.md](../../README_.md#9-trace-console). Every step key has a `StepTrace.Step` call at its source line, and the unit test `StepKeyCoverageTests` fails when a documented key has no call or a call uses an undocumented key. Tools extract keys with `\b[A-Z]{3}-[A-Z]{3}(-\d{2})?\b`.
+- The trace console prints these keys: from the repository root, `dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- t <scenario>` hosts the API in process and prints one line per step, `HH:mm:ss.ffffff  T022  SAL-CRT-04 CMN-PIP-10  Validate the command  presetId=null valid=True errors=0  CreateSaleHandler.cs:74` (a shared line prints every key it carries). It wipes the development databases first; see [README.md](../README.md#9-trace-console). Every step key has a `StepTrace.Step` call at its source line, and the unit test `StepKeyCoverageTests` fails when a documented key has no call or a call uses an undocumented key. Tools extract keys with `\b[A-Z]{3}-[A-Z]{3}(-\d{2})?\b`.
 
 ## Diagrams
 
@@ -53,7 +53,7 @@ An `erDiagram` when more than one table is involved.
 
 <At most three lines: what the process does and why.>
 
-**Source:** `backend/src/<repository-relative path>`
+**Source:** `src/<repository-relative path>`
 
 ```mermaid
 flowchart TD

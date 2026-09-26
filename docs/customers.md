@@ -23,7 +23,7 @@ The customer registry. Sales reference customers by id and copy their name.
 
 Stores a new customer. The document is normalized first, so a formatted and an unformatted CPF are the same customer.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Customers/CustomersController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Customers/CreateCustomer/CreateCustomerHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.Domain/Validation/DocumentNumber.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/CustomerRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Customers/CustomersController.cs`, `src/Ambev.DeveloperEvaluation.Application/Customers/CreateCustomer/CreateCustomerHandler.cs`, `src/Ambev.DeveloperEvaluation.Domain/Validation/DocumentNumber.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/CustomerRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -52,7 +52,7 @@ flowchart TD
 
 Returns one customer by id.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Customers/CustomersController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Customers/GetCustomer/GetCustomerHandler.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Customers/CustomersController.cs`, `src/Ambev.DeveloperEvaluation.Application/Customers/GetCustomer/GetCustomerHandler.cs`
 
 ```mermaid
 flowchart TD
@@ -72,7 +72,7 @@ flowchart TD
 
 Returns customers one page at a time with the list conventions of CMN-LST.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Customers/CustomersController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Customers/ListCustomers/ListCustomersHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/CustomerRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Customers/CustomersController.cs`, `src/Ambev.DeveloperEvaluation.Application/Customers/ListCustomers/ListCustomersHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/CustomerRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -94,7 +94,7 @@ flowchart TD
 
 Replaces a customer's name and document. Sales keep the name they copied when they were written.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Customers/CustomersController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Customers/UpdateCustomer/UpdateCustomerHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/CustomerRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Customers/CustomersController.cs`, `src/Ambev.DeveloperEvaluation.Application/Customers/UpdateCustomer/UpdateCustomerHandler.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/CustomerRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -127,7 +127,7 @@ flowchart TD
 
 Deletes one customer by id. Sales that reference it are untouched.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Customers/CustomersController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Customers/DeleteCustomer/DeleteCustomerHandler.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Customers/CustomersController.cs`, `src/Ambev.DeveloperEvaluation.Application/Customers/DeleteCustomer/DeleteCustomerHandler.cs`
 
 ```mermaid
 flowchart TD

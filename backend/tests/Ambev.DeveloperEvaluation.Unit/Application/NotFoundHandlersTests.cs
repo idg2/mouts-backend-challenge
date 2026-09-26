@@ -30,6 +30,9 @@ public class NotFoundHandlersTests
     private readonly IBranchRepository _branches = Substitute.For<IBranchRepository>();
     private readonly IProductRepository _products = Substitute.For<IProductRepository>();
     private readonly ISaleRepository _sales = Substitute.For<ISaleRepository>();
+
+    // Work item: TASK-077 (FEAT-003)
+    private readonly ISaleReadStore _saleReadStore = Substitute.For<ISaleReadStore>();
     private readonly IMapper _mapper = Substitute.For<IMapper>();
 
     /// <summary>
@@ -71,7 +74,7 @@ public class NotFoundHandlersTests
         await act.Should().ThrowAsync<ValidationException>();
     }
 
-    // Work item: TD-007 (FEAT-010), FEAT-013, FEAT-012, TASK-029 (FEAT-004)
+    // Work item: TD-007 (FEAT-010), FEAT-013, FEAT-012, TASK-029 (FEAT-004), TASK-077 (FEAT-003)
     private Task HandleAsync(string operation, Guid id) => operation switch
     {
         "customers/get" => new GetCustomerHandler(_customers, _mapper).Handle(new GetCustomerCommand(id), CancellationToken.None),
@@ -86,7 +89,7 @@ public class NotFoundHandlersTests
         "products/update" => new UpdateProductHandler(_products, _mapper)
             .Handle(new UpdateProductCommand { Id = id, Code = "BEER-350", Description = "Beer 350ml", UnitPrice = 10m }, CancellationToken.None),
         "products/delete" => new DeleteProductHandler(_products).Handle(new DeleteProductCommand(id), CancellationToken.None),
-        "sales/get" => new GetSaleHandler(_sales, _mapper).Handle(new GetSaleCommand(id), CancellationToken.None),
+        "sales/get" => new GetSaleHandler(_saleReadStore, _mapper).Handle(new GetSaleCommand(id), CancellationToken.None),
         _ => new DeleteSaleHandler(_sales, Substitute.For<IOutbox>()).Handle(new DeleteSaleCommand(id), CancellationToken.None)
     };
 }

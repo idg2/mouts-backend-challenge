@@ -13,11 +13,13 @@ namespace Ambev.DeveloperEvaluation.Unit.WebApi.Messaging;
 /// </summary>
 public class RebusEventPublisherTests
 {
+    // Work item: TASK-076 (FEAT-003)
     /// <summary>
-    /// Tests that the event is sent to the local queue with the outbox row id as its message id.
+    /// Tests that the event is sent to the local queue with the outbox row id as its message id and the outbox
+    /// sequence as the ordering header.
     /// </summary>
-    [Fact(DisplayName = "Given an event and its id When publishing Then sends it locally with the id as message id")]
-    public async Task Given_EventAndId_When_Publishing_Then_SendsLocallyWithIdAsMessageId()
+    [Fact(DisplayName = "Given an event, its id, and its sequence When publishing Then sends it locally with both headers")]
+    public async Task Given_EventIdAndSequence_When_Publishing_Then_SendsLocallyWithBothHeaders()
     {
         // Arrange
         var bus = Substitute.For<IBus>();
@@ -25,11 +27,12 @@ public class RebusEventPublisherTests
         var eventId = Guid.NewGuid();
 
         // Act
-        await new RebusEventPublisher(bus).PublishAsync(integrationEvent, eventId, CancellationToken.None);
+        await new RebusEventPublisher(bus).PublishAsync(integrationEvent, eventId, 77, CancellationToken.None);
 
         // Assert
         await bus.Received(1).SendLocal(
             integrationEvent,
-            Arg.Is<IDictionary<string, string>>(headers => headers[Headers.MessageId] == eventId.ToString()));
+            Arg.Is<IDictionary<string, string>>(headers =>
+                headers[Headers.MessageId] == eventId.ToString() && headers[RebusEventPublisher.SequenceHeader] == "77"));
     }
 }

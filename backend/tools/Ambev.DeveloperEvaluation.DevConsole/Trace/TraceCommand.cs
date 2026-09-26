@@ -12,11 +12,13 @@ namespace Ambev.DeveloperEvaluation.DevConsole.Trace;
 /// </summary>
 public static class TraceCommand
 {
-    // Work item: TASK-056 (FEAT-017)
+    // Work item: TASK-056 (FEAT-017), TASK-078 (FEAT-003)
     private static readonly string[] SharedWithApi =
     [
         "ConnectionStrings:DefaultConnection",
         "ConnectionStrings:MessageBus",
+        "ConnectionStrings:ReadModel",
+        "ReadModel:Database",
         "Seed:Admin:Email",
         "Seed:Admin:Password"
     ];

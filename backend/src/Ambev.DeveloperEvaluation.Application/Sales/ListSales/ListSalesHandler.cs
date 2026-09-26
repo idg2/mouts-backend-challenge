@@ -12,21 +12,22 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.ListSales;
 /// </summary>
 public class ListSalesHandler : IRequestHandler<ListSalesCommand, ListSalesResult>
 {
-    private readonly ISaleRepository _saleRepository;
+    private readonly ISaleReadStore _saleReadStore;
     private readonly IMapper _mapper;
 
+    // Work item: TASK-077 (FEAT-003)
     /// <summary>
     /// Initializes a new instance of ListSalesHandler.
     /// </summary>
-    /// <param name="saleRepository">The sale repository</param>
+    /// <param name="saleReadStore">The sale read model</param>
     /// <param name="mapper">The AutoMapper instance</param>
-    public ListSalesHandler(ISaleRepository saleRepository, IMapper mapper)
+    public ListSalesHandler(ISaleReadStore saleReadStore, IMapper mapper)
     {
-        _saleRepository = saleRepository;
+        _saleReadStore = saleReadStore;
         _mapper = mapper;
     }
 
-    // Work item: TASK-025 (FEAT-011), TASK-052 (FEAT-017)
+    // Work item: TASK-025 (FEAT-011), TASK-052 (FEAT-017), TASK-077 (FEAT-003)
     /// <summary>
     /// Handles the ListSalesCommand request.
     /// </summary>
@@ -49,8 +50,8 @@ public class ListSalesHandler : IRequestHandler<ListSalesCommand, ListSalesResul
             Filters = command.Filters,
             Order = command.Order
         };
-        var (sales, totalCount) = await _saleRepository.ListAsync(query, cancellationToken);
-        StepTrace.Step("SAL-LST-03", "Query one page of headers", [("page", command.Page), ("size", command.Size), ("filters", command.Filters.Count), ("returned", sales.Count), ("totalCount", totalCount)]);
+        var (sales, totalCount) = await _saleReadStore.ListAsync(query, cancellationToken);
+        StepTrace.Step("SAL-LST-03", "Query one page from the read model", [("page", command.Page), ("size", command.Size), ("filters", command.Filters.Count), ("returned", sales.Count), ("totalCount", totalCount)]);
 
         return new ListSalesResult
         {

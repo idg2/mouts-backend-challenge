@@ -12,16 +12,19 @@ namespace Ambev.DeveloperEvaluation.Unit.DevConsole;
 /// </summary>
 public class DatabaseWipeTests
 {
-    private static readonly (string Postgres, string Mongo) Names = ("developer_evaluation", "developer_evaluation_bus");
+    private static readonly (string Postgres, string Mongo, string ReadModel) Names = ("developer_evaluation", "developer_evaluation_bus", "developer_evaluation_read");
 
-    [Fact(DisplayName = "Given the WebApi connection strings When reading the names Then both databases are named")]
-    public void Given_ConnectionStrings_When_ReadingNames_Then_BothNamed()
+    // Work item: TASK-056 (FEAT-017), TASK-078 (FEAT-003)
+    [Fact(DisplayName = "Given the WebApi connection strings When reading the names Then the three databases are named")]
+    public void Given_ConnectionStrings_When_ReadingNames_Then_ThreeNamed()
     {
         // Arrange
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Port=5432;Database=developer_evaluation;Username=u;Password=p",
-            ["ConnectionStrings:MessageBus"] = "mongodb://u:p@localhost:27017/developer_evaluation_bus?authSource=admin"
+            ["ConnectionStrings:MessageBus"] = "mongodb://u:p@localhost:27017/developer_evaluation_bus?authSource=admin",
+            ["ConnectionStrings:ReadModel"] = "mongodb://u:p@localhost:27017/?authSource=admin",
+            ["ReadModel:Database"] = "developer_evaluation_read"
         }).Build();
 
         // Act
@@ -31,7 +34,7 @@ public class DatabaseWipeTests
         names.Should().Be(Names);
     }
 
-    // Work item: TASK-056 (FEAT-017), TASK-059 (FEAT-017)
+    // Work item: TASK-056 (FEAT-017), TASK-059 (FEAT-017), TASK-078 (FEAT-003)
     [Fact(DisplayName = "Given the user declines When wiping Then nothing is dropped and the exit code is 1")]
     public async Task Given_Declined_When_Wiping_Then_NothingDropped()
     {
@@ -45,7 +48,7 @@ public class DatabaseWipeTests
         // Assert
         code.Should().Be(1);
         dropped.Should().BeFalse();
-        output.ToString().Should().Contain("developer_evaluation").And.Contain("developer_evaluation_bus");
+        output.ToString().Should().Contain("developer_evaluation").And.Contain("developer_evaluation_bus").And.Contain("developer_evaluation_read");
     }
 
     // Work item: TASK-056 (FEAT-017), TASK-059 (FEAT-017)
@@ -83,7 +86,7 @@ public class DatabaseWipeTests
         drops.Should().Be(2);
     }
 
-    // Work item: TASK-056 (FEAT-017), TASK-059 (FEAT-017)
+    // Work item: TASK-056 (FEAT-017), TASK-059 (FEAT-017), TASK-078 (FEAT-003)
     [Fact(DisplayName = "Given the MongoDB drop fails after the PostgreSQL drop When wiping Then the error writer says which one was dropped")]
     public async Task Given_MongoDropFails_When_Wiping_Then_SaysPostgresDroppedMongoNot()
     {
@@ -99,9 +102,9 @@ public class DatabaseWipeTests
         code.Should().Be(1);
         error.ToString().Should()
             .Contain("PostgreSQL database \"developer_evaluation\" was dropped")
-            .And.Contain("MongoDB queue database \"developer_evaluation_bus\" was not")
+            .And.Contain("MongoDB databases \"developer_evaluation_bus\" and \"developer_evaluation_read\" were not")
             .And.Contain("TimeoutException: no server");
-        output.ToString().Should().NotContain("was not").And.NotContain("Both databases dropped.");
+        output.ToString().Should().NotContain("was not").And.NotContain("All three databases dropped.");
     }
 
     // Work item: TASK-056 (FEAT-017)
@@ -121,7 +124,7 @@ public class DatabaseWipeTests
         maintenance.Pooling.Should().BeFalse();
     }
 
-    // Work item: TASK-056 (FEAT-017)
+    // Work item: TASK-056 (FEAT-017), TASK-078 (FEAT-003)
     [Fact(DisplayName = "Given a blank connection string When reading the names Then it throws naming the key")]
     public void Given_BlankConnection_When_ReadingNames_Then_ThrowsNamingKey()
     {
@@ -129,7 +132,9 @@ public class DatabaseWipeTests
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:DefaultConnection"] = "   ",
-            ["ConnectionStrings:MessageBus"] = "mongodb://u:p@localhost:27017/developer_evaluation_bus?authSource=admin"
+            ["ConnectionStrings:MessageBus"] = "mongodb://u:p@localhost:27017/developer_evaluation_bus?authSource=admin",
+            ["ConnectionStrings:ReadModel"] = "mongodb://u:p@localhost:27017/?authSource=admin",
+            ["ReadModel:Database"] = "developer_evaluation_read"
         }).Build();
 
         // Act
@@ -137,5 +142,24 @@ public class DatabaseWipeTests
 
         // Assert
         act.Should().Throw<InvalidOperationException>().WithMessage("ConnectionStrings:DefaultConnection is not configured.");
+    }
+
+    // Work item: TASK-078 (FEAT-003)
+    [Fact(DisplayName = "Given no read model database key When reading the names Then it throws naming the key")]
+    public void Given_NoReadModelDatabase_When_ReadingNames_Then_ThrowsNamingKey()
+    {
+        // Arrange
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:DefaultConnection"] = "Host=localhost;Port=5432;Database=developer_evaluation;Username=u;Password=p",
+            ["ConnectionStrings:MessageBus"] = "mongodb://u:p@localhost:27017/developer_evaluation_bus?authSource=admin",
+            ["ConnectionStrings:ReadModel"] = "mongodb://u:p@localhost:27017/?authSource=admin"
+        }).Build();
+
+        // Act
+        var act = () => DatabaseWipe.Names(configuration);
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>().WithMessage("ReadModel:Database is not configured.");
     }
 }

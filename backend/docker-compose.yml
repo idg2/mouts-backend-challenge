@@ -12,6 +12,7 @@ services:
       ConnectionStrings__DefaultConnection: Host=ambev.developerevaluation.database;Port=5432;Database=developer_evaluation;Username=developer;Password=ev@luAt10n
       ConnectionStrings__LogStorage: "mongodb://developer:ev%40luAt10n@ambev.developerevaluation.nosql:27017/?authSource=admin"
       ConnectionStrings__MessageBus: "mongodb://developer:ev%40luAt10n@ambev.developerevaluation.nosql:27017/developer_evaluation_bus?authSource=admin"
+      ConnectionStrings__ReadModel: "mongodb://developer:ev%40luAt10n@ambev.developerevaluation.nosql:27017/?authSource=admin"
     ports:
       - "8080:8080"
     depends_on:

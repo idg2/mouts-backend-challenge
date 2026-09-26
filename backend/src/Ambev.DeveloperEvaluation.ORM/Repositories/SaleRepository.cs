@@ -1,21 +1,18 @@
-using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
 
 namespace Ambev.DeveloperEvaluation.ORM.Repositories;
 
-// Work item: TASK-016 (FEAT-010)
+// Work item: TASK-016 (FEAT-010), TASK-077 (FEAT-003)
 /// <summary>
 /// Implementation of ISaleRepository using Entity Framework Core. Every write is a single SaveChangesAsync,
-/// which EF Core runs in one transaction, so a sale and its items are stored together or not at all.
+/// which EF Core runs in one transaction, so a sale and its items are stored together or not at all. Lists are
+/// served by the read model (ISaleReadStore).
 /// </summary>
 public class SaleRepository : ISaleRepository
 {
     private readonly DefaultContext _context;
-
-    // Work item: TASK-025 (FEAT-011)
-    private static readonly SortField[] DefaultOrder = [new("SaleNumber", false)];
 
     /// <summary>
     /// Initializes a new instance of SaleRepository
@@ -68,27 +65,5 @@ public class SaleRepository : ISaleRepository
         _context.Sales.Remove(sale);
         await _context.SaveChangesAsync(cancellationToken);
         return true;
-    }
-
-    // Work item: BUG-008 (FEAT-010), TASK-025 (FEAT-011), TASK-047 (FEAT-017)
-    /// <summary>
-    /// Retrieves one page of sales, without their items, that match the query's filters, in the query's order or else by sale number. A page
-    /// past the last one, including one whose offset does not fit an int, is empty
-    /// </summary>
-    public async Task<(IReadOnlyList<Sale> Items, int TotalCount)> ListAsync(ListQuery query, CancellationToken cancellationToken = default)
-    {
-        var rows = _context.Sales.AsNoTracking()
-            .ApplyFilters(query.Filters)
-            .ApplyOrder(query.Order, DefaultOrder);
-        var totalCount = await rows.CountAsync(cancellationToken);
-        var offset = (long)(query.Page - 1) * query.Size;
-        StepTrace.Step("CMN-LST-09", "Filter, order with Id as tiebreak, count, then page",
-            [("filters", query.Filters.Count), ("sortFields", query.Order.Count), ("total", totalCount), ("page", query.Page), ("size", query.Size),
-             ("pastEnd", offset >= totalCount)]);
-        if (offset >= totalCount)
-            return ([], totalCount);
-
-        var items = await rows.Skip((int)offset).Take(query.Size).ToListAsync(cancellationToken);
-        return (items, totalCount);
     }
 }

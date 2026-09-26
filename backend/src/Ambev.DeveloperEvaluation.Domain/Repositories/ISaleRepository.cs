@@ -40,13 +40,4 @@ public interface ISaleRepository
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>True if the sale was deleted, false if not found</returns>
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
-
-    // Work item: TASK-025 (FEAT-011)
-    /// <summary>
-    /// Retrieves one page of sales, without their items, that match the query's filters, in the query's order or else by sale number
-    /// </summary>
-    /// <param name="query">The page, size, filters, and sort fields</param>
-    /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns>The sales on the page and the number of sales that match the filters</returns>
-    Task<(IReadOnlyList<Sale> Items, int TotalCount)> ListAsync(ListQuery query, CancellationToken cancellationToken = default);
 }

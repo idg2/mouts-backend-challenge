@@ -5,10 +5,10 @@ using System.Reflection;
 
 namespace Ambev.DeveloperEvaluation.ORM.Repositories;
 
-// Work item: TASK-024 (FEAT-011)
+// Work item: TASK-024 (FEAT-011), TASK-075 (FEAT-003)
 /// <summary>
-/// Translates the filters and sort fields of a <see cref="ListQuery"/> into an EF Core query over entity properties
-/// by name. Values are sent as SQL parameters.
+/// Translates the filters and sort fields of a <see cref="ListQuery"/> into a query over entity properties by name:
+/// EF Core (values sent as SQL parameters) or, through the Like translator overload, the MongoDB read model.
 /// </summary>
 public static class ListQueryExtensions
 {
@@ -20,23 +20,36 @@ public static class ListQueryExtensions
 
     /// <summary>
     /// Applies the filters: the Like, Equal, and OnDay filters of one property as one OR, everything else with AND.
+    /// Like uses the Npgsql ILIKE translation.
     /// </summary>
     /// <param name="source">The query to narrow</param>
     /// <param name="filters">The filters, on entity property names</param>
     /// <returns>The narrowed query</returns>
-    public static IQueryable<T> ApplyFilters<T>(this IQueryable<T> source, IReadOnlyList<FieldFilter> filters)
+    public static IQueryable<T> ApplyFilters<T>(this IQueryable<T> source, IReadOnlyList<FieldFilter> filters) =>
+        source.ApplyFilters(filters, NpgsqlLike);
+
+    // Work item: TASK-075 (FEAT-003)
+    /// <summary>
+    /// Applies the filters with a caller-supplied Like translation, so the same tree serves EF Core (ILIKE) and the
+    /// MongoDB read model (a regular expression).
+    /// </summary>
+    /// <param name="source">The query to narrow</param>
+    /// <param name="filters">The filters, on entity property names</param>
+    /// <param name="like">Builds the predicate of a Like filter from the property and the ILIKE pattern</param>
+    /// <returns>The narrowed query</returns>
+    public static IQueryable<T> ApplyFilters<T>(this IQueryable<T> source, IReadOnlyList<FieldFilter> filters, Func<MemberExpression, string, Expression> like)
     {
         var parameter = Expression.Parameter(typeof(T), "entity");
         foreach (var field in filters.GroupBy(filter => filter.Field))
         {
             var property = Expression.Property(parameter, field.Key);
 
-            var matches = field.Where(IsMatch).Select(filter => Compare(property, filter)).ToList();
+            var matches = field.Where(IsMatch).Select(filter => Compare(property, filter, like)).ToList();
             if (matches.Count > 0)
                 source = source.Where(Expression.Lambda<Func<T, bool>>(AnyOf(matches, 0, matches.Count), parameter));
 
             foreach (var range in field.Where(filter => !IsMatch(filter)))
-                source = source.Where(Expression.Lambda<Func<T, bool>>(Compare(property, range), parameter));
+                source = source.Where(Expression.Lambda<Func<T, bool>>(Compare(property, range, like), parameter));
         }
 
         return source;
@@ -82,13 +95,19 @@ public static class ListQueryExtensions
     private static bool IsMatch(FieldFilter filter) =>
         filter.Operator is FilterOperator.Like or FilterOperator.Equal or FilterOperator.OnDay;
 
-    private static Expression Compare(MemberExpression property, FieldFilter filter)
+    // Work item: TASK-075 (FEAT-003)
+    private static Expression NpgsqlLike(MemberExpression property, string pattern) =>
+        Expression.Call(ILikeMethod, Expression.Constant(EF.Functions), property, Parameter(pattern, typeof(string)), Expression.Constant(LikeEscape));
+
+    // Work item: TASK-075 (FEAT-003)
+    private static Expression Compare(MemberExpression property, FieldFilter filter, Func<MemberExpression, string, Expression> like)
     {
+        if (filter.Operator == FilterOperator.Like)
+            return like(property, (string)filter.Value);
+
         var value = Parameter(filter.Value, property.Type);
         return filter.Operator switch
         {
-            FilterOperator.Like => Expression.Call(
-                ILikeMethod, Expression.Constant(EF.Functions), property, value, Expression.Constant(LikeEscape)),
             FilterOperator.Equal => Expression.Equal(property, value),
             FilterOperator.OnDay => Expression.AndAlso(
                 Expression.GreaterThanOrEqual(property, value),

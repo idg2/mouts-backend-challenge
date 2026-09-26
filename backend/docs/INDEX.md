@@ -59,6 +59,7 @@ How each API of the DeveloperStore sales backend behaves, from the HTTP contract
 | [SAL-DSP](sales.md#sal-dsp--dispatch-cycle) | Dispatch cycle | sales.md |
 | [SAL-BUS](sales.md#sal-bus--message-bus) | Message bus | sales.md |
 | [SAL-CON](sales.md#sal-con--event-consumer) | Event consumer | sales.md |
+| [SAL-PRJ](sales.md#sal-prj--read-model-projection) | Read model projection | sales.md |
 | [SAL-ERR](sales.md#sal-err--failures-and-the-error-queue) | Failures and the error queue | sales.md |
 | [DSC-CRT](discount-policies.md#dsc-crt--create-a-discount-policy) | Create a discount policy | discount-policies.md |
 | [DSC-GET](discount-policies.md#dsc-get--get-a-discount-policy) | Get a discount policy | discount-policies.md |

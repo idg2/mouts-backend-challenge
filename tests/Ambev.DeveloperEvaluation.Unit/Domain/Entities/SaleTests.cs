@@ -1,11 +1,12 @@
 using System.Reflection;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using Ambev.DeveloperEvaluation.Unit.TestData;
 using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities;
 
-// Work item: TASK-015 (FEAT-010), TASK-062 (FEAT-001), TD-039
+// Work item: TASK-015 (FEAT-010), TASK-062 (FEAT-001), TD-039, TD-042
 /// <summary>
 /// Contains unit tests for the Sale aggregate: creation, the header changes of an update, the item synchronization,
 /// validation, and the encapsulation of Sale and SaleItem.
@@ -153,6 +154,27 @@ public class SaleTests
         // Assert
         Assert.True(result.IsValid);
         Assert.Empty(result.Errors);
+    }
+
+    // Work item: TD-042
+    /// <summary>
+    /// Tests that a generated sale, created from its lines and priced by the README policy, passes validation.
+    /// </summary>
+    [Fact(DisplayName = "Validation should pass for a generated sale priced by the README policy")]
+    public void Given_GeneratedSale_When_PricedAndValidated_Then_ShouldReturnValid()
+    {
+        // Arrange
+        var sale = SaleTestData.GenerateValidSale();
+        var policies = sale.Items.ToDictionary(item => item.ProductId, _ => DiscountPolicyTestData.Create());
+
+        // Act
+        sale.ApplyDiscounts(policies);
+        var result = sale.Validate();
+
+        // Assert
+        Assert.True(result.IsValid);
+        Assert.Empty(result.Errors);
+        Assert.Equal(sale.Items.Sum(item => item.TotalAmount), sale.TotalAmount);
     }
 
     // Work item: TD-039

@@ -1,4 +1,4 @@
-using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities;
@@ -9,7 +9,7 @@ namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities;
 /// </summary>
 public class ProductTests
 {
-    // Work item: TASK-014 (FEAT-010), FEAT-013
+    // Work item: TASK-014 (FEAT-010), FEAT-013, TD-042
     /// <summary>
     /// Tests that validation passes when the product data is valid.
     /// </summary>
@@ -17,7 +17,7 @@ public class ProductTests
     public void Given_ValidProduct_When_Validated_Then_ShouldReturnValid()
     {
         // Arrange
-        var product = new Product { Id = Guid.NewGuid(), Code = "BEER-350", Description = "Beer 350ml", UnitPrice = 10m };
+        var product = ProductTestData.GenerateValidProduct();
 
         // Act
         var result = product.Validate();
@@ -27,7 +27,7 @@ public class ProductTests
         Assert.Empty(result.Errors);
     }
 
-    // Work item: BUG-009 (FEAT-010), FEAT-013
+    // Work item: BUG-009 (FEAT-010), FEAT-013, TD-042
     /// <summary>
     /// Tests that unit prices that do not fit numeric(18,2) or are not positive are rejected.
     /// </summary>
@@ -39,13 +39,8 @@ public class ProductTests
     public void Given_InvalidUnitPrice_When_Validated_Then_ShouldReturnInvalid(string unitPrice)
     {
         // Arrange
-        var product = new Product
-        {
-            Id = Guid.NewGuid(),
-            Code = "BEER-350",
-            Description = "Beer 350ml",
-            UnitPrice = decimal.Parse(unitPrice, System.Globalization.CultureInfo.InvariantCulture)
-        };
+        var product = ProductTestData.GenerateValidProduct();
+        product.UnitPrice = decimal.Parse(unitPrice, System.Globalization.CultureInfo.InvariantCulture);
 
         // Act
         var result = product.Validate();
@@ -54,7 +49,7 @@ public class ProductTests
         Assert.False(result.IsValid);
     }
 
-    // Work item: FEAT-013
+    // Work item: FEAT-013, TD-042
     /// <summary>
     /// Tests that an empty or longer than 50 characters code is rejected.
     /// </summary>
@@ -64,7 +59,8 @@ public class ProductTests
     public void Given_InvalidCode_When_Validated_Then_ShouldReturnInvalid(string code)
     {
         // Arrange
-        var product = new Product { Id = Guid.NewGuid(), Code = code, Description = "Beer 350ml", UnitPrice = 10m };
+        var product = ProductTestData.GenerateValidProduct();
+        product.Code = code;
 
         // Act
         var result = product.Validate();

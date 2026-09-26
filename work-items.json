@@ -559,9 +559,9 @@
       "description": "AddControllers and AddHealthChecks are registered both in Program and in WebApiModuleInitializer.",
       "parent": null,
       "moscow": "could",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-26"
     },
     {
       "id": "TD-005",
@@ -600,12 +600,12 @@
       "id": "TD-008",
       "type": "td",
       "title": "Upgrade AutoMapper past the known vulnerability",
-      "description": "The build reports NU1903: AutoMapper 13.0.1 has a known high-severity vulnerability (GHSA-rvv3-g6hj-g44x) in the Application and WebApi projects.",
+      "description": "The build reports NU1903: AutoMapper 13.0.1 has a known high-severity vulnerability (GHSA-rvv3-g6hj-g44x) in the Application and WebApi projects. Resolved by a NuGetAuditSuppress with justification in the Application project: no mapped type nests, and AutoMapper 15+ needs a license key.",
       "parent": null,
       "moscow": "should",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-26"
     },
     {
       "id": "TD-009",
@@ -614,9 +614,9 @@
       "description": "CreateUserRequest to CreateUserCommand is mapped both in WebApi/Mappings/CreateUserRequestProfile and in Features/Users/CreateUser/CreateUserProfile; AutoMapper silently keeps one of them.",
       "parent": null,
       "moscow": "could",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-26"
     },
     {
       "id": "TD-010",
@@ -911,9 +911,9 @@
       "description": "CreateSaleProfile leaves CreateSaleCommand.Id unmapped only implicitly. Add .ForMember(c => c.Id, o => o.Ignore()) so a future Id on CreateSaleRequest cannot silently let clients choose sale ids.",
       "parent": null,
       "moscow": "could",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-24",
-      "updatedAt": "2026-09-24"
+      "updatedAt": "2026-09-26"
     },
     {
       "id": "TD-013",
@@ -988,9 +988,9 @@
       "description": "Domain/Events/UserRegisteredEvent.cs comes from the original template and nothing references it: no code raises, publishes, or handles it, and no test uses it. Delete the file.",
       "parent": null,
       "moscow": "could",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-25",
-      "updatedAt": "2026-09-25"
+      "updatedAt": "2026-09-26"
     },
     {
       "id": "BUG-012",
@@ -1693,6 +1693,17 @@
       "parent": null,
       "moscow": "could",
       "status": "backlog",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TD-041",
+      "type": "td",
+      "title": "Null check on Jwt:SecretKey in JwtTokenGenerator",
+      "description": "JwtTokenGenerator passes _configuration[\"Jwt:SecretKey\"] to Encoding.GetBytes without a null check, which the build reports as CS8604 (template code). A missing key now throws an InvalidOperationException that names the key, like the other required settings. Evaluation gap N12.",
+      "parent": null,
+      "moscow": "could",
+      "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26"
     }

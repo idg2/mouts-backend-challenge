@@ -17,8 +17,9 @@ namespace Ambev.DeveloperEvaluation.Application.DiscountPolicies.CreateDiscountP
 /// </summary>
 public class CreateDiscountPolicyHandler : IRequestHandler<CreateDiscountPolicyCommand, DiscountPolicyResult>
 {
+    // Work item: TD-043
     /// <summary>
-    /// The error code of a ValidFrom before the current time (D5).
+    /// The error code of a ValidFrom before the current time: a policy never applies retroactively.
     /// </summary>
     public const string ValidFromInPast = "ValidFromInPast";
 

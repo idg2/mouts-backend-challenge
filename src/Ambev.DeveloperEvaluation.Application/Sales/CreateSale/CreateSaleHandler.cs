@@ -68,7 +68,7 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         _discountPolicyResolver = discountPolicyResolver;
     }
 
-    // Work item: TD-010 (FEAT-010), TASK-037 (FEAT-006), TASK-029 (FEAT-004), TASK-052 (FEAT-017), TASK-064 (FEAT-001), TD-039
+    // Work item: TD-010 (FEAT-010), TASK-037 (FEAT-006), TASK-029 (FEAT-004), TASK-052 (FEAT-017), TASK-064 (FEAT-001), TD-039, TD-043
     /// <summary>
     /// Handles the CreateSaleCommand request.
     /// </summary>
@@ -119,7 +119,7 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
             throw new ValidationException(failures);
 
         // PostgreSQL stores microseconds: truncating here keeps the SaleCreated snapshot and the response equal to
-        // what a later read returns. The policies are those in effect at this same instant (A2, D9).
+        // what a later read returns. The sale is priced by the policies in effect at this same instant, its sale date.
         var now = _timeProvider.GetUtcNow().UtcDateTime;
         var saleDate = now.AddTicks(-(now.Ticks % TimeSpan.TicksPerMicrosecond));
 

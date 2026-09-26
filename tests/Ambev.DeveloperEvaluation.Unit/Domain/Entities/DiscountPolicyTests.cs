@@ -14,7 +14,8 @@ public class DiscountPolicyTests
 {
     private static readonly DateTime Start = DiscountPolicyTestData.Start;
 
-    [Theory(DisplayName = "Given the README policy When evaluating a total Then returns the tier ceiling")]
+    // Work item: TD-043
+    [Theory(DisplayName = "Given the default policy When evaluating a total Then returns the tier ceiling")]
     [InlineData(1, 0)]
     [InlineData(3, 0)]
     [InlineData(4, 10)]
@@ -291,5 +292,23 @@ public class DiscountPolicyTests
 
         // Assert
         inEffect.Should().BeFalse();
+    }
+
+    // Work item: TD-043
+    [Fact(DisplayName = "Given a policy disabled later When checking an instant before the disable Then it is still in effect and from the disable on it is not")]
+    public void Given_PolicyDisabledLater_When_CheckingEarlierInstant_Then_InEffectUntilDisable()
+    {
+        // Arrange
+        var policy = DiscountPolicyTestData.Create(validTo: Start.AddDays(10));
+        var disabledAt = Start.AddDays(5);
+        policy.Disable(disabledAt);
+
+        // Act
+        var before = policy.IsInEffectAt(disabledAt.AddTicks(-1));
+        var at = policy.IsInEffectAt(disabledAt);
+
+        // Assert
+        before.Should().BeTrue();
+        at.Should().BeFalse();
     }
 }

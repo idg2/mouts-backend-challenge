@@ -26,8 +26,9 @@ public class DiscountPolicyRepositoryTests : IClassFixture<PostgresFixture>
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Given the migrations When loading the default policy Then it carries the README rules")]
-    public async Task Given_Migrations_When_LoadingDefault_Then_ReadmeRules()
+    // Work item: TD-043
+    [Fact(DisplayName = "Given the migrations When loading the default policy Then it carries the challenge rules")]
+    public async Task Given_Migrations_When_LoadingDefault_Then_ChallengeRules()
     {
         // Act
         await using var context = _fixture.CreateContext();
@@ -187,6 +188,24 @@ public class DiscountPolicyRepositoryTests : IClassFixture<PostgresFixture>
         var ids = result.Select(policy => policy.Id).ToList();
         Assert.Contains(active.Id, ids);
         Assert.DoesNotContain(disabled.Id, ids);
+    }
+
+    // Work item: TD-043
+    [Fact(DisplayName = "Given a policy disabled after a date When getting the applicable ones at that date Then it is returned")]
+    public async Task Given_PolicyDisabledAfterDate_When_GettingApplicable_Then_Included()
+    {
+        // Arrange
+        var product = Guid.NewGuid();
+        var disabled = Policy(product, null, Start);
+        disabled.Disable(Start.AddDays(5));
+        await SaveAsync(disabled);
+
+        // Act
+        await using var context = _fixture.CreateContext();
+        var result = await new DiscountPolicyRepository(context).GetApplicableAsync(Guid.NewGuid(), [product], Start.AddDays(2));
+
+        // Assert
+        Assert.Contains(disabled.Id, result.Select(policy => policy.Id));
     }
 
     // Work item: TD-032

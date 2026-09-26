@@ -3,9 +3,10 @@ using AutoMapper;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Features.DiscountPolicies.DisableDiscountPolicies;
 
-// Work item: TD-032
+// Work item: TD-032, TD-043
 /// <summary>
-/// Profile for mapping the DisableDiscountPolicies request to the command. The response is the Application result (A11).
+/// Profile for mapping the DisableDiscountPolicies request to the command. The endpoint
+/// returns the Application result itself, so no response is mapped.
 /// </summary>
 public class DisableDiscountPoliciesProfile : Profile
 {

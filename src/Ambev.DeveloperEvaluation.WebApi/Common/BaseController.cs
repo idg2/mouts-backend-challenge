@@ -1,7 +1,6 @@
 ﻿using Ambev.DeveloperEvaluation.Common.Tracing;
 using FluentValidation.Results;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Ambev.DeveloperEvaluation.WebApi.Common;
 
@@ -9,13 +8,6 @@ namespace Ambev.DeveloperEvaluation.WebApi.Common;
 [ApiController]
 public class BaseController : ControllerBase
 {
-    // Work item: BUG-001
-    protected Guid GetCurrentUserId() =>
-            Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? throw new NullReferenceException());
-
-    protected string GetCurrentUserEmail() =>
-        User.FindFirst(ClaimTypes.Email)?.Value ?? throw new NullReferenceException();
-
     protected IActionResult Created<T>(string routeName, object routeValues, T data) =>
         base.CreatedAtRoute(routeName, routeValues, new ApiResponseWithData<T> { Data = data, Success = true });
 

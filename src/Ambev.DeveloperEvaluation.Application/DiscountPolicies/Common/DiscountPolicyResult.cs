@@ -1,9 +1,9 @@
 namespace Ambev.DeveloperEvaluation.Application.DiscountPolicies.Common;
 
-// Work item: TASK-063 (FEAT-001), TD-032
+// Work item: TASK-063 (FEAT-001), TD-032, TD-043
 /// <summary>
 /// A discount policy with its tiers, returned by the create, get, list, and disable operations and, wrapped in the API
-/// envelope, by the endpoints (A11).
+/// envelope, by the endpoints, which map no response of their own.
 /// </summary>
 public class DiscountPolicyResult
 {

@@ -11,8 +11,9 @@ namespace Ambev.DeveloperEvaluation.ORM.Mapping;
 /// </summary>
 public class DiscountPolicyConfiguration : IEntityTypeConfiguration<DiscountPolicy>
 {
+    // Work item: TD-043
     /// <summary>
-    /// The id of the default policy that migration AddDiscountPolicies seeds with the README rules.
+    /// The id of the default policy that migration AddDiscountPolicies seeds with the challenge rules (CHALLENGE.md).
     /// </summary>
     public static readonly Guid DefaultPolicyId = Guid.Parse("7d0c5a6e-2f4b-4c1d-9a39-0f6f2b8a1c01");
 

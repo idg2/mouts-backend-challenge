@@ -42,7 +42,7 @@ public class ProductsController : BaseController
         _mapper = mapper;
     }
 
-    // Work item: TASK-051 (FEAT-017)
+    // Work item: TASK-051 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Creates a new product
     /// </summary>
@@ -52,7 +52,7 @@ public class ProductsController : BaseController
     [HttpPost]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponseWithData<CreateProductResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateProduct([FromBody] CreateProductRequest request, CancellationToken cancellationToken)
     {
         var validator = new CreateProductRequestValidator();
@@ -60,7 +60,7 @@ public class ProductsController : BaseController
         StepTrace.Step("PRD-CRT-01", "CMN-PIP-04", "Validate the request", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count), ("code", request.Code)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<CreateProductCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(CreateProductCommand))]);
@@ -75,7 +75,7 @@ public class ProductsController : BaseController
         });
     }
 
-    // Work item: TASK-051 (FEAT-017)
+    // Work item: TASK-051 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Retrieves a product by its ID
     /// </summary>
@@ -84,8 +84,8 @@ public class ProductsController : BaseController
     /// <returns>The product details if found</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponseWithData<GetProductResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProduct([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new GetProductRequest { Id = id };
@@ -94,7 +94,7 @@ public class ProductsController : BaseController
         StepTrace.Step("PRD-GET-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<GetProductCommand>(request.Id);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(GetProductCommand))]);
@@ -109,7 +109,7 @@ public class ProductsController : BaseController
         });
     }
 
-    // Work item: TASK-027 (FEAT-011), TASK-051 (FEAT-017)
+    // Work item: TASK-027 (FEAT-011), TASK-051 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Lists products one page at a time. Any response field (id, code, description, unitPrice) can be a query key: text matches ignore
     /// case and accept '*' at the start or end, and a repeated key matches any of its values. Numeric and date fields
@@ -123,7 +123,7 @@ public class ProductsController : BaseController
     /// <returns>The requested page of products</returns>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedResponse<ListProductsResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ListProducts(
         [FromQuery(Name = "_page")] int page = 1,
         [FromQuery(Name = "_size")] int size = 10,
@@ -139,7 +139,7 @@ public class ProductsController : BaseController
         StepTrace.Step("PRD-LST-02", "CMN-LST-08", "Validate _page and _size", [("page", request.Page), ("size", request.Size), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<ListProductsCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(ListProductsCommand))]);
@@ -153,7 +153,7 @@ public class ProductsController : BaseController
         return OkPaginated(new PaginatedList<ListProductsResponse>(products, response.TotalCount, response.Page, response.Size));
     }
 
-    // Work item: TASK-051 (FEAT-017)
+    // Work item: TASK-051 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Updates a product
     /// </summary>
@@ -164,8 +164,8 @@ public class ProductsController : BaseController
     [HttpPut("{id}")]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponseWithData<UpdateProductResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateProduct([FromRoute] Guid id, [FromBody] UpdateProductRequest request, CancellationToken cancellationToken)
     {
         request.Id = id;
@@ -174,7 +174,7 @@ public class ProductsController : BaseController
         StepTrace.Step("PRD-UPD-01", "CMN-PIP-04", "Validate the request", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count), ("code", request.Code)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<UpdateProductCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(UpdateProductCommand))]);
@@ -189,7 +189,7 @@ public class ProductsController : BaseController
         });
     }
 
-    // Work item: TASK-051 (FEAT-017)
+    // Work item: TASK-051 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Deletes a product by its ID
     /// </summary>
@@ -199,8 +199,8 @@ public class ProductsController : BaseController
     [HttpDelete("{id}")]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteProduct([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new DeleteProductRequest { Id = id };
@@ -209,7 +209,7 @@ public class ProductsController : BaseController
         StepTrace.Step("PRD-DEL-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<DeleteProductCommand>(request.Id);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(DeleteProductCommand))]);

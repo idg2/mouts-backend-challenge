@@ -50,7 +50,7 @@ public class SalesController : BaseController
         _bus = bus;
     }
 
-    // Work item: TASK-039 (FEAT-006), TASK-052 (FEAT-017)
+    // Work item: TASK-039 (FEAT-006), TASK-052 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Creates a new sale with its items. With the header Prefer: respond-async the sale is queued instead: the
     /// response is 202 with the id it will be stored under, and GET /api/sales/{id} answers 404 until it is stored
@@ -63,7 +63,7 @@ public class SalesController : BaseController
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponseWithData<SaleResponse>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponseWithData<SaleAcceptedResponse>), StatusCodes.Status202Accepted)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateSale(
         [FromBody] CreateSaleRequest request,
         [FromHeader(Name = "Prefer")] string? prefer,
@@ -74,7 +74,7 @@ public class SalesController : BaseController
         StepTrace.Step("SAL-CRT-01", "CMN-PIP-04", "Validate the request", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count), ("items", request.Items.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<CreateSaleCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(CreateSaleCommand))]);
@@ -110,7 +110,7 @@ public class SalesController : BaseController
         });
     }
 
-    // Work item: TASK-052 (FEAT-017)
+    // Work item: TASK-052 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Retrieves a sale with its items by its ID
     /// </summary>
@@ -119,8 +119,8 @@ public class SalesController : BaseController
     /// <returns>The sale with its items if found</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponseWithData<SaleResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSale([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new GetSaleRequest { Id = id };
@@ -129,7 +129,7 @@ public class SalesController : BaseController
         StepTrace.Step("SAL-GET-01", "CMN-PIP-04", "Validate the id", [("saleId", request.Id), ("valid", validationResult.IsValid)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<GetSaleCommand>(request.Id);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(GetSaleCommand))]);
@@ -144,7 +144,7 @@ public class SalesController : BaseController
         });
     }
 
-    // Work item: TASK-027 (FEAT-011), TASK-052 (FEAT-017)
+    // Work item: TASK-027 (FEAT-011), TASK-052 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Lists sales one page at a time. Any response field (id, saleNumber, saleDate, customerId, customerName, branchId, branchName, totalAmount, isCancelled) can be a query key: text matches ignore
     /// case and accept '*' at the start or end, and a repeated key matches any of its values. Numeric and date fields
@@ -158,7 +158,7 @@ public class SalesController : BaseController
     /// <returns>The requested page of sale headers</returns>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedResponse<ListSalesResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ListSales(
         [FromQuery(Name = "_page")] int page = 1,
         [FromQuery(Name = "_size")] int size = 10,
@@ -174,7 +174,7 @@ public class SalesController : BaseController
         StepTrace.Step("SAL-LST-02", "CMN-LST-08", "Validate _page and _size", [("page", request.Page), ("size", request.Size), ("valid", validationResult.IsValid)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<ListSalesCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(ListSalesCommand))]);
@@ -188,7 +188,7 @@ public class SalesController : BaseController
         return OkPaginated(new PaginatedList<ListSalesResponse>(sales, response.TotalCount, response.Page, response.Size));
     }
 
-    // Work item: TASK-022 (FEAT-010), TASK-053 (FEAT-017)
+    // Work item: TASK-022 (FEAT-010), TASK-053 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Updates a sale and its items; items are matched by id
     /// </summary>
@@ -199,8 +199,8 @@ public class SalesController : BaseController
     [HttpPut("{id}")]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponseWithData<SaleResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateSale([FromRoute] Guid id, [FromBody] UpdateSaleRequest request, CancellationToken cancellationToken)
     {
         request.Id = id;
@@ -209,7 +209,7 @@ public class SalesController : BaseController
         StepTrace.Step("SAL-UPD-01", "CMN-PIP-04", "Validate the request", [("saleId", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<UpdateSaleCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(UpdateSaleCommand))]);
@@ -224,7 +224,7 @@ public class SalesController : BaseController
         });
     }
 
-    // Work item: TASK-022 (FEAT-010), TASK-052 (FEAT-017)
+    // Work item: TASK-022 (FEAT-010), TASK-052 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Deletes a sale and its items by its ID
     /// </summary>
@@ -234,8 +234,8 @@ public class SalesController : BaseController
     [HttpDelete("{id}")]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteSale([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new DeleteSaleRequest { Id = id };
@@ -244,7 +244,7 @@ public class SalesController : BaseController
         StepTrace.Step("SAL-DEL-01", "CMN-PIP-04", "Validate the id", [("saleId", request.Id), ("valid", validationResult.IsValid)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<DeleteSaleCommand>(request.Id);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(DeleteSaleCommand))]);

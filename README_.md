@@ -28,9 +28,9 @@ This guide takes you from a fresh clone to a running platform, then through conf
 | Component | Technology | Role | Host port |
 |---|---|---|---|
 | API | ASP.NET Core 8 (`backend/src/Ambev.DeveloperEvaluation.WebApi`) | REST API, Swagger, JWT auth | 8080 (container) or 5119 (`dotnet run`) |
-| PostgreSQL 13 | compose service `ambev.developerevaluation.database` | Users, customers, branches, products, sales | 5432 |
+| PostgreSQL 13 | compose service `ambev.developerevaluation.database` | Users, customers, branches, products, sales | 5433 (5432 inside the container) |
 | MongoDB 8 | compose service `ambev.developerevaluation.nosql` | Application logs (`developer_evaluation_logs`) and the Rebus sale queue (`developer_evaluation_bus`) | 27017 |
-| Redis 7 | compose service `ambev.developerevaluation.cache` | Started by the stack; not used by the code yet | 6379 |
+| Redis 7 | compose service `ambev.developerevaluation.cache` | Started by the stack; not used by the code yet | 6380 (6379 inside the container) |
 | Developer console | console app (`backend/tools/Ambev.DeveloperEvaluation.DevConsole`) | Traced scenarios against the API hosted in process, and the load simulator | — |
 
 PostgreSQL keeps its data in the named volume `postgres-data` and MongoDB in `mongo-data`, so both survive `docker compose down`.
@@ -51,7 +51,7 @@ Install the EF Core CLI if it is missing:
 dotnet tool install --global dotnet-ef
 ```
 
-The stack publishes the default ports 5432, 27017, 6379, and 8080. Stop anything else that listens on them, or change the published ports in `backend/docker-compose.yml` together with the matching connection strings (see [§7](#7-configuration-reference)).
+The stack publishes PostgreSQL on 5433 and Redis on 6380 (not the defaults 5432 and 6379, to avoid colliding with other local instances), and the defaults 27017 and 8080. Stop anything else that listens on them, or change the published ports in `backend/docker-compose.yml` together with the matching connection strings (see [§7](#7-configuration-reference)).
 
 ## 3. Start the containers with make
 
@@ -74,9 +74,9 @@ make dev-up
 This starts PostgreSQL, MongoDB, Redis, and the API container, then prints where each one listens:
 
 ```
-Postgres  0.0.0.0:5432
+Postgres  0.0.0.0:5433
 MongoDB   0.0.0.0:27017
-Redis     0.0.0.0:6379
+Redis     0.0.0.0:6380
 API       http://0.0.0.0:8080/swagger
 ```
 
@@ -108,7 +108,7 @@ dotnet ef database update \
   --startup-project src/Ambev.DeveloperEvaluation.WebApi
 ```
 
-The command reads `ConnectionStrings:DefaultConnection` from `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettings.json`, which already points at the compose PostgreSQL on `localhost:5432`.
+The command reads `ConnectionStrings:DefaultConnection` from `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettings.json`, which already points at the compose PostgreSQL on `localhost:5433`.
 
 ## 5. Choose how to run the API
 
@@ -191,6 +191,19 @@ SALE="{\"customerId\":\"$CUSTOMER\",\"branchId\":\"$BRANCH\",
 curl -s -X POST $BASE/api/sales -H "$AUTH" -H 'Content-Type: application/json' -d "$SALE"
 ```
 
+Every error, from any endpoint, has the body of [`.doc/general-api.md`](.doc/general-api.md): `type` is the category, `error` the code of the first failure, and `detail` a JSON array of messages serialized as a string, each prefixed with the field or line it belongs to. Asking for 50% on four units, above the 10% ceiling, gives:
+
+```bash
+curl -s -X POST $BASE/api/sales -H "$AUTH" -H 'Content-Type: application/json' -d "{\"customerId\":\"$CUSTOMER\",\"branchId\":\"$BRANCH\",
+  \"items\":[{\"productId\":\"$PRODUCT\",\"quantity\":4,\"discountPercentage\":50}]}"
+```
+
+```
+{"type":"ValidationError","error":"DiscountAboveAllowed","detail":"[\"Items[0].DiscountPercentage: Requested discount 50% exceeds 10% allowed for 4 units\"]"}
+```
+
+A request without a token answers `401` with `type` `AuthenticationError`; a `Customer` token on a write answers `403` with `AuthorizationError`.
+
 **Step 5: create a sale asynchronously.** Add `Prefer: respond-async`. The response is `202 Accepted` with the id the sale will be stored under:
 
 ```bash
@@ -232,7 +245,7 @@ Configuration comes from `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettin
 
 | Key | Value in `appsettings.json` | Notes |
 |---|---|---|
-| `ConnectionStrings:DefaultConnection` | PostgreSQL on `localhost:5432` | Npgsql format. Append `;Maximum Pool Size=N` to change the pool size (default 100). |
+| `ConnectionStrings:DefaultConnection` | PostgreSQL on `localhost:5433` | Npgsql format. Append `;Maximum Pool Size=N` to change the pool size (default 100). |
 | `Jwt:SecretKey` | Development key | At least 32 bytes. Replace it outside development. |
 | `ConnectionStrings:LogStorage` | MongoDB on `localhost:27017` | MongoDB URL for the log sink. Percent-encode `@` in passwords as `%40`. |
 | `LogStorage:Database` / `Collection` | `developer_evaluation_logs` / `logs` | Where Serilog stores events. |
@@ -256,7 +269,7 @@ The API container overrides `DefaultConnection`, `LogStorage`, and `MessageBus` 
 
 ```bash
 cd backend
-ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=developer_evaluation;Username=developer;Password=ev@luAt10n;Maximum Pool Size=200" \
+ConnectionStrings__DefaultConnection="Host=localhost;Port=5433;Database=developer_evaluation;Username=developer;Password=ev@luAt10n;Maximum Pool Size=200" \
 Rebus__MaxParallelism=50 \
 dotnet run --project src/Ambev.DeveloperEvaluation.WebApi --launch-profile http
 ```
@@ -339,7 +352,7 @@ dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- t all --yes >
 
 ```bash
 dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- t all --yes \
-  --ConnectionStrings:DefaultConnection="Host=localhost;Port=5432;Database=trace_scratch;Username=developer;Password=ev@luAt10n" \
+  --ConnectionStrings:DefaultConnection="Host=localhost;Port=5433;Database=trace_scratch;Username=developer;Password=ev@luAt10n" \
   --ConnectionStrings:MessageBus="mongodb://developer:ev%40luAt10n@localhost:27017/trace_scratch_bus?authSource=admin" \
   > trace.txt 2>&1; echo "exit $?"
 tail -3 trace.txt          # a good run ends with ===== no unexpected misses
@@ -542,7 +555,7 @@ Run these from `backend/`:
 | API container `exited` right after `make dev-up` | MongoDB was still initializing when the API started; the Rebus transport needs MongoDB at startup | `cd backend && docker compose up -d ambev.developerevaluation.webapi` |
 | API exits naming a key, for example `ConnectionStrings:MessageBus is not configured` | Missing or invalid configuration | Set the key named in the message ([§7](#7-configuration-reference)) |
 | API exits at startup with a PostgreSQL connection error | PostgreSQL is unreachable; the API applies the migrations before it listens ([§4](#4-database-schema-and-the-administrator)) | Start PostgreSQL, then the API |
-| `address already in use` on 5432, 27017, 6379, or 8080 | Another service uses the port | Stop it, or change the port and the matching connection strings ([§7](#7-configuration-reference)) |
+| `address already in use` on 5433, 27017, 6380, or 8080 | Another service uses the port | Stop it, or change the port and the matching connection strings ([§7](#7-configuration-reference)) |
 | `dotnet run` fails because 5119 is in use | Another API instance on the host | Stop it; run one API instance at a time |
 | Queued sales never appear | The consumer is failing, or two API instances share the queue | Check the error queue and the logs ([§8](#8-asynchronous-sale-intake), [§11](#11-logs-and-observability)) |
 | `401` on every endpoint | Missing or expired token | Log in again ([§6](#6-first-requests-end-to-end), step 1) |

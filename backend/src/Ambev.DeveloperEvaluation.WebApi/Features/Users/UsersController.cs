@@ -39,7 +39,7 @@ public class UsersController : BaseController
         _mapper = mapper;
     }
 
-    // Work item: TASK-048 (FEAT-017)
+    // Work item: TASK-048 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Creates a new user
     /// </summary>
@@ -48,7 +48,7 @@ public class UsersController : BaseController
     /// <returns>The created user details</returns>
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponseWithData<CreateUserResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request, CancellationToken cancellationToken)
     {
         var validator = new CreateUserRequestValidator();
@@ -56,7 +56,7 @@ public class UsersController : BaseController
         StepTrace.Step("USR-CRT-01", "CMN-PIP-04", "Validate the request", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<CreateUserCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(CreateUserCommand))]);
@@ -71,7 +71,7 @@ public class UsersController : BaseController
         });
     }
 
-    // Work item: TASK-048 (FEAT-017)
+    // Work item: TASK-048 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Retrieves a user by their ID
     /// </summary>
@@ -80,8 +80,8 @@ public class UsersController : BaseController
     /// <returns>The user details if found</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponseWithData<GetUserResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUser([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new GetUserRequest { Id = id };
@@ -90,7 +90,7 @@ public class UsersController : BaseController
         StepTrace.Step("USR-GET-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<GetUserCommand>(request.Id);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(GetUserCommand))]);
@@ -105,7 +105,7 @@ public class UsersController : BaseController
         });
     }
 
-    // Work item: TASK-048 (FEAT-017)
+    // Work item: TASK-048 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Deletes a user by their ID
     /// </summary>
@@ -114,8 +114,8 @@ public class UsersController : BaseController
     /// <returns>Success response if the user was deleted</returns>
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteUser([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new DeleteUserRequest { Id = id };
@@ -124,7 +124,7 @@ public class UsersController : BaseController
         StepTrace.Step("USR-DEL-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<DeleteUserCommand>(request.Id);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(DeleteUserCommand))]);

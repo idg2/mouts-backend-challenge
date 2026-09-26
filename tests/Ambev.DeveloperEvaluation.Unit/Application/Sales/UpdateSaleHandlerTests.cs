@@ -6,6 +6,7 @@ using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Domain.Services;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
+using Ambev.DeveloperEvaluation.Unit.TestData;
 using AutoMapper;
 using FluentAssertions;
 using FluentValidation;
@@ -63,7 +64,7 @@ public class UpdateSaleHandlerTests
             new DiscountPolicyResolver(_discountPolicies));
     }
 
-    // Work item: TASK-062 (FEAT-001), TASK-064 (FEAT-001)
+    // Work item: TASK-062 (FEAT-001), TASK-064 (FEAT-001), TD-039
     /// <summary>
     /// Tests that an item with the same product keeps its copy (and can be cancelled), an item whose product
     /// changed copies the new product, and a new item copies its product; only changed or new products are loaded.
@@ -73,16 +74,16 @@ public class UpdateSaleHandlerTests
     {
         // Arrange
         var beerId = Guid.NewGuid();
-        var kept = new SaleItem
+        var kept = Persisted.New<SaleItem>(new
         {
             Id = Guid.NewGuid(), ProductId = beerId, ProductDescription = "Beer 350ml", UnitPrice = 10m,
             Quantity = 5, DiscountPolicyId = _readme.Id, DiscountPercentage = 10m, DiscountAmount = 5m, TotalAmount = 45m
-        };
-        var replaced = new SaleItem
+        });
+        var replaced = Persisted.New<SaleItem>(new
         {
             Id = Guid.NewGuid(), ProductId = Guid.NewGuid(), ProductDescription = "Soda 2L", UnitPrice = 5m,
             Quantity = 2, DiscountPolicyId = _readme.Id, TotalAmount = 10m
-        };
+        });
         var sale = NewSale(kept, replaced);
         var water = new Product { Id = Guid.NewGuid(), Description = "Water 500ml", UnitPrice = 3m };
         var juice = new Product { Id = Guid.NewGuid(), Description = "Juice 1L", UnitPrice = 4m };
@@ -130,7 +131,7 @@ public class UpdateSaleHandlerTests
         await _saleRepository.Received(1).UpdateAsync(sale, Arg.Any<CancellationToken>());
     }
 
-    // Work item: TASK-064 (FEAT-001), TASK-066 (FEAT-001)
+    // Work item: TASK-064 (FEAT-001), TASK-066 (FEAT-001), TD-039
     /// <summary>
     /// Tests that the sale number and date never change, the customer name is kept when the customer id is
     /// unchanged, and the branch name is refreshed when the branch id changes; the policies are resolved for the new
@@ -140,11 +141,11 @@ public class UpdateSaleHandlerTests
     public async Task Given_HeaderChanges_When_Handled_Then_KeepsNumberAndDateAndRefreshesChangedReferences()
     {
         // Arrange
-        var item = new SaleItem
+        var item = Persisted.New<SaleItem>(new
         {
             Id = Guid.NewGuid(), ProductId = Guid.NewGuid(), ProductDescription = "Beer 350ml", UnitPrice = 10m,
             Quantity = 5, TotalAmount = 50m
-        };
+        });
         var sale = NewSale(item);
         var saleDate = sale.SaleDate;
         var uptown = new Branch { Id = Guid.NewGuid(), Name = "Uptown" };
@@ -250,7 +251,7 @@ public class UpdateSaleHandlerTests
         Items = [new UpdateSaleItemInput { ProductId = Guid.NewGuid(), Quantity = 1 }]
     };
 
-    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001), TD-039
     /// <summary>
     /// Tests that an update that does not cancel the sale or any item, including one that un-cancels the sale,
     /// enqueues only SaleModified with the sale after the update.
@@ -261,9 +262,9 @@ public class UpdateSaleHandlerTests
     public async Task Given_NoCancellation_When_Handled_Then_EnqueuesOnlySaleModified(bool saleWasCancelled)
     {
         // Arrange
-        var item = new SaleItem { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m };
+        var item = Persisted.New<SaleItem>(new { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m });
         var sale = NewSale(item);
-        sale.IsCancelled = saleWasCancelled;
+        Persisted.Set(sale, nameof(Sale.IsCancelled), saleWasCancelled);
         _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
         var command = UpdateCommand(sale, isCancelled: false, new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 3 });
 
@@ -277,7 +278,7 @@ public class UpdateSaleHandlerTests
         modified.Sale.Items.Should().ContainSingle().Which.Quantity.Should().Be(3);
     }
 
-    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001), TD-039
     /// <summary>
     /// Tests that cancelling an active sale enqueues SaleModified and then SaleCancelled.
     /// </summary>
@@ -285,7 +286,7 @@ public class UpdateSaleHandlerTests
     public async Task Given_ActiveSaleCancelled_When_Handled_Then_EnqueuesModifiedThenCancelled()
     {
         // Arrange
-        var item = new SaleItem { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m };
+        var item = Persisted.New<SaleItem>(new { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m });
         var sale = NewSale(item);
         _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
         var command = UpdateCommand(sale, isCancelled: true, new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 1 });
@@ -298,7 +299,7 @@ public class UpdateSaleHandlerTests
         _enqueued[1].Should().Be(new SaleCancelled(sale.Id));
     }
 
-    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001), TD-039
     /// <summary>
     /// Tests that ItemCancelled is enqueued only for existing items that were active and are now cancelled, in the
     /// order of the incoming item list; an item already cancelled and a new item sent cancelled enqueue nothing.
@@ -307,12 +308,12 @@ public class UpdateSaleHandlerTests
     public async Task Given_ItemFlagChanges_When_Handled_Then_EnqueuesItemCancelledOnlyForActiveItemsInIncomingOrder()
     {
         // Arrange
-        var first = new SaleItem { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m };
-        var second = new SaleItem { Id = Guid.NewGuid(), LineNumber = 2, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m };
-        var alreadyCancelled = new SaleItem
+        var first = Persisted.New<SaleItem>(new { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m });
+        var second = Persisted.New<SaleItem>(new { Id = Guid.NewGuid(), LineNumber = 2, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m });
+        var alreadyCancelled = Persisted.New<SaleItem>(new
         {
             Id = Guid.NewGuid(), LineNumber = 3, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m, IsCancelled = true
-        };
+        });
         var sale = NewSale(first, second, alreadyCancelled);
         var water = new Product { Id = Guid.NewGuid(), Description = "Water 500ml", UnitPrice = 3m };
         _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
@@ -335,7 +336,7 @@ public class UpdateSaleHandlerTests
             new ItemCancelled(sale.Id, first.Id, first.ProductId));
     }
 
-    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001), TD-039
     /// <summary>
     /// Tests that an update cancelling an item and the sale together enqueues SaleModified, then ItemCancelled,
     /// then SaleCancelled.
@@ -344,7 +345,7 @@ public class UpdateSaleHandlerTests
     public async Task Given_SaleAndItemCancelledTogether_When_Handled_Then_EnqueuesModifiedThenItemThenSale()
     {
         // Arrange
-        var item = new SaleItem { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m };
+        var item = Persisted.New<SaleItem>(new { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m });
         var sale = NewSale(item);
         _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
         var command = UpdateCommand(sale, isCancelled: true,
@@ -357,7 +358,7 @@ public class UpdateSaleHandlerTests
         _enqueued.Select(e => e.GetType()).Should().Equal(typeof(SaleModified), typeof(ItemCancelled), typeof(SaleCancelled));
     }
 
-    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001), TD-039
     /// <summary>
     /// Tests that an update of an unknown sale enqueues nothing.
     /// </summary>
@@ -365,7 +366,7 @@ public class UpdateSaleHandlerTests
     public async Task Given_UnknownSale_When_Handled_Then_EnqueuesNothing()
     {
         // Arrange
-        var sale = NewSale(new SaleItem { Id = Guid.NewGuid(), ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m });
+        var sale = NewSale(Persisted.New<SaleItem>(new { Id = Guid.NewGuid(), ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m }));
         var command = UpdateCommand(sale, isCancelled: false,
             new UpdateSaleItemInput { ProductId = Guid.NewGuid(), Quantity = 1 });
 
@@ -435,7 +436,7 @@ public class UpdateSaleHandlerTests
         _enqueued.Should().BeEmpty();
     }
 
-    // Work item: TASK-064 (FEAT-001)
+    // Work item: TASK-064 (FEAT-001), TD-039
     /// <summary>
     /// Tests that an update resolves the policies at the stored sale date and for the branch the command sends.
     /// </summary>
@@ -443,7 +444,7 @@ public class UpdateSaleHandlerTests
     public async Task Given_StoredSale_When_Handled_Then_ResolvesAtTheStoredSaleDate()
     {
         // Arrange
-        var item = new SaleItem { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, UnitPrice = 10m, DiscountPolicyId = _readme.Id };
+        var item = Persisted.New<SaleItem>(new { Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), Quantity = 1, UnitPrice = 10m, DiscountPolicyId = _readme.Id });
         var sale = NewSale(item);
         _saleRepository.GetByIdAsync(sale.Id, Arg.Any<CancellationToken>()).Returns(sale);
         var command = UpdateCommand(sale, isCancelled: false, new UpdateSaleItemInput { Id = item.Id, ProductId = item.ProductId, Quantity = 2 });
@@ -494,20 +495,20 @@ public class UpdateSaleHandlerTests
             .Which.Should().Be(new ItemCancelled(sale.Id, items[0].Id, storedProductId));
     }
 
-    // Work item: TASK-064 (FEAT-001)
+    // Work item: TASK-064 (FEAT-001), TD-039
     private (Sale Sale, IReadOnlyList<SaleItem> Items) PricedSaleOfThreeLines()
     {
         var productId = Guid.NewGuid();
         var items = Enumerable.Range(1, 3)
-            .Select(line => new SaleItem
+            .Select(line => Persisted.New<SaleItem>(new
             {
                 Id = Guid.NewGuid(), LineNumber = line, ProductId = productId, ProductDescription = "Beer 350ml", UnitPrice = 10m,
                 Quantity = 4, DiscountPolicyId = _readme.Id, DiscountCeilingPercentage = 20m, DiscountPercentage = 20m,
                 DiscountAmount = 8m, TotalAmount = 32m
-            })
+            }))
             .ToList();
         var sale = NewSale(items.ToArray());
-        sale.TotalAmount = 96m;
+        Persisted.Set(sale, nameof(Sale.TotalAmount), 96m);
         return (sale, items);
     }
 
@@ -521,10 +522,11 @@ public class UpdateSaleHandlerTests
         Items = items.ToList()
     };
 
-    private static Sale NewSale(params SaleItem[] items) => new()
+    // Work item: TD-039
+    private static Sale NewSale(params SaleItem[] items) => Persisted.New<Sale>(new
     {
         Id = Guid.NewGuid(),
-        SaleNumber = 7,
+        SaleNumber = 7L,
         SaleDate = new DateTime(2026, 9, 20, 10, 0, 0, DateTimeKind.Utc),
         CustomerId = Guid.NewGuid(),
         CustomerName = "Acme Market",
@@ -532,5 +534,5 @@ public class UpdateSaleHandlerTests
         BranchName = "Downtown",
         TotalAmount = 45m,
         Items = items.ToList()
-    };
+    });
 }

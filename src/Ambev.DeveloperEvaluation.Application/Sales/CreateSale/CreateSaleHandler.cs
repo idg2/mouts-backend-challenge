@@ -68,7 +68,7 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         _discountPolicyResolver = discountPolicyResolver;
     }
 
-    // Work item: TD-010 (FEAT-010), TASK-037 (FEAT-006), TASK-029 (FEAT-004), TASK-052 (FEAT-017), TASK-064 (FEAT-001)
+    // Work item: TD-010 (FEAT-010), TASK-037 (FEAT-006), TASK-029 (FEAT-004), TASK-052 (FEAT-017), TASK-064 (FEAT-001), TD-039
     /// <summary>
     /// Handles the CreateSaleCommand request.
     /// </summary>
@@ -135,27 +135,18 @@ public class CreateSaleHandler : IRequestHandler<CreateSaleCommand, SaleResult>
         if (discountFailures.Count > 0)
             throw new ValidationException(discountFailures);
 
-        var sale = new Sale
-        {
-            // Guid.Empty leaves the id to the column default (gen_random_uuid()).
-            Id = command.Id ?? Guid.Empty,
-            SaleDate = saleDate,
-            CustomerId = customer.Id,
-            CustomerName = customer.Name,
-            BranchId = branch.Id,
-            BranchName = branch.Name,
-            IsCancelled = false,
-            Items = command.Items.Select((item, index) => new SaleItem
-            {
-                LineNumber = index + 1,
-                ProductId = item.ProductId,
-                ProductDescription = products[item.ProductId].Description,
-                UnitPrice = products[item.ProductId].UnitPrice,
-                Quantity = item.Quantity,
-                RequestedDiscountPercentage = item.DiscountPercentage,
-                IsCancelled = false
-            }).ToList()
-        };
+        var saleLines = command.Items
+            .Select(item => new SaleLine(
+                ItemId: null,
+                item.ProductId,
+                products[item.ProductId].Description,
+                products[item.ProductId].UnitPrice,
+                item.Quantity,
+                item.DiscountPercentage,
+                IsCancelled: false))
+            .ToList();
+        // Guid.Empty leaves the id to the column default (gen_random_uuid()).
+        var sale = Sale.Create(command.Id ?? Guid.Empty, saleDate, customer.Id, customer.Name, branch.Id, branch.Name, saleLines);
         StepTrace.Step("SAL-CRT-09", "Build the sale with copied names and prices", [("presetId", command.Id), ("saleDate", sale.SaleDate), ("customerName", sale.CustomerName), ("branchName", sale.BranchName), ("items", sale.Items.Count)]);
 
         sale.ApplyDiscounts(policies);

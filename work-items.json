@@ -1662,6 +1662,17 @@
       "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TD-039",
+      "type": "td",
+      "title": "Rich Sale aggregate: no public setters, discount rule check in the Domain",
+      "description": "Sale and SaleItem get private setters, a Sale.Create factory fed by SaleLine records, ChangeCustomer, ChangeBranch, and SetCancelled for the PUT, and items created or changed only by Sale; SaleDiscountRules and SaleDiscountLine move unchanged to Domain/Services. HTTP contract, error codes, events, schema, and step keys unchanged. Closes evaluation gap N9 (row C2).",
+      "parent": null,
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
     }
   ]
 }

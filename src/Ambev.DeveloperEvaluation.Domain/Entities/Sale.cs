@@ -6,58 +6,137 @@ using Ambev.DeveloperEvaluation.Domain.Validation;
 
 namespace Ambev.DeveloperEvaluation.Domain.Entities;
 
-// Work item: TASK-015 (FEAT-010), TASK-062 (FEAT-001)
+// Work item: TASK-015 (FEAT-010), TASK-062 (FEAT-001), TD-039
 /// <summary>
-/// Represents a sale record. Customer and branch are referenced by id with copies of their names
-/// (External Identities); discounts and totals are computed from the discount policies by <see cref="ApplyDiscounts"/>.
+/// Represents a sale record (aggregate root). Customer and branch are referenced by id with copies of their names
+/// (External Identities); items are created and changed only through the aggregate, and discounts and totals are
+/// computed from the discount policies by <see cref="ApplyDiscounts"/>.
 /// </summary>
 public class Sale : BaseEntity
 {
-    /// <summary>
-    /// Gets or sets the sequential sale number assigned by the database.
-    /// </summary>
-    public long SaleNumber { get; set; }
+    // Work item: TD-039
+    private readonly List<SaleItem> _items = [];
 
+    // Work item: TD-039
     /// <summary>
-    /// Gets or sets the UTC date and time when the sale was made.
+    /// Gets the sequential sale number assigned by the database.
     /// </summary>
-    public DateTime SaleDate { get; set; }
+    public long SaleNumber { get; private set; }
 
+    // Work item: TD-039
     /// <summary>
-    /// Gets or sets the customer id (external identity, no foreign key).
+    /// Gets the UTC date and time when the sale was made.
     /// </summary>
-    public Guid CustomerId { get; set; }
+    public DateTime SaleDate { get; private set; }
 
+    // Work item: TD-039
     /// <summary>
-    /// Gets or sets the customer name copied from the catalog.
+    /// Gets the customer id (external identity, no foreign key).
     /// </summary>
-    public string CustomerName { get; set; } = string.Empty;
+    public Guid CustomerId { get; private set; }
 
+    // Work item: TD-039
     /// <summary>
-    /// Gets or sets the branch id (external identity, no foreign key).
+    /// Gets the customer name copied from the catalog.
     /// </summary>
-    public Guid BranchId { get; set; }
+    public string CustomerName { get; private set; } = string.Empty;
 
+    // Work item: TD-039
     /// <summary>
-    /// Gets or sets the branch name copied from the catalog.
+    /// Gets the branch id (external identity, no foreign key).
     /// </summary>
-    public string BranchName { get; set; } = string.Empty;
+    public Guid BranchId { get; private set; }
 
-    // Work item: TASK-062 (FEAT-001)
+    // Work item: TD-039
     /// <summary>
-    /// Gets or sets the sale total: the sum of the totals of the active items, computed by <see cref="ApplyDiscounts"/>.
+    /// Gets the branch name copied from the catalog.
     /// </summary>
-    public decimal TotalAmount { get; set; }
+    public string BranchName { get; private set; } = string.Empty;
 
+    // Work item: TASK-062 (FEAT-001), TD-039
     /// <summary>
-    /// Gets or sets whether the sale is cancelled.
+    /// Gets the sale total: the sum of the totals of the active items, computed by <see cref="ApplyDiscounts"/>.
     /// </summary>
-    public bool IsCancelled { get; set; }
+    public decimal TotalAmount { get; private set; }
 
+    // Work item: TD-039
     /// <summary>
-    /// Gets or sets the sale items.
+    /// Gets whether the sale is cancelled.
     /// </summary>
-    public List<SaleItem> Items { get; set; } = [];
+    public bool IsCancelled { get; private set; }
+
+    // Work item: TD-039
+    /// <summary>
+    /// Gets the sale items. Only the aggregate adds, changes, or removes them.
+    /// </summary>
+    public IReadOnlyList<SaleItem> Items => _items;
+
+    // Work item: TD-039
+    private Sale()
+    {
+    }
+
+    // Work item: TD-039
+    /// <summary>
+    /// Creates an active sale with one item per line, numbered from 1 in the order given. The discounts and the total
+    /// are left to <see cref="ApplyDiscounts"/>.
+    /// </summary>
+    /// <param name="id">The sale id, or <see cref="Guid.Empty"/> to leave it to the column default</param>
+    /// <param name="saleDate">The UTC sale date</param>
+    /// <param name="customerId">The customer id (external identity)</param>
+    /// <param name="customerName">The customer name copy</param>
+    /// <param name="branchId">The branch id (external identity)</param>
+    /// <param name="branchName">The branch name copy</param>
+    /// <param name="lines">The items, each with a null item id</param>
+    /// <returns>The sale</returns>
+    public static Sale Create(
+        Guid id, DateTime saleDate, Guid customerId, string customerName, Guid branchId, string branchName,
+        IReadOnlyList<SaleLine> lines)
+    {
+        var sale = new Sale
+        {
+            Id = id,
+            SaleDate = saleDate,
+            CustomerId = customerId,
+            CustomerName = customerName,
+            BranchId = branchId,
+            BranchName = branchName
+        };
+        for (var index = 0; index < lines.Count; index++)
+            sale._items.Add(SaleItem.From(lines[index], index + 1));
+        return sale;
+    }
+
+    // Work item: TD-039
+    /// <summary>
+    /// Points the sale at another customer.
+    /// </summary>
+    /// <param name="customerId">The customer id (external identity)</param>
+    /// <param name="customerName">The customer name copy</param>
+    public void ChangeCustomer(Guid customerId, string customerName)
+    {
+        CustomerId = customerId;
+        CustomerName = customerName;
+    }
+
+    // Work item: TD-039
+    /// <summary>
+    /// Points the sale at another branch.
+    /// </summary>
+    /// <param name="branchId">The branch id (external identity)</param>
+    /// <param name="branchName">The branch name copy</param>
+    public void ChangeBranch(Guid branchId, string branchName)
+    {
+        BranchId = branchId;
+        BranchName = branchName;
+    }
+
+    // Work item: TD-039
+    /// <summary>
+    /// Sets the cancelled flag. Both directions are allowed; the sale state rules are FEAT-002.
+    /// </summary>
+    /// <param name="isCancelled">Whether the sale is cancelled</param>
+    public void SetCancelled(bool isCancelled) => IsCancelled = isCancelled;
 
     /// <summary>
     /// Validates the sale against the <see cref="SaleValidator"/> rules.
@@ -74,48 +153,47 @@ public class Sale : BaseEntity
         };
     }
 
-    // Work item: TD-010 (FEAT-010), TASK-053 (FEAT-017), TASK-062 (FEAT-001)
+    // Work item: TD-010 (FEAT-010), TASK-053 (FEAT-017), TASK-062 (FEAT-001), TD-039
     /// <summary>
-    /// Replaces the item list with the incoming items, matching them by id.
+    /// Replaces the item list with the incoming lines, matching them to items by id.
     /// </summary>
     /// <remarks>
-    /// An incoming item with <see cref="Guid.Empty"/> as id is added. An incoming item with an id updates the existing
-    /// item with that id, which must exist: an active incoming item (including one that reactivates a cancelled item)
-    /// copies its product, description, unit price, quantity, requested discount, and cancelled flag, and the discount
-    /// snapshot and the totals are left to <see cref="ApplyDiscounts"/>; a cancelled incoming item copies only the
-    /// cancelled flag, so the item keeps the values it was priced with. An existing item whose id is not among the
-    /// incoming items is removed. Every resulting item is numbered by its position in the incoming list.
+    /// A line without item id is added as a new item. A line with an item id updates the existing item with that id,
+    /// which must exist: an active line (including one that reactivates a cancelled item) copies its product,
+    /// description, unit price, quantity, requested discount, and cancelled flag, and the discount snapshot and the
+    /// totals are left to <see cref="ApplyDiscounts"/>; a cancelled line copies only the cancelled flag, so the item
+    /// keeps the values it was priced with. An existing item whose id is not among the lines is removed. Every
+    /// resulting item is numbered by its position in the lines.
     /// </remarks>
-    /// <param name="incoming">The complete list of items the sale must have.</param>
-    public void SyncItems(IReadOnlyCollection<SaleItem> incoming)
+    /// <param name="incoming">The complete list of lines the sale must have.</param>
+    public void SyncItems(IReadOnlyList<SaleLine> incoming)
     {
         var incomingIds = incoming
-            .Where(item => item.Id != Guid.Empty)
-            .Select(item => item.Id)
+            .Where(line => line.ItemId.HasValue)
+            .Select(line => line.ItemId!.Value)
             .ToHashSet();
 
-        var removed = Items.RemoveAll(existing => !incomingIds.Contains(existing.Id));
+        var removed = _items.RemoveAll(existing => !incomingIds.Contains(existing.Id));
 
         var lineNumber = 0;
-        foreach (var item in incoming)
+        foreach (var line in incoming)
         {
             lineNumber++;
-            if (item.Id == Guid.Empty)
+            if (line.ItemId is not Guid itemId)
             {
-                item.LineNumber = lineNumber;
-                Items.Add(item);
+                _items.Add(SaleItem.From(line, lineNumber));
                 continue;
             }
 
-            var target = Items.Single(existing => existing.Id == item.Id);
-            CopyValues(item, target);
-            target.LineNumber = lineNumber;
+            var target = _items.Single(existing => existing.Id == itemId);
+            target.Update(line);
+            target.Renumber(lineNumber);
         }
 
-        StepTrace.Step("SAL-UPD-10", "SyncItems removes, updates, adds, and renumbers", [("saleId", Id), ("removed", removed), ("updated", incomingIds.Count), ("added", incoming.Count - incomingIds.Count), ("items", Items.Count)]);
+        StepTrace.Step("SAL-UPD-10", "SyncItems removes, updates, adds, and renumbers", [("saleId", Id), ("removed", removed), ("updated", incomingIds.Count), ("added", incoming.Count - incomingIds.Count), ("items", _items.Count)]);
     }
 
-    // Work item: TASK-062 (FEAT-001), TASK-066 (FEAT-001)
+    // Work item: TASK-062 (FEAT-001), TASK-066 (FEAT-001), TD-039
     /// <summary>
     /// Prices the items from the discount policies (spec section 3.5). The active items of each product are evaluated
     /// on their summed quantity; each gets the tier ceiling, or its requested discount when lower, a discount amount
@@ -145,33 +223,14 @@ public class Sale : BaseEntity
                 var applied = item.RequestedDiscountPercentage is decimal requested
                     ? Math.Min(requested, decision.CeilingPercentage)
                     : decision.CeilingPercentage;
-                Price(item, decision.PolicyId, decision.CeilingPercentage, applied);
+                item.Price(decision.PolicyId, decision.CeilingPercentage, applied);
             }
         }
 
         foreach (var item in Items.Where(item => item.IsCancelled && item.DiscountPolicyId == Guid.Empty))
-            Price(item, PolicyOf(item.ProductId, policiesByProduct).Id, 0m, 0m);
+            item.Price(PolicyOf(item.ProductId, policiesByProduct).Id, 0m, 0m);
 
         TotalAmount = activeItems.Sum(item => item.TotalAmount);
-    }
-
-    // Work item: TASK-062 (FEAT-001)
-    /// <summary>
-    /// Copies an incoming item onto an existing one. A cancelled incoming item copies only the cancelled flag, since
-    /// <see cref="ApplyDiscounts"/> leaves a priced cancelled item untouched and its values must stay consistent with
-    /// its discount snapshot; an active incoming item copies every client-supplied value.
-    /// </summary>
-    private static void CopyValues(SaleItem source, SaleItem target)
-    {
-        target.IsCancelled = source.IsCancelled;
-        if (source.IsCancelled)
-            return;
-
-        target.ProductId = source.ProductId;
-        target.ProductDescription = source.ProductDescription;
-        target.UnitPrice = source.UnitPrice;
-        target.Quantity = source.Quantity;
-        target.RequestedDiscountPercentage = source.RequestedDiscountPercentage;
     }
 
     // Work item: TASK-062 (FEAT-001)
@@ -180,15 +239,4 @@ public class Sale : BaseEntity
             ? policy
             : throw new DomainException(
                 $"No discount policy in effect for product {productId} at branch {BranchId} on {SaleDate.ToString("O", CultureInfo.InvariantCulture)}");
-
-    // Work item: TASK-062 (FEAT-001)
-    private static void Price(SaleItem item, Guid policyId, decimal ceilingPercentage, decimal appliedPercentage)
-    {
-        var gross = item.Quantity * item.UnitPrice;
-        item.DiscountPolicyId = policyId;
-        item.DiscountCeilingPercentage = ceilingPercentage;
-        item.DiscountPercentage = appliedPercentage;
-        item.DiscountAmount = Math.Round(gross * appliedPercentage / 100m, 2, MidpointRounding.AwayFromZero);
-        item.TotalAmount = gross - item.DiscountAmount;
-    }
 }

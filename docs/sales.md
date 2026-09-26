@@ -105,7 +105,7 @@ flowchart LR
 
 `POST /api/sales` without `Prefer: respond-async` prices the items from the discount policies, stores the sale in the request's transaction, and records SaleCreated in the outbox. The same handler also runs queued sales (SAL-ASY).
 
-**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/PreferHeader.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/CreateSale/CreateSaleHandler.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/Common/SaleDiscountRules.cs`, `src/Ambev.DeveloperEvaluation.Domain/Services/DiscountPolicyResolver.cs`, `src/Ambev.DeveloperEvaluation.Domain/Entities/Sale.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/PreferHeader.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/CreateSale/CreateSaleHandler.cs`, `src/Ambev.DeveloperEvaluation.Domain/Services/SaleDiscountRules.cs`, `src/Ambev.DeveloperEvaluation.Domain/Services/DiscountPolicyResolver.cs`, `src/Ambev.DeveloperEvaluation.Domain/Entities/Sale.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
 
 ```mermaid
 flowchart TD
@@ -290,7 +290,7 @@ flowchart TD
 
 Replaces the sale's header values and item list in one transaction and prices the items again at the stored sale date. Items are matched by id, and events describe the transitions the update caused.
 
-**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/UpdateSale/UpdateSaleHandler.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/Common/SaleDiscountRules.cs`, `src/Ambev.DeveloperEvaluation.Domain/Services/DiscountPolicyResolver.cs`, `src/Ambev.DeveloperEvaluation.Domain/Entities/Sale.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
+**Source:** `src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `src/Ambev.DeveloperEvaluation.Application/Sales/UpdateSale/UpdateSaleHandler.cs`, `src/Ambev.DeveloperEvaluation.Domain/Services/SaleDiscountRules.cs`, `src/Ambev.DeveloperEvaluation.Domain/Services/DiscountPolicyResolver.cs`, `src/Ambev.DeveloperEvaluation.Domain/Entities/Sale.cs`, `src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
 
 ```mermaid
 flowchart TD

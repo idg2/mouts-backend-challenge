@@ -5,9 +5,9 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Integration;
 
-// Work item: TASK-025 (FEAT-011)
+// Work item: TASK-025 (FEAT-011), TASK-077 (FEAT-003)
 /// <summary>
-/// Contains integration tests for the list query of the customer, branch, product, and sale repositories.
+/// Contains integration tests for the list query of the customer, branch, and product repositories.
 /// Each test tags its rows with a unique marker and filters on it, because the test class shares one database.
 /// </summary>
 public class RepositoryListQueryTests : IClassFixture<PostgresFixture>
@@ -96,30 +96,6 @@ public class RepositoryListQueryTests : IClassFixture<PostgresFixture>
         Assert.Equal(letters.Order().Select(letter => $"{marker} {letter}"), names);
     }
 
-    /// <summary>
-    /// Tests that sales are ordered by sale number when no order is requested.
-    /// </summary>
-    [Fact(DisplayName = "Given no order When listing sales Then orders by sale number")]
-    public async Task Given_NoOrder_When_ListingSales_Then_OrdersBySaleNumber()
-    {
-        // Arrange
-        var marker = Guid.NewGuid().ToString("N");
-        await using (var context = _fixture.CreateContext())
-        {
-            context.Sales.AddRange(NewSale(marker), NewSale(marker));
-            await context.SaveChangesAsync();
-        }
-        var query = new ListQuery { Page = 1, Size = 10, Filters = [new("CustomerName", FilterOperator.Like, marker)] };
-
-        // Act
-        await using var listContext = _fixture.CreateContext();
-        var (sales, totalCount) = await new SaleRepository(listContext).ListAsync(query);
-
-        // Assert
-        Assert.Equal(2, totalCount);
-        Assert.True(sales[0].SaleNumber < sales[1].SaleNumber);
-    }
-
     private async Task<string> SeedProductsAsync()
     {
         var marker = Guid.NewGuid().ToString("N");
@@ -138,26 +114,4 @@ public class RepositoryListQueryTests : IClassFixture<PostgresFixture>
         await using var context = _fixture.CreateContext();
         return await new ProductRepository(context).ListAsync(query);
     }
-
-    private static Sale NewSale(string marker) => new()
-    {
-        SaleDate = DateTime.UtcNow,
-        CustomerId = Guid.NewGuid(),
-        CustomerName = marker,
-        BranchId = Guid.NewGuid(),
-        BranchName = "Downtown",
-        TotalAmount = 10m,
-        Items =
-        [
-            new SaleItem
-            {
-                LineNumber = 1,
-                ProductId = Guid.NewGuid(),
-                ProductDescription = "Beer 350ml",
-                UnitPrice = 10m,
-                Quantity = 1,
-                TotalAmount = 10m
-            }
-        ]
-    };
 }

@@ -35,7 +35,7 @@ public class TraceCommandTests
         settings.Values.Should().NotContainNulls();
     }
 
-    // Work item: TASK-056 (FEAT-017)
+    // Work item: TASK-056 (FEAT-017), TASK-078 (FEAT-003)
     [Fact(DisplayName = "Given databases and admin resolved outside the command line When building the host settings Then they reach the API")]
     public void Given_ResolvedDatabasesAndAdmin_When_BuildingHostSettings_Then_Forwarded()
     {
@@ -44,6 +44,8 @@ public class TraceCommandTests
             ("Trace:AppLogMinimumLevel", "Warning"),
             ("ConnectionStrings:DefaultConnection", Connection),
             ("ConnectionStrings:MessageBus", "mongodb://u:p@localhost:27017/scratch_bus?authSource=admin"),
+            ("ConnectionStrings:ReadModel", "mongodb://u:p@localhost:27017/?authSource=admin"),
+            ("ReadModel:Database", "scratch_read"),
             ("Seed:Admin:Email", "secret@b.c"),
             ("Seed:Admin:Password", "S3cret!"),
             ("Jwt:SecretKey", "not-forwarded"));
@@ -54,6 +56,8 @@ public class TraceCommandTests
         // Assert
         settings.Should().Contain("ConnectionStrings:DefaultConnection", Connection);
         settings.Should().Contain("ConnectionStrings:MessageBus", "mongodb://u:p@localhost:27017/scratch_bus?authSource=admin");
+        settings.Should().Contain("ConnectionStrings:ReadModel", "mongodb://u:p@localhost:27017/?authSource=admin");
+        settings.Should().Contain("ReadModel:Database", "scratch_read");
         settings.Should().Contain("Seed:Admin:Email", "secret@b.c");
         settings.Should().Contain("Seed:Admin:Password", "S3cret!");
         settings.Should().NotContainKey("Jwt:SecretKey");

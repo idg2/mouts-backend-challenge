@@ -13,21 +13,22 @@ namespace Ambev.DeveloperEvaluation.Application.Sales.GetSale;
 /// </summary>
 public class GetSaleHandler : IRequestHandler<GetSaleCommand, SaleResult>
 {
-    private readonly ISaleRepository _saleRepository;
+    private readonly ISaleReadStore _saleReadStore;
     private readonly IMapper _mapper;
 
+    // Work item: TASK-077 (FEAT-003)
     /// <summary>
     /// Initializes a new instance of GetSaleHandler.
     /// </summary>
-    /// <param name="saleRepository">The sale repository</param>
+    /// <param name="saleReadStore">The sale read model</param>
     /// <param name="mapper">The AutoMapper instance</param>
-    public GetSaleHandler(ISaleRepository saleRepository, IMapper mapper)
+    public GetSaleHandler(ISaleReadStore saleReadStore, IMapper mapper)
     {
-        _saleRepository = saleRepository;
+        _saleReadStore = saleReadStore;
         _mapper = mapper;
     }
 
-    // Work item: TASK-052 (FEAT-017)
+    // Work item: TASK-052 (FEAT-017), TASK-077 (FEAT-003)
     /// <summary>
     /// Handles the GetSaleCommand request.
     /// </summary>
@@ -43,8 +44,8 @@ public class GetSaleHandler : IRequestHandler<GetSaleCommand, SaleResult>
         if (!validationResult.IsValid)
             throw new ValidationException(validationResult.Errors);
 
-        StepTrace.Step("SAL-GET-02", "Load the sale with items in line order", [("saleId", request.Id)]);
-        var sale = await _saleRepository.GetByIdAsync(request.Id, cancellationToken);
+        StepTrace.Step("SAL-GET-02", "Load the sale from the read model", [("saleId", request.Id)]);
+        var sale = await _saleReadStore.GetAsync(request.Id, cancellationToken);
         StepTrace.Step("SAL-GET-03", "Sale found?", [("saleId", request.Id), ("found", sale != null), ("items", sale?.Items.Count)]);
         if (sale == null)
             throw new KeyNotFoundException($"Sale with ID {request.Id} not found");

@@ -37,7 +37,7 @@ public class OutboxRelay : IOutboxRelay
         _logger = logger;
     }
 
-    // Work item: TASK-054 (FEAT-017)
+    // Work item: TASK-054 (FEAT-017), TASK-076 (FEAT-003)
     /// <summary>
     /// Publishes up to <paramref name="batchSize"/> pending rows, oldest first.
     /// </summary>
@@ -67,7 +67,7 @@ public class OutboxRelay : IOutboxRelay
                 var integrationEvent = (IIntegrationEvent)JsonSerializer.Deserialize(message.Payload, type)!;
                 StepTrace.Step("SAL-DSP-03", "Deserialize the payload",
                     [("rowId", message.Id), ("eventType", integrationEvent.GetType().Name), ("saleId", SaleEventIds.SaleIdOf(integrationEvent))]);
-                await _publisher.PublishAsync(integrationEvent, message.Id, cancellationToken);
+                await _publisher.PublishAsync(integrationEvent, message.Id, message.Sequence, cancellationToken);
             }
             catch (Exception exception) when (exception is not OperationCanceledException)
             {

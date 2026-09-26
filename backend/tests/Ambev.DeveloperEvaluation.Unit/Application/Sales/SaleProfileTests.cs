@@ -1,5 +1,6 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using AutoMapper;
 using FluentAssertions;
 using Xunit;
@@ -74,5 +75,32 @@ public class SaleProfileTests
         item.DiscountPercentage.Should().Be(5m);
         item.DiscountAmount.Should().Be(2.5m);
         item.TotalAmount.Should().Be(47.5m);
+    }
+
+    // Work item: TASK-077 (FEAT-003)
+    /// <summary>
+    /// Tests that a snapshot maps to the sale result with the ids renamed (SaleId → Id, ItemId → Id) and every
+    /// discount field copied.
+    /// </summary>
+    [Fact(DisplayName = "Given a snapshot When mapping to the sale result Then the ids and the discount fields are mapped")]
+    public void Given_Snapshot_When_MappingToSaleResult_Then_IdsAndDiscountFieldsMapped()
+    {
+        // Arrange
+        var policyId = Guid.NewGuid();
+        var snapshot = new SaleSnapshot(Guid.NewGuid(), 9, DateTime.UtcNow, Guid.NewGuid(), "Acme", Guid.NewGuid(), "Downtown", 45m, false,
+            [new SaleSnapshotItem(Guid.NewGuid(), 1, Guid.NewGuid(), "Beer", 10m, 5, 10m, 5m, 45m, false, 8m, policyId, 10m)]);
+
+        // Act
+        var result = _mapper.Map<SaleResult>(snapshot);
+
+        // Assert
+        result.Id.Should().Be(snapshot.SaleId);
+        result.SaleNumber.Should().Be(9);
+        result.Items.Should().ContainSingle();
+        result.Items[0].Id.Should().Be(snapshot.Items[0].ItemId);
+        result.Items[0].RequestedDiscountPercentage.Should().Be(8m);
+        result.Items[0].DiscountPolicyId.Should().Be(policyId);
+        result.Items[0].DiscountCeilingPercentage.Should().Be(10m);
+        result.Items[0].DiscountPercentage.Should().Be(10m);
     }
 }

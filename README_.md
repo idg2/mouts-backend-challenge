@@ -29,7 +29,7 @@ This guide takes you from a fresh clone to a running platform, then through conf
 |---|---|---|---|
 | API | ASP.NET Core 8 (`backend/src/Ambev.DeveloperEvaluation.WebApi`) | REST API, Swagger, JWT auth | 8080 (container) or 5119 (`dotnet run`) |
 | PostgreSQL 13 | compose service `ambev.developerevaluation.database` | Users, customers, branches, products, sales | 5433 (5432 inside the container) |
-| MongoDB 8 | compose service `ambev.developerevaluation.nosql` | Application logs (`developer_evaluation_logs`) and the Rebus sale queue (`developer_evaluation_bus`) | 27017 |
+| MongoDB 8 | compose service `ambev.developerevaluation.nosql` | Application logs (`developer_evaluation_logs`), the Rebus sale queue (`developer_evaluation_bus`), and the sales read model (`developer_evaluation_read`) | 27017 |
 | Redis 7 | compose service `ambev.developerevaluation.cache` | Started by the stack; not used by the code yet | 6380 (6379 inside the container) |
 | Developer console | console app (`backend/tools/Ambev.DeveloperEvaluation.DevConsole`) | Traced scenarios against the API hosted in process, and the load simulator | — |
 
@@ -225,6 +225,8 @@ Preference-Applied: respond-async
 curl -s -o /dev/null -w '%{http_code}\n' -H "$AUTH" $BASE/api/sales/<id>
 ```
 
+`GET /api/sales/{id}` and the sale list read from the MongoDB read model, which the sale events fill within `Outbox:PollingInterval` (half a second) of the write; a `GET` fired in that window answers 404, and `saleDate` comes back with millisecond precision (BSON dates), so its last digits can differ from the POST response.
+
 **Step 7: list and filter.** List endpoints follow [`.doc/general-api.md`](.doc/general-api.md):
 
 | Parameter | Meaning |
@@ -254,12 +256,14 @@ Configuration comes from `backend/src/Ambev.DeveloperEvaluation.WebApi/appsettin
 | `Rebus:InputQueue` | `sales-intake` | Queue the API sends to and consumes from. |
 | `Rebus:Workers` | `1` | Rebus worker threads. |
 | `Rebus:MaxParallelism` | `20` | Queued messages processed at the same time. Keep it **below** the Npgsql pool size. |
-| `Outbox:PollingInterval` | `00:00:05` | Wait between outbox relay cycles; after a full batch the next cycle starts at once. A time span (hh:mm:ss) from `00:00:00.1` to `01:00:00`; a bare number is rejected, since .NET reads it as days. |
+| `Outbox:PollingInterval` | `00:00:00.500` | Wait between outbox relay cycles; after a full batch the next cycle starts at once. A time span (hh:mm:ss) from `00:00:00.1` to `01:00:00`; a bare number is rejected, since .NET reads it as days. |
 | `Outbox:BatchSize` | `50` | Outbox rows one relay cycle sends. |
+| `ConnectionStrings:ReadModel` | MongoDB on `localhost:27017` | MongoDB URL of the sales read model (no database in the path; the database is `ReadModel:Database`). |
+| `ReadModel:Database` / `Collection` | `developer_evaluation_read` / `sales` | Where the sale events are projected and where `GET /api/sales` reads. |
 | `Seed:Admin:Username` / `Email` / `Password` / `Phone` | `admin` / `admin@example.com` / `Adm1n@Pass` / `+5511999990000` | The administrator created at startup when no user has that e-mail ([§4](#4-database-schema-and-the-administrator)). The values must pass the user rules, or the API does not start. Replace the password outside development. |
 | `Serilog` section | Levels, console output, `/health` filter | EF Core and ASP.NET Core log at Warning, so SQL commands do not flood the log. |
 
-The API container overrides `DefaultConnection`, `LogStorage`, and `MessageBus` in `backend/docker-compose.yml` so they point at the service names instead of `localhost`.
+The API container overrides `DefaultConnection`, `LogStorage`, `MessageBus`, and `ReadModel` in `backend/docker-compose.yml` so they point at the service names instead of `localhost`.
 
 **MongoDB is required at startup.** The Rebus transport creates its queue index when the bus starts, so the whole API, synchronous endpoints included, does not start while MongoDB is unreachable.
 
@@ -299,6 +303,7 @@ Every sale create, update, and delete records its events (`SaleCreated`, `SaleMo
 - A write that rolls back leaves no event, and a committed write always leaves its events.
 - A relay inside the API sends pending rows, oldest first, to the same Rebus queue.
 - `SaleEventLogHandler` writes one line per event to the log: `Sale event <Type> <MessageId> for sale <SaleId>`.
+- `SaleProjectionHandler` projects `SaleCreated`, `SaleModified`, and `SaleDeleted` into the MongoDB read model that `GET /api/sales` reads, ordered by the outbox sequence so a late or repeated event never overwrites a newer state.
 - **Delivery is at least once.** The message id is the outbox row id, so a re-sent event keeps its id.
 - **Consumers may process events in any order**, because they run in parallel. The order is guaranteed only for how events leave the outbox.
 - A queued sale that is delivered again after it was stored produces no second `SaleCreated`.
@@ -323,11 +328,18 @@ db.messages.countDocuments({ q: "error" })                 // failed
 db.messages.find({ q: "sales-intake", n: { $gte: 5 } })    // claimed 5 times and never moved to "error"
 ```
 
+**Inspect the read model** (`use developer_evaluation_read` in the same shell):
+
+```javascript
+db.sales.find({}, { _id: 1, SaleNumber: 1, Version: 1, IsDeleted: 1 }).sort({ SaleNumber: -1 }).limit(20)
+```
+
 **Known limitations:**
 
 - Retries have no backoff.
 - The MongoDB transport claims a message at most 5 times. Claims that Rebus does not count as errors, such as a restart mid-processing, still use up those 5 claims, so a message can get stuck, which the last query above finds.
 - Update and delete are synchronous only.
+- The read model is not rebuilt from PostgreSQL. Sales stored before this version, or while MongoDB was down for the projection, are missing from `GET /api/sales`; `docker compose down -v` and a fresh start recreate everything.
 
 ## 9. Trace console
 
@@ -337,7 +349,7 @@ The `t` command of `backend/tools/Ambev.DeveloperEvaluation.DevConsole` runs a d
 17:48:57.538726  T022  SAL-CRT-04 CMN-PIP-10  Validate the command  presetId=null valid=True errors=0  CreateSaleHandler.cs:74
 ```
 
-**It wipes the development data.** Before hosting the API it drops the PostgreSQL database named in `ConnectionStrings:DefaultConnection` (the API then recreates the schema and reseeds the administrator, [§4](#4-database-schema-and-the-administrator)) and the MongoDB queue database named in `ConnectionStrings:MessageBus`. The log database is untouched. It asks for confirmation unless `--yes` is given. The drop is a plain `DROP DATABASE` over a connection to the maintenance database `Trace:MaintenanceDatabase` and is never forced: while another session holds the database, the console prints the command that stops the API container and exits 1. Stop the API container and any `dotnet run` of the WebApi first.
+**It wipes the development data.** Before hosting the API it drops the PostgreSQL database named in `ConnectionStrings:DefaultConnection` (the API then recreates the schema and reseeds the administrator, [§4](#4-database-schema-and-the-administrator)) the MongoDB queue database named in `ConnectionStrings:MessageBus`, and the MongoDB read model database named in `ReadModel:Database`. The log database is untouched. It asks for confirmation unless `--yes` is given. The drop is a plain `DROP DATABASE` over a connection to the maintenance database `Trace:MaintenanceDatabase` and is never forced: while another session holds the database, the console prints the command that stops the API container and exits 1. Stop the API container and any `dotnet run` of the WebApi first.
 
 ```bash
 cd backend
@@ -354,6 +366,7 @@ dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- t all --yes >
 dotnet run --project tools/Ambev.DeveloperEvaluation.DevConsole -- t all --yes \
   --ConnectionStrings:DefaultConnection="Host=localhost;Port=5433;Database=trace_scratch;Username=developer;Password=ev@luAt10n" \
   --ConnectionStrings:MessageBus="mongodb://developer:ev%40luAt10n@localhost:27017/trace_scratch_bus?authSource=admin" \
+  --ReadModel:Database=trace_scratch_read \
   > trace.txt 2>&1; echo "exit $?"
 tail -3 trace.txt          # a good run ends with ===== no unexpected misses
 grep -n '^!!!' trace.txt   # a good run prints nothing: no scenario failed and no wait timed out
@@ -364,6 +377,7 @@ A good run shows `exit 0`, ends with `===== no unexpected misses`, and has no `!
 ```bash
 docker compose exec -T ambev.developerevaluation.database psql -U developer -d postgres -c 'DROP DATABASE IF EXISTS trace_scratch'
 docker compose exec -T ambev.developerevaluation.nosql mongosh -u developer -p 'ev@luAt10n' --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("trace_scratch_bus").dropDatabase()'
+docker compose exec -T ambev.developerevaluation.nosql mongosh -u developer -p 'ev@luAt10n' --authenticationDatabase admin --quiet --eval 'db.getSiblingDB("trace_scratch_read").dropDatabase()'
 rm trace.txt
 ```
 
@@ -373,7 +387,7 @@ Scenarios: `conventions`, `auth`, `users`, `customers`, `branches`, `products`, 
 
 - Each request and response is printed with `password`, `token`, and a rejected password's `attemptedValue` and `formattedMessagePlaceholderValues` masked as `***`; a body that looks like JSON but does not parse prints as `[unparsed body]`.
 - A failing scenario prints `!!! scenario <name> failed: ...`; the run goes on with the next scenario and exits 1.
-- The run ends with the distinct keys seen and, for `all`, the documented keys that were not exercised. Six misses are expected (failure and redelivery paths no scenario provokes, and the seed skip, which a wiped database never reaches). `===== no unexpected misses` means every other documented step ran.
+- The run ends with the distinct keys seen and, for `all`, the documented keys that were not exercised. Eight misses are expected (failure and redelivery paths no scenario provokes, and the seed skip, which a wiped database never reaches). `===== no unexpected misses` means every other documented step ran.
 
 | Key | Default | Meaning |
 |---|---|---|
@@ -510,6 +524,7 @@ docker exec ambev_developer_evaluation_database psql -U developer -d developer_e
 | Container console | `cd backend && docker compose logs -f ambev.developerevaluation.webapi` |
 | Host console | the `dotnet run` terminal |
 | MongoDB | database `developer_evaluation_logs`, collection `logs` (expires after `LogStorage:ExpireAfter`) |
+| MongoDB read model | database `developer_evaluation_read`, collection `sales` (one document per sale, see [§8](#8-asynchronous-sale-intake)) |
 
 Each HTTP request and each MediatR request logs one Information line. Rejections log a Warning with the exception type, and failures log an Error. To query the stored logs:
 

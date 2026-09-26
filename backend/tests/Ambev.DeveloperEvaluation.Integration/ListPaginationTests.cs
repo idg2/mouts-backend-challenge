@@ -5,9 +5,9 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Integration;
 
-// Work item: BUG-008 (FEAT-010)
+// Work item: BUG-008 (FEAT-010), TASK-077 (FEAT-003)
 /// <summary>
-/// Contains integration tests for the paging of the customer, branch, product, and sale repositories.
+/// Contains integration tests for the paging of the customer, branch, and product repositories.
 /// </summary>
 public class ListPaginationTests : IClassFixture<PostgresFixture>
 {
@@ -28,7 +28,6 @@ public class ListPaginationTests : IClassFixture<PostgresFixture>
     [InlineData("customers")]
     [InlineData("branches")]
     [InlineData("products")]
-    [InlineData("sales")]
     public async Task Given_PageOffsetOverflowingInt_When_Listing_Then_ReturnsEmptyPage(string resource)
     {
         // Arrange
@@ -49,7 +48,6 @@ public class ListPaginationTests : IClassFixture<PostgresFixture>
     [InlineData("customers")]
     [InlineData("branches")]
     [InlineData("products")]
-    [InlineData("sales")]
     public async Task Given_StoredRows_When_ListingFirstPage_Then_ReturnsThem(string resource)
     {
         // Arrange
@@ -63,7 +61,7 @@ public class ListPaginationTests : IClassFixture<PostgresFixture>
         Assert.Equal(totalCount, count);
     }
 
-    // Work item: BUG-008 (FEAT-010), FEAT-013, FEAT-012
+    // Work item: BUG-008 (FEAT-010), FEAT-013, FEAT-012, TASK-077 (FEAT-003)
     private async Task SeedOneAsync(string resource)
     {
         await using var context = _fixture.CreateContext();
@@ -78,35 +76,12 @@ public class ListPaginationTests : IClassFixture<PostgresFixture>
             case "products":
                 context.Products.Add(new Product { Code = $"BEER-{Guid.NewGuid():N}", Description = "Beer 350ml", UnitPrice = 10m });
                 break;
-            default:
-                context.Sales.Add(new Sale
-                {
-                    SaleDate = DateTime.UtcNow,
-                    CustomerId = Guid.NewGuid(),
-                    CustomerName = "Acme Market",
-                    BranchId = Guid.NewGuid(),
-                    BranchName = "Downtown",
-                    TotalAmount = 10m,
-                    Items =
-                    [
-                        new SaleItem
-                        {
-                            LineNumber = 1,
-                            ProductId = Guid.NewGuid(),
-                            ProductDescription = "Beer 350ml",
-                            UnitPrice = 10m,
-                            Quantity = 1,
-                            TotalAmount = 10m
-                        }
-                    ]
-                });
-                break;
         }
 
         await context.SaveChangesAsync();
     }
 
-    // Work item: TASK-025 (FEAT-011)
+    // Work item: TASK-025 (FEAT-011), TASK-077 (FEAT-003)
     private async Task<(int Count, int TotalCount)> ListAsync(string resource, int page, int size)
     {
         var query = new ListQuery { Page = page, Size = size };
@@ -123,8 +98,7 @@ public class ListPaginationTests : IClassFixture<PostgresFixture>
                 var products = await new ProductRepository(context).ListAsync(query);
                 return (products.Items.Count, products.TotalCount);
             default:
-                var sales = await new SaleRepository(context).ListAsync(query);
-                return (sales.Items.Count, sales.TotalCount);
+                throw new ArgumentOutOfRangeException(nameof(resource), resource, "Unknown resource");
         }
     }
 }

@@ -2,7 +2,7 @@
 
 What every API shares: authentication, the request path, transactions, responses and errors, list queries, and health checks.
 
-> Work item: TD-023, TASK-072 (FEAT-018) · Key: CMN
+> Work item: TD-023, TASK-072 (FEAT-018), TASK-078 (FEAT-003) · Key: CMN
 
 ## CMN-AUT — Authentication and roles
 
@@ -155,7 +155,7 @@ flowchart TD
 
 Every list endpoint turns its query string into filters, an order, and a page. Field names are the response's JSON names, case-insensitive.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/ListQueryParser.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/ListQueryExtensions.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/PaginatedList.cs`
+**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/ListQueryParser.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/ListQueryExtensions.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleReadStore.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Common/PaginatedList.cs`
 
 ```mermaid
 flowchart TD
@@ -185,7 +185,7 @@ flowchart TD
 - CMN-LST-05: text fields match case-insensitively with `*` allowed only at the start or the end; other types match exactly, and a nullable id field matches an id, never null; a day matches the whole day; a repeated key matches any of its values, up to 50.
 - CMN-LST-07: a bad filter or order throws `ValidationException` and gets the error body (CMN-RSP-06); a bad `_page` or `_size` fails in CMN-LST-08 and gets the error body from the request validator (CMN-RSP-04), or from the model state (CMN-RSP-03) when the value does not bind.
 - CMN-LST-08: `_page` is at least 1 and `_size` is from 1 to 100 (defaults 1 and 10).
-- CMN-LST-09: a page past the end returns an empty list with the real total count.
+- CMN-LST-09: a page past the end returns an empty list with the real total count. The sale list runs this step on the MongoDB read model (`SaleReadStore`), where the Like filter is a case-insensitive regular expression with the same meaning as the ILIKE pattern.
 
 ## CMN-HLT — Health checks
 

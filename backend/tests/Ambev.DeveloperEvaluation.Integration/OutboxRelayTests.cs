@@ -64,6 +64,7 @@ public class OutboxRelayTests : IClassFixture<PostgresFixture>
         // Assert
         Assert.Equal(2, dispatched);
         Assert.Equal(rows.Take(2).Select(row => row.Id), published.Select(call => call.EventId));
+        Assert.Equal((await ReadAsync(rows)).Take(2).Select(row => row.Sequence), published.Select(call => call.Sequence));
         Assert.Null((await ReadAsync(rows))[2].ProcessedAt);
     }
 
@@ -77,7 +78,7 @@ public class OutboxRelayTests : IClassFixture<PostgresFixture>
         // Arrange
         var rows = await SeedAsync(new SaleDeleted(Guid.NewGuid()), new SaleDeleted(Guid.NewGuid()), new SaleDeleted(Guid.NewGuid()));
         var (failing, failingCalls) = NewPublisher();
-        failing.PublishAsync(Arg.Any<IIntegrationEvent>(), rows[1].Id, Arg.Any<CancellationToken>())
+        failing.PublishAsync(Arg.Any<IIntegrationEvent>(), rows[1].Id, Arg.Any<long>(), Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("bus down")));
 
         // Act
@@ -152,12 +153,13 @@ public class OutboxRelayTests : IClassFixture<PostgresFixture>
         return await relay.DispatchPendingAsync(batchSize, CancellationToken.None);
     }
 
-    private static (IEventPublisher Publisher, List<(IIntegrationEvent Event, Guid EventId)> Calls) NewPublisher()
+    // Work item: TASK-076 (FEAT-003)
+    private static (IEventPublisher Publisher, List<(IIntegrationEvent Event, Guid EventId, long Sequence)> Calls) NewPublisher()
     {
         var publisher = Substitute.For<IEventPublisher>();
-        var calls = new List<(IIntegrationEvent Event, Guid EventId)>();
-        publisher.When(p => p.PublishAsync(Arg.Any<IIntegrationEvent>(), Arg.Any<Guid>(), Arg.Any<CancellationToken>()))
-            .Do(call => calls.Add((call.ArgAt<IIntegrationEvent>(0), call.ArgAt<Guid>(1))));
+        var calls = new List<(IIntegrationEvent Event, Guid EventId, long Sequence)>();
+        publisher.When(p => p.PublishAsync(Arg.Any<IIntegrationEvent>(), Arg.Any<Guid>(), Arg.Any<long>(), Arg.Any<CancellationToken>()))
+            .Do(call => calls.Add((call.ArgAt<IIntegrationEvent>(0), call.ArgAt<Guid>(1), call.ArgAt<long>(2))));
         return (publisher, calls);
     }
 }

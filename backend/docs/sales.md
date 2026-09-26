@@ -2,7 +2,7 @@
 
 Records sales with their items, synchronously or through a queue, and publishes an event for every change through a transactional outbox.
 
-> Work item: TD-029 · Key: SAL · Routes: `/api/sales`
+> Work item: TD-029, TASK-076 (FEAT-003), TASK-078 (FEAT-003) · Key: SAL · Routes: `/api/sales`
 
 ## Endpoints
 
@@ -65,22 +65,26 @@ erDiagram
 - `LineNumber` orders the items, and deleting a sale deletes its items.
 - `OutboxMessages.ProcessedAt` is null while a row is pending; the partial index `IX_OutboxMessages_Pending` on `Sequence` covers only pending rows.
 
+**Read model.** MongoDB `ReadModel:Database`, collection `ReadModel:Collection` (`developer_evaluation_read.sales` in `appsettings.json`): one document per sale with the fields of the sale response (`Id` as `_id`, `SaleNumber`, `SaleDate`, customer and branch, `TotalAmount`, `IsCancelled`, `Items` with the discount snapshot fields), plus `Version` (the outbox `Sequence` of the last event applied) and `IsDeleted` (a tombstone). Guids use the standard binary subtype, decimals are Decimal128. No indexes: `SaleNumber` uniqueness is PostgreSQL's.
+
 ## SAL-OVW — Overview
 
-The API writes sales and their events to PostgreSQL in one transaction. A relay moves the events to a MongoDB queue that also carries queued sales, and workers in the same API consume both.
+The API writes sales and their events to PostgreSQL in one transaction. A relay moves the events to a MongoDB queue that also carries queued sales, and workers in the same API consume both: one logs the events, the other projects them into a MongoDB collection that the get and list endpoints read.
 
 **Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/MessagingExtensions.cs`
 
 ```mermaid
 flowchart LR
   CLIENT["Client"]
-  API["SalesController: SAL-CRT, SAL-ASY, SAL-GET, SAL-LST, SAL-UPD, SAL-DEL"]
+  API["SalesController: SAL-CRT, SAL-ASY, SAL-GET, SAL-LST (read from RM), SAL-UPD, SAL-DEL"]
   PG[("PostgreSQL: Sales and SaleItems")]
   OUT[("OutboxMessages: SAL-OBW")]
   RLY["OutboxRelayService: SAL-RLY, SAL-DSP"]
   Q[("MongoDB queue sales-intake: SAL-BUS")]
   CSH["CreateSaleMessageHandler: SAL-ASY"]
   LOGH["SaleEventLogHandler: SAL-CON"]
+  PRJH["SaleProjectionHandler: SAL-PRJ"]
+  RM[("MongoDB read model sales: SAL-PRJ")]
   LOGS[("MongoDB logs")]
   ERRQ[("error queue: SAL-ERR")]
   CLIENT --> API
@@ -92,6 +96,8 @@ flowchart LR
   CSH --> PG
   CSH --> OUT
   Q --> LOGH --> LOGS
+  Q --> PRJH --> RM
+  RM --> API
   Q --> ERRQ
 ```
 
@@ -240,12 +246,12 @@ sequenceDiagram
 
 Returns one sale with its items in line order.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/GetSale/GetSaleHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
+**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/GetSale/GetSaleHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleReadStore.cs`
 
 ```mermaid
 flowchart TD
   GET01{"SAL-GET-01 Validate the id"}
-  GET02["SAL-GET-02 Load the sale with items in line order"]
+  GET02["SAL-GET-02 Load the sale from the read model"]
   GET03{"SAL-GET-03 Sale found?"}
   GET04["SAL-GET-04 200 with the sale and its items"]
   E400["400"]
@@ -256,19 +262,19 @@ flowchart TD
   GET03 -->|no| E404
 ```
 
-- SAL-GET-03: a queued sale answers 404 until the worker stores it, and for good if the worker rejects it (SAL-ASY).
+- SAL-GET-03: a sale answers 404 until its SaleCreated is projected (SAL-PRJ), normally within `Outbox:PollingInterval`; a queued sale also until the worker stores it, and for good if the worker rejects it (SAL-ASY); a deleted sale answers 404 from its tombstone.
 
 ## SAL-LST — List sales
 
 Returns sale headers one page at a time, without items, with the list conventions of CMN-LST.
 
-**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/ListSales/ListSalesHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/Repositories/SaleRepository.cs`
+**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Features/Sales/SalesController.cs`, `backend/src/Ambev.DeveloperEvaluation.Application/Sales/ListSales/ListSalesHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleReadStore.cs`
 
 ```mermaid
 flowchart TD
   LST01{"SAL-LST-01 Parse filters and order, see CMN-LST"}
   LST02{"SAL-LST-02 Validate _page and _size"}
-  LST03["SAL-LST-03 Query one page of headers"]
+  LST03["SAL-LST-03 Query one page from the read model"]
   LST04["SAL-LST-04 200 with the page"]
   E400["400"]
   LST01 -->|pass| LST02
@@ -278,7 +284,7 @@ flowchart TD
 ```
 
 - SAL-LST-01: the fields are `id`, `saleNumber`, `saleDate`, `customerId`, `customerName`, `branchId`, `branchName`, `totalAmount`, and `isCancelled`; `saleNumber`, `saleDate`, and `totalAmount` also accept `_min` and `_max`.
-- SAL-LST-03: the default order is sale number, then id; use SAL-GET for the items.
+- SAL-LST-03: the default order is sale number, then id; the read store runs CMN-LST-09 on the MongoDB collection, where the `*` filter is a case-insensitive regular expression; use SAL-GET for the items.
 
 ## SAL-UPD — Update a sale
 
@@ -609,7 +615,7 @@ sequenceDiagram
   end
 ```
 
-- SAL-DSP-04: the Rebus header `rbs2-msg-id` is the row id, so a re-sent event keeps its id.
+- SAL-DSP-04: the Rebus header `rbs2-msg-id` is the row id, so a re-sent event keeps its id, and the header `outbox-sequence` is the row sequence, which the read model uses to order events of one sale (SAL-PRJ).
 - SAL-DSP-05: the save runs outside the failure handling of SAL-DSP-07, so a failed save or a crash after SAL-DSP-04 ends the cycle in SAL-RLY and the already-sent event is sent again on the next cycle (at-least-once).
 - SAL-DSP-07: the failed row and every later row wait for the next cycle (SAL-RLY-06); a cancellation stops the cycle without being logged as a failure.
 
@@ -670,7 +676,7 @@ sequenceDiagram
 
 ## SAL-CON — Event consumer
 
-`SaleEventLogHandler` consumes the five events and writes one log line per event. It is the only consumer today.
+`SaleEventLogHandler` consumes the five events and writes one log line per event. `SaleProjectionHandler` (SAL-PRJ) consumes the same events; a throw in either handler fails the message for both.
 
 **Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/SaleEventLogHandler.cs`
 
@@ -689,6 +695,31 @@ sequenceDiagram
 - SAL-CON-01: events may be consumed in any order, because the worker handles messages in parallel.
 - SAL-CON-02: the message id is the outbox row id (SAL-DSP-04), so a consumer can drop duplicates; this one does not need to, because logging twice is harmless.
 - SAL-CON-03: MongoDB `developer_evaluation_logs.logs` stores the line as `Sale event "SaleCreated" "<message id>" for sale <sale id>`, and the console prints it without the quotes.
+
+## SAL-PRJ — Read model projection
+
+`SaleProjectionHandler` keeps the MongoDB sales collection that SAL-GET and SAL-LST read. Every write is ordered by the outbox sequence the relay sends as a header, so events of one sale handled in parallel, or delivered again, never leave an older state.
+
+**Source:** `backend/src/Ambev.DeveloperEvaluation.WebApi/Messaging/SaleProjectionHandler.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleReadStore.cs`, `backend/src/Ambev.DeveloperEvaluation.ORM/ReadModel/SaleDocument.cs`
+
+```mermaid
+sequenceDiagram
+  participant W as Rebus worker
+  participant H as SaleProjectionHandler
+  participant S as SaleReadStore
+  participant M as MongoDB sales collection
+  W->>H: event with the outbox-sequence header
+  H->>S: upsert the snapshot, or a tombstone for SaleDeleted, if the stored version is older
+  S->>M: one write whose filter is the id and Version lower than the sequence
+  M-->>S: written, or duplicate key when the stored version is newer
+  S-->>H: applied or older
+  H->>H: SAL-PRJ-01 Apply the event to the read model
+  H->>H: SAL-PRJ-02 Event older than the document, ignored
+```
+
+- SAL-PRJ-01: `action` is `upsert` for SaleCreated and SaleModified, `tombstone` for SaleDeleted, and `none` for SaleCancelled and ItemCancelled, whose state the SaleModified written with them already carried (SAL-EVT). A message without the `outbox-sequence` header fails and goes to the error queue (SAL-ERR).
+- SAL-PRJ-02: the stored `Version` is greater than or equal to the sequence: a delayed or re-delivered event. A tombstone keeps its version, so a SaleModified that arrives after the SaleDeleted of the same sale is ignored too. A duplicate key on the upsert is retried once without upsert, because it also happens when two handlers insert the first document of a sale at the same time; the newer event then matches and wins.
+- Reads are eventual: a sale appears in SAL-GET and SAL-LST once its SaleCreated is projected, normally within `Outbox:PollingInterval`. MongoDB unreachable while projecting fails the message like any handler failure (SAL-ERR); there is no replay of the projection.
 
 ## SAL-ERR — Failures and the error queue
 
@@ -734,6 +765,9 @@ This topic is an operations guide, so it has no step keys of its own; the failur
 - Processed outbox rows are never deleted.
 - A shutdown during a relay cycle can send one event twice (TD-016).
 - The API does not start while MongoDB is unreachable (TD-011).
+- Reads are eventual: a written sale is visible to SAL-GET and SAL-LST only after its event is projected (SAL-PRJ), normally within `Outbox:PollingInterval`.
+- The read model is never rebuilt from PostgreSQL; sales written before the projection existed are not in it.
+- BSON dates keep milliseconds, so `saleDate` read through SAL-GET or SAL-LST may differ from the value the POST or PUT response carried by less than a millisecond.
 
 ## See also
 

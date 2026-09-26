@@ -42,7 +42,7 @@ public class BranchesController : BaseController
         _mapper = mapper;
     }
 
-    // Work item: TASK-050 (FEAT-017), TASK-071 (FEAT-018)
+    // Work item: TASK-050 (FEAT-017), TASK-071 (FEAT-018), BUG-013
     /// <summary>
     /// Creates a new branch
     /// </summary>
@@ -67,7 +67,7 @@ public class BranchesController : BaseController
         var response = await _mediator.Send(command, cancellationToken);
         StepTrace.Step("BRN-CRT-04", "CMN-PIP-06", "201 with id and name", [("id", response.Id)]);
 
-        return Created(string.Empty, new ApiResponseWithData<CreateBranchResponse>
+        return CreatedAtAction(nameof(GetBranch), new { id = response.Id }, new ApiResponseWithData<CreateBranchResponse>
         {
             Success = true,
             Message = "Branch created successfully",

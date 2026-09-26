@@ -50,7 +50,7 @@ public class SalesController : BaseController
         _bus = bus;
     }
 
-    // Work item: TASK-039 (FEAT-006), TASK-052 (FEAT-017), TASK-071 (FEAT-018)
+    // Work item: TASK-039 (FEAT-006), TASK-052 (FEAT-017), TASK-071 (FEAT-018), BUG-013
     /// <summary>
     /// Creates a new sale with its items. With the header Prefer: respond-async the sale is queued instead: the
     /// response is 202 with the id it will be stored under, and GET /api/sales/{id} answers 404 until it is stored
@@ -102,7 +102,7 @@ public class SalesController : BaseController
         var response = await _mediator.Send(command, cancellationToken);
         StepTrace.Step("SAL-CRT-13", "201 with the sale", [("saleId", response.Id), ("saleNumber", response.SaleNumber), ("items", response.Items.Count)]);
 
-        return Created(string.Empty, new ApiResponseWithData<SaleResponse>
+        return CreatedAtAction(nameof(GetSale), new { id = response.Id }, new ApiResponseWithData<SaleResponse>
         {
             Success = true,
             Message = "Sale created successfully",

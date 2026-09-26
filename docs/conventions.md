@@ -2,7 +2,7 @@
 
 What every API shares: authentication, the request path, transactions, responses and errors, list queries, and health checks.
 
-> Work item: TD-023, TASK-072 (FEAT-018), TASK-078 (FEAT-003) · Key: CMN
+> Work item: TD-023, TASK-072 (FEAT-018), TASK-078 (FEAT-003), BUG-013 · Key: CMN
 
 ## CMN-AUT — Authentication and roles
 
@@ -102,7 +102,7 @@ flowchart TD
 
 ## CMN-RSP — Responses and errors
 
-Successful responses share one envelope; every error, wherever the request stopped, has the `{ type, error, detail }` body of [general-api.md](../.doc/general-api.md): `type` is the category, `error` is the code of the first failure (the type itself when the category has no codes), and `detail` is a string holding a JSON array with one message per failure, never empty.
+Successful responses share one envelope; every error, wherever the request stopped, has the `{ type, error, detail }` body of [general-api.md](../.doc/general-api.md): `type` is the category, `error` is the code of the first failure (the type itself when the category has no codes), and `detail` is a string holding a JSON array with one message per failure, never empty. A create answers `201` with a `Location` header pointing at the GET by id of the new resource.
 
 **Source:** `src/Ambev.DeveloperEvaluation.WebApi/Common/ErrorResponse.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Middleware/ValidationExceptionMiddleware.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/BaseController.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/ModelStateErrorResponse.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/StatusCodeErrorResponse.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/ApiResponse.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/PaginatedResponse.cs`
 

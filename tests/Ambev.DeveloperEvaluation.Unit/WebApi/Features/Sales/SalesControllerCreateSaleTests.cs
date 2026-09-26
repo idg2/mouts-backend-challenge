@@ -72,8 +72,10 @@ public class SalesControllerCreateSaleTests
         await _mediator.DidNotReceive().Send(Arg.Any<CreateSaleCommand>(), Arg.Any<CancellationToken>());
     }
 
+    // Work item: BUG-013
     /// <summary>
-    /// Tests that without respond-async the sale is created synchronously, with no preset id, and nothing is queued.
+    /// Tests that without respond-async the sale is created synchronously, with no preset id, and nothing is queued,
+    /// and that the 201 points at the new sale.
     /// </summary>
     [Theory(DisplayName = "Given no respond-async When creating sale Then creates it synchronously without an id and answers 201")]
     [InlineData(null)]
@@ -82,14 +84,17 @@ public class SalesControllerCreateSaleTests
     {
         // Arrange
         var request = ValidRequest();
+        var saleId = Guid.NewGuid();
         _mediator.Send(Arg.Any<CreateSaleCommand>(), Arg.Any<CancellationToken>())
-            .Returns(new SaleResult { Id = Guid.NewGuid() });
+            .Returns(new SaleResult { Id = saleId });
 
         // Act
         var result = await _controller.CreateSale(request, prefer, CancellationToken.None);
 
         // Assert
-        result.Should().BeOfType<CreatedResult>();
+        var created = result.Should().BeOfType<CreatedAtActionResult>().Subject;
+        created.ActionName.Should().Be(nameof(SalesController.GetSale));
+        created.RouteValues!["id"].Should().Be(saleId);
         await _mediator.Received(1).Send(
             Arg.Is<CreateSaleCommand>(c => c.Id == null && c.CustomerId == request.CustomerId),
             Arg.Any<CancellationToken>());

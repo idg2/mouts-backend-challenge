@@ -42,7 +42,7 @@ public class CustomersController : BaseController
         _mapper = mapper;
     }
 
-    // Work item: TASK-049 (FEAT-017), TASK-071 (FEAT-018)
+    // Work item: TASK-049 (FEAT-017), TASK-071 (FEAT-018), BUG-013
     /// <summary>
     /// Creates a new customer
     /// </summary>
@@ -67,7 +67,7 @@ public class CustomersController : BaseController
         var response = await _mediator.Send(command, cancellationToken);
         StepTrace.Step("CUS-CRT-06", "CMN-PIP-06", "201 with id, name, and document", [("id", response.Id), ("document", response.Document)]);
 
-        return Created(string.Empty, new ApiResponseWithData<CreateCustomerResponse>
+        return CreatedAtAction(nameof(GetCustomer), new { id = response.Id }, new ApiResponseWithData<CreateCustomerResponse>
         {
             Success = true,
             Message = "Customer created successfully",

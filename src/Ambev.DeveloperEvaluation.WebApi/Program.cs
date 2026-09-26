@@ -18,7 +18,7 @@ namespace Ambev.DeveloperEvaluation.WebApi;
 
 public class Program
 {
-    // Work item: TD-006, TASK-033 (FEAT-016), TASK-034 (FEAT-016), TASK-038 (FEAT-006), BUG-012, TASK-046 (FEAT-017), TASK-047 (FEAT-017), TASK-070 (FEAT-018)
+    // Work item: TD-006, TASK-033 (FEAT-016), TASK-034 (FEAT-016), TASK-038 (FEAT-006), BUG-012, TASK-046 (FEAT-017), TASK-047 (FEAT-017), TASK-070 (FEAT-018), TD-014
     public static void Main(string[] args)
     {
         try
@@ -50,7 +50,7 @@ public class Program
             builder.Services.AddEndpointsApiExplorer();
 
             builder.AddBasicHealthChecks();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerWithJwtBearer();
 
             builder.Services.AddDbContext<DefaultContext>(options =>
             {

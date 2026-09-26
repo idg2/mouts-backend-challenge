@@ -42,7 +42,7 @@ public class ProductsController : BaseController
         _mapper = mapper;
     }
 
-    // Work item: TASK-051 (FEAT-017), TASK-071 (FEAT-018)
+    // Work item: TASK-051 (FEAT-017), TASK-071 (FEAT-018), BUG-013
     /// <summary>
     /// Creates a new product
     /// </summary>
@@ -67,7 +67,7 @@ public class ProductsController : BaseController
         var response = await _mediator.Send(command, cancellationToken);
         StepTrace.Step("PRD-CRT-06", "CMN-PIP-06", "201 with id, code, description, and unit price", [("id", response.Id), ("code", response.Code)]);
 
-        return Created(string.Empty, new ApiResponseWithData<CreateProductResponse>
+        return CreatedAtAction(nameof(GetProduct), new { id = response.Id }, new ApiResponseWithData<CreateProductResponse>
         {
             Success = true,
             Message = "Product created successfully",

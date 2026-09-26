@@ -14,7 +14,7 @@ namespace Ambev.DeveloperEvaluation.Common.Security
 {
     public static class AuthenticationExtension
     {
-        // Work item: TASK-046 (FEAT-017)
+        // Work item: TASK-046 (FEAT-017), TD-043
         public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
@@ -85,8 +85,6 @@ namespace Ambev.DeveloperEvaluation.Common.Security
                 };
 #endif
             });
-
-            services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 
             return services;
         }

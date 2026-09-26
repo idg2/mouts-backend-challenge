@@ -6,10 +6,10 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.Domain.Services;
 
-// Work item: TASK-064 (FEAT-001), TD-039
+// Work item: TASK-064 (FEAT-001), TD-039, TD-043
 /// <summary>
 /// Contains unit tests for <see cref="SaleDiscountRules"/>: the three business codes, the line each one lands on, and
-/// their messages (spec section 5).
+/// their messages.
 /// </summary>
 public class SaleDiscountRulesTests
 {

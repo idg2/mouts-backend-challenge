@@ -18,7 +18,7 @@ namespace Ambev.DeveloperEvaluation.WebApi;
 
 public class Program
 {
-    // Work item: TD-006, TASK-033 (FEAT-016), TASK-034 (FEAT-016), TASK-038 (FEAT-006), BUG-012, TASK-046 (FEAT-017), TASK-047 (FEAT-017), TASK-070 (FEAT-018), TD-014
+    // Work item: TD-006, TASK-033 (FEAT-016), TASK-034 (FEAT-016), TASK-038 (FEAT-006), BUG-012, TASK-046 (FEAT-017), TASK-047 (FEAT-017), TASK-070 (FEAT-018), TD-014, TD-043
     public static void Main(string[] args)
     {
         try
@@ -52,10 +52,19 @@ public class Program
             builder.AddBasicHealthChecks();
             builder.Services.AddSwaggerWithJwtBearer();
 
+            // Work item: TD-043
+            // Checked here, like every other required key, so a missing value names the key instead of failing inside
+            // Npgsql on the first query.
+            const string defaultConnectionKey = "ConnectionStrings:DefaultConnection";
+            var defaultConnection = builder.Configuration[defaultConnectionKey];
+            if (string.IsNullOrWhiteSpace(defaultConnection))
+                throw new InvalidOperationException(
+                    $"{defaultConnectionKey} is not configured. Set it in appsettings or via the ConnectionStrings__DefaultConnection environment variable.");
+
             builder.Services.AddDbContext<DefaultContext>(options =>
             {
                 options.UseNpgsql(
-                    builder.Configuration.GetConnectionString("DefaultConnection"),
+                    defaultConnection,
                     b => b.MigrationsAssembly("Ambev.DeveloperEvaluation.ORM")
                 );
 #if DEBUG

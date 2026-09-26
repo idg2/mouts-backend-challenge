@@ -97,7 +97,7 @@ public class MessagingSettingsTests
         act.Should().Throw<InvalidOperationException>().WithMessage($"*{key}*");
     }
 
-    // Work item: TASK-031 (FEAT-004)
+    // Work item: TASK-031 (FEAT-004), TD-043
     /// <summary>
     /// Tests that a polling interval outside 100 ms to 1 hour fails naming the key: a bare number reads as days and
     /// stalls the relay (or, above Task.Delay's limit, stops the host), and a tiny interval spins it in a hot loop.
@@ -186,7 +186,7 @@ public class MessagingSettingsTests
     }
 
     /// <summary>
-    /// Tests that the queue cannot share the log database (spec D10).
+    /// Tests that the queue cannot share the log database.
     /// </summary>
     [Fact(DisplayName = "Given the queue database is the log database When reading Then throws naming both keys")]
     public void Given_QueueDatabaseIsLogDatabase_When_Reading_Then_ThrowsNamingBothKeys()

@@ -142,7 +142,7 @@ flowchart TD
 - DSC-DIS-01: the body is `{ "ids": [...] }` with at least one id (`error` = `IdsRequired`), none empty (`EmptyId`), and none repeated (`DuplicateId`).
 - DSC-DIS-04: all or nothing: one unknown id answers 404, the message lists every unknown id, and no policy is disabled.
 - DSC-DIS-05: `disabledAt` is the server's UTC time truncated to microseconds, the same for every policy of the request. A policy already disabled keeps its first `disabledAt`, so repeating a request is harmless. Disabling is not reversible; to bring a rule back, create a new policy.
-- DSC-DIS-05: from then on SAL-CRT and SAL-UPD skip the policy, recalculations of older sales included. Disabling the default policy without another policy covering every product and branch makes those sales answer 400 `NoDiscountPolicy`.
+- DSC-DIS-05: the policy stops at `disabledAt`: SAL-CRT and SAL-UPD skip it for sales dated from then on, and a sale dated before it keeps being priced by it, so older sales stay editable. Disabling the default policy without another policy covering every product and branch makes new sales answer 400 `NoDiscountPolicy`.
 - DSC-DIS-06: the response lists the policies in the order of `ids`, each with its tiers and `disabledAt`.
 
 ## Known limitations

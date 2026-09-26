@@ -66,7 +66,7 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
         _discountPolicyResolver = discountPolicyResolver;
     }
 
-    // Work item: TASK-029 (FEAT-004), TASK-053 (FEAT-017), TASK-064 (FEAT-001), TD-039
+    // Work item: TASK-029 (FEAT-004), TASK-053 (FEAT-017), TASK-064 (FEAT-001), TD-039, TD-043
     /// <summary>
     /// Handles the UpdateSaleCommand request.
     /// </summary>
@@ -151,7 +151,7 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
         if (failures.Count > 0)
             throw new ValidationException(failures);
 
-        // The stored sale date, never the current one (D9): a later policy never reprices an older sale.
+        // The stored sale date, never the current one: a later policy never reprices an older sale.
         var policyProductIds = command.Items.Select(EffectiveProductId).Distinct().ToList();
         var policies = await _discountPolicyResolver.ResolveAsync(command.BranchId, policyProductIds, sale.SaleDate, cancellationToken);
         StepTrace.Step("SAL-UPD-18", "Resolve the discount policies at the sale date",

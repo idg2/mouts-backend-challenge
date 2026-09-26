@@ -133,14 +133,16 @@ public class DiscountPolicy : BaseEntity
         DisabledAt = now;
     }
 
-    // Work item: TASK-060 (FEAT-001), TD-032
+    // Work item: TASK-060 (FEAT-001), TD-032, TD-043
     /// <summary>
-    /// Returns whether the policy applies at an instant: it is not disabled and <c>ValidFrom &lt;= date &lt; ValidTo</c>.
+    /// Returns whether the policy applies at an instant: <c>ValidFrom &lt;= date &lt; ValidTo</c> and the policy was not
+    /// yet disabled at that instant. A disable ends the policy from then on and leaves the sales dated before it priced
+    /// by it, so they stay editable.
     /// </summary>
     /// <param name="date">The UTC instant, usually a sale date</param>
     /// <returns>True when the policy is in effect</returns>
     public bool IsInEffectAt(DateTime date) =>
-        DisabledAt is null && ValidFrom <= date && (ValidTo is null || date < ValidTo);
+        (DisabledAt is null || date < DisabledAt) && ValidFrom <= date && (ValidTo is null || date < ValidTo);
 
     /// <summary>
     /// Evaluates the total quantity of one product in a sale.

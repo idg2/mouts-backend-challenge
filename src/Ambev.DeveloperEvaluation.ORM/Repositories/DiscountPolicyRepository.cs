@@ -74,10 +74,10 @@ public class DiscountPolicyRepository : IDiscountPolicyRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
-    // Work item: TASK-061 (FEAT-001), TD-032
+    // Work item: TASK-061 (FEAT-001), TD-032, TD-043
     /// <summary>
-    /// Retrieves the policies not disabled and in effect at the date for the products (or every product) and the branch
-    /// (or every branch)
+    /// Retrieves the policies in effect at the date, and not yet disabled at it, for the products (or every product) and
+    /// the branch (or every branch)
     /// </summary>
     public async Task<IReadOnlyList<DiscountPolicy>> GetApplicableAsync(
         Guid branchId, IReadOnlyCollection<Guid> productIds, DateTime date, CancellationToken cancellationToken = default)
@@ -86,7 +86,7 @@ public class DiscountPolicyRepository : IDiscountPolicyRepository
         return await _context.DiscountPolicies.AsNoTracking()
             .Where(policy => (policy.ProductId == null || ids.Contains(policy.ProductId.Value))
                              && (policy.BranchId == null || policy.BranchId == branchId)
-                             && policy.DisabledAt == null
+                             && (policy.DisabledAt == null || date < policy.DisabledAt)
                              && policy.ValidFrom <= date
                              && (policy.ValidTo == null || date < policy.ValidTo))
             .ToListAsync(cancellationToken);

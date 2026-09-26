@@ -156,11 +156,11 @@ public class SaleTests
         Assert.Empty(result.Errors);
     }
 
-    // Work item: TD-042
+    // Work item: TD-042, TD-043
     /// <summary>
-    /// Tests that a generated sale, created from its lines and priced by the README policy, passes validation.
+    /// Tests that a generated sale, created from its lines and priced by the default policy, passes validation.
     /// </summary>
-    [Fact(DisplayName = "Validation should pass for a generated sale priced by the README policy")]
+    [Fact(DisplayName = "Validation should pass for a generated sale priced by the default policy")]
     public void Given_GeneratedSale_When_PricedAndValidated_Then_ShouldReturnValid()
     {
         // Arrange

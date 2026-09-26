@@ -3,10 +3,10 @@ using Ambev.DeveloperEvaluation.Domain.ValueObjects;
 
 namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 
-// Work item: TASK-060 (FEAT-001)
+// Work item: TASK-060 (FEAT-001), TD-043
 /// <summary>
-/// Builds discount policies for tests. With no arguments it builds the seeded README policy: default scope, starting
-/// 2026-01-01 UTC, at most 20 units, 4 to 9 units 10%, 10 to 20 units 20%.
+/// Builds discount policies for tests. With no arguments it builds the seeded default policy, the challenge rules:
+/// default scope, starting 2026-01-01 UTC, at most 20 units, 4 to 9 units 10%, 10 to 20 units 20%.
 /// </summary>
 public static class DiscountPolicyTestData
 {
@@ -15,12 +15,14 @@ public static class DiscountPolicyTestData
     /// </summary>
     public static readonly DateTime Start = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
+    // Work item: TD-043
     /// <summary>
-    /// Returns the README tiers.
+    /// Returns the challenge tiers.
     /// </summary>
-    public static IReadOnlyList<DiscountTier> ReadmeTiers() =>
+    public static IReadOnlyList<DiscountTier> ChallengeTiers() =>
         [new DiscountTier(4, 9, 10m), new DiscountTier(10, 20, 20m)];
 
+    // Work item: TD-043
     /// <summary>
     /// Creates a policy. The creation instant defaults to the start, the latest instant a policy may be created at.
     /// </summary>
@@ -34,6 +36,6 @@ public static class DiscountPolicyTestData
         DateTime? createdAt = null)
     {
         var from = validFrom ?? Start;
-        return DiscountPolicy.Create(productId, branchId, from, validTo, max, tiers ?? ReadmeTiers(), now: createdAt ?? from);
+        return DiscountPolicy.Create(productId, branchId, from, validTo, max, tiers ?? ChallengeTiers(), now: createdAt ?? from);
     }
 }

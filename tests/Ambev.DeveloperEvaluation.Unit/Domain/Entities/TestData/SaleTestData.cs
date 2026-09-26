@@ -3,10 +3,10 @@ using Bogus;
 
 namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 
-// Work item: TD-042
+// Work item: TD-042, TD-043
 /// <summary>
 /// Generates sales with the Bogus library. Sale has no public setter, so the faker builds the lines and the header and
-/// the sale comes from <see cref="Sale.Create"/>. Each line has its own product and 1 to 20 units, within the README
+/// the sale comes from <see cref="Sale.Create"/>. Each line has its own product and 1 to 20 units, within the default
 /// policy maximum, and requests no discount.
 /// </summary>
 public static class SaleTestData

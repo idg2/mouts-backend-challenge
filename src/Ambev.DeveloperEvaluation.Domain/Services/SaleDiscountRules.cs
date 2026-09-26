@@ -4,10 +4,10 @@ using FluentValidation.Results;
 
 namespace Ambev.DeveloperEvaluation.Domain.Services;
 
-// Work item: TASK-064 (FEAT-001), TD-039
+// Work item: TASK-064 (FEAT-001), TD-039, TD-043
 /// <summary>
 /// Checks the lines of a sale against the discount policies resolved for it, before the sale is built, so every
-/// violation reaches the client as one 400 entry (A15) instead of a DomainException from <see cref="Sale.ApplyDiscounts"/>.
+/// violation reaches the client as an entry of one 400 response instead of a DomainException from <see cref="Sale.ApplyDiscounts"/>.
 /// </summary>
 public static class SaleDiscountRules
 {

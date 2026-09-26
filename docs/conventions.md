@@ -102,7 +102,7 @@ flowchart TD
 
 ## CMN-RSP — Responses and errors
 
-Successful responses share one envelope; every error, wherever the request stopped, has the `{ type, error, detail }` body of [general-api.md](../.doc/general-api.md): `type` is the category, `error` is the code of the first failure (the type itself when the category has no codes), and `detail` is a string holding a JSON array with one message per failure, never empty. A create answers `201` with a `Location` header pointing at the GET by id of the new resource.
+Successful responses share one envelope; every error, wherever the request stopped, has the `{ type, error, detail }` body of [general-api.md](../.doc/general-api.md): `type` is the category, `error` is the code of the first failure (the type itself when the category has no codes), and `detail` is a string holding a JSON array with one message per failure, never empty. This differs from general-api.md, where `error` is a short human-readable summary and `detail` a human-readable explanation: here `error` is a code a client can branch on, and `detail` lists every failure of the request, not only the first. A create answers `201` with a `Location` header pointing at the GET by id of the new resource.
 
 **Source:** `src/Ambev.DeveloperEvaluation.WebApi/Common/ErrorResponse.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Middleware/ValidationExceptionMiddleware.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/BaseController.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/ModelStateErrorResponse.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/StatusCodeErrorResponse.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/ApiResponse.cs`, `src/Ambev.DeveloperEvaluation.WebApi/Common/PaginatedResponse.cs`
 

@@ -178,7 +178,7 @@ PRODUCT=$(curl -s -X POST $BASE/api/products -H "$AUTH" -H 'Content-Type: applic
   -d '{"code":"BEER-350","description":"Beer 350ml","unitPrice":5}' | id)
 ```
 
-**Step 4: create a sale synchronously.** The response is `201` with the stored sale. The server prices the items from the discount policies (the seeded default policy is the README rule: 4 to 9 units of one product get 10%, 10 to 20 get 20%, more than 20 is refused), so the body carries no amounts; send `discountPercentage` on an item only to ask for less than the ceiling.
+**Step 4: create a sale synchronously.** The response is `201` with the stored sale. The server prices the items from the discount policies (the seeded default policy is the challenge rule: 4 to 9 units of one product get 10%, 10 to 20 get 20%, more than 20 is refused), so the body carries no amounts; send `discountPercentage` on an item only to ask for less than the ceiling.
 
 ```bash
 SALE="{\"customerId\":\"$CUSTOMER\",\"branchId\":\"$BRANCH\",
@@ -198,6 +198,19 @@ curl -s -X POST $BASE/api/sales -H "$AUTH" -H 'Content-Type: application/json' -
 ```
 
 A request without a token answers `401` with `type` `AuthenticationError`; a `Customer` token on a write answers `403` with `AuthorizationError`.
+
+**Discount rules per product and branch.** The challenge rules are the seeded default policy, which covers every product and every branch. A policy can also be scoped to a product, a branch, or both, with its own maximum and tiers. Each sale is priced, per product, by the most specific policy in effect at its sale date: product and branch, then product, then branch, then the default. A policy cannot start in the past, so this one starts ten seconds from now and gives the product of step 3 up to 50 units, with 30% from 12 units:
+
+```bash
+FROM=$(date -u -v+10S +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '+10 seconds' +%Y-%m-%dT%H:%M:%SZ)   # macOS, then Linux
+curl -s -X POST $BASE/api/discount-policies -H "$AUTH" -H 'Content-Type: application/json' -d "{\"productId\":\"$PRODUCT\",\"branchId\":null,
+  \"validFrom\":\"$FROM\",\"maxQuantityPerProduct\":50,\"tiers\":[{\"minQuantity\":12,\"maxQuantity\":null,\"percentage\":30}]}"
+sleep 10
+curl -s -X POST $BASE/api/sales -H "$AUTH" -H 'Content-Type: application/json' -d "{\"customerId\":\"$CUSTOMER\",\"branchId\":\"$BRANCH\",
+  \"items\":[{\"productId\":\"$PRODUCT\",\"quantity\":30}]}"
+```
+
+The sale is accepted with 30 units at 30%, and its item carries the new policy's id in `discountPolicyId`; every other product keeps the challenge rules. A policy is never edited: a newer one of the same scope wins once it starts, and `POST /api/discount-policies/disable` ends one from that moment on, while sales dated before keep being priced by it. The rules are in [docs/discount-policies.md](docs/discount-policies.md).
 
 **Step 5: create a sale asynchronously.** Add `Prefer: respond-async`. The response is `202 Accepted` with the id the sale will be stored under:
 
@@ -381,6 +394,7 @@ Scenarios: `conventions`, `auth`, `users`, `customers`, `branches`, `products`, 
 - Each request and response is printed with `password`, `token`, and a rejected password's `attemptedValue` and `formattedMessagePlaceholderValues` masked as `***`; a body that looks like JSON but does not parse prints as `[unparsed body]`.
 - A failing scenario prints `!!! scenario <name> failed: ...`; the run goes on with the next scenario and exits 1.
 - The run ends with the distinct keys seen and, for `all`, the documented keys that were not exercised. None is expected: `===== no unexpected misses` means every documented step ran.
+- `sale-discount` walks the same sales rules as the functional tests ([§12](#12-automated-tests)) and prints, for each case, whether the discount or the status matched; a mismatch is a `!!!` line.
 - `failures` provokes the failure and redelivery paths on purpose, so its error log lines are expected. It runs the seed again, writes to the outbox outside a transaction, sends a stored sale's command and its `SaleCreated` again, adds an outbox row of an unknown type and deletes it, sends an event that skipped the relay (it ends in the error queue after 5 deliveries), and arms two faults that exist only in the trace host: one failed relay cycle and one unhandled exception (500).
 
 | Key | Default | Meaning |
@@ -539,10 +553,13 @@ Run these from the repository root:
 ```bash
 dotnet test tests/Ambev.DeveloperEvaluation.Unit          # no infrastructure needed
 dotnet test tests/Ambev.DeveloperEvaluation.Integration   # needs the compose PostgreSQL and MongoDB
+dotnet test tests/Ambev.DeveloperEvaluation.Functional    # the challenge sales rules over HTTP; same infrastructure
 ./coverage-report.sh                                      # coverage report in TestResults/CoverageReport/index.html
 ```
 
 The integration tests create a throwaway database for each test class, apply the migrations, and drop it afterwards, so they never touch `developer_evaluation`.
+
+The functional tests host the whole API in process against throwaway PostgreSQL and MongoDB databases, dropped afterwards, and prove the challenge sales rules through HTTP with the seeded default policy: 1 to 3 identical items get no discount, 4 to 9 get 10%, 10 to 20 get 20%, more than 20 (on one line or across lines) answer 400 `QuantityLimitExceeded`, a requested discount above the tier answers 400 `DiscountAboveAllowed`, each product is priced on its own total, names and prices come from the catalog, cancelling a line reprices the others, a policy scoped to one product applies its own cap and tiers while the other products keep the challenge rules, and disabling the default policy leaves older sales editable. They also check that the API refuses to start without `ConnectionStrings:DefaultConnection`, naming the key.
 
 ## 13. Stop, restart, and reset
 
@@ -591,7 +608,8 @@ Run these from the repository root:
 │   └── Ambev.DeveloperEvaluation.WebApi        # controllers, Rebus messaging, Program.cs
 ├── tests/
 │   ├── Ambev.DeveloperEvaluation.Unit
-│   └── Ambev.DeveloperEvaluation.Integration
+│   ├── Ambev.DeveloperEvaluation.Integration
+│   └── Ambev.DeveloperEvaluation.Functional    # the challenge sales rules over HTTP
 └── tools/
     └── Ambev.DeveloperEvaluation.DevConsole    # trace console and load simulator
 ```

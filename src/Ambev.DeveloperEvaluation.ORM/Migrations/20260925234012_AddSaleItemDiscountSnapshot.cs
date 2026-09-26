@@ -33,7 +33,7 @@ namespace Ambev.DeveloperEvaluation.ORM.Migrations
 
             // Items stored before the discount policies were priced by hand: point them to the seeded default policy
             // (AddDiscountPolicies) and take their stored percentage as the ceiling, so the applied percentage never
-            // exceeds it. The requested percentage stays null (A17).
+            // exceeds it. The requested percentage stays null: no client asked for one.
             migrationBuilder.Sql(
                 """
                 UPDATE "SaleItems"

@@ -193,9 +193,9 @@ public class Sale : BaseEntity
         StepTrace.Step("SAL-UPD-10", "SyncItems removes, updates, adds, and renumbers", [("saleId", Id), ("removed", removed), ("updated", incomingIds.Count), ("added", incoming.Count - incomingIds.Count), ("items", _items.Count)]);
     }
 
-    // Work item: TASK-062 (FEAT-001), TASK-066 (FEAT-001), TD-039
+    // Work item: TASK-062 (FEAT-001), TASK-066 (FEAT-001), TD-039, TD-043
     /// <summary>
-    /// Prices the items from the discount policies (spec section 3.5). The active items of each product are evaluated
+    /// Prices the items from the discount policies. The active items of each product are evaluated
     /// on their summed quantity; each gets the tier ceiling, or its requested discount when lower, a discount amount
     /// rounded to cents (midpoint away from zero), and a snapshot of the policy. A cancelled item keeps the values it
     /// was last priced with; one that was never priced gets its policy with no discount. The sale total is the sum of

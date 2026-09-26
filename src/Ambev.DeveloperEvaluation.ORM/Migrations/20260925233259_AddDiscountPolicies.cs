@@ -61,8 +61,8 @@ namespace Ambev.DeveloperEvaluation.ORM.Migrations
                 table: "DiscountPolicies",
                 columns: new[] { "ProductId", "BranchId", "ValidFrom" });
 
-            // The default policy reproduces the README rules (spec section 4). Literal values keep the migration
-            // deterministic; CreatedAt equals ValidFrom (A14). DiscountPolicyConfiguration.DefaultPolicyId holds the same id.
+            // The default policy reproduces the challenge rules (CHALLENGE.md). Literal values keep the migration
+            // deterministic; CreatedAt equals ValidFrom. DiscountPolicyConfiguration.DefaultPolicyId holds the same id.
             migrationBuilder.InsertData(
                 table: "DiscountPolicies",
                 columns: new[] { "Id", "ProductId", "BranchId", "ValidFrom", "ValidTo", "MaxQuantityPerProduct", "CreatedAt" },

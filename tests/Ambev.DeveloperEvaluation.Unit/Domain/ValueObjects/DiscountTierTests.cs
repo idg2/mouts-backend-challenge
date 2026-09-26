@@ -61,8 +61,9 @@ public class DiscountTierTests
         tier.Contains(1000).Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Given the README tiers When checking the set Then there is no violation")]
-    public void Given_ReadmeTiers_When_Checked_Then_NoViolation()
+    // Work item: TD-043
+    [Fact(DisplayName = "Given the challenge tiers When checking the set Then there is no violation")]
+    public void Given_ChallengeTiers_When_Checked_Then_NoViolation()
     {
         // Act
         var violation = DiscountTier.FindSetViolation([(4, 9), (10, 20)], 20);

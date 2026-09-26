@@ -23,7 +23,7 @@ public class JwtTokenGenerator : IJwtTokenGenerator
         _configuration = configuration;
     }
 
-    // Work item: TASK-048 (FEAT-017)
+    // Work item: TASK-048 (FEAT-017), TD-041
     /// <summary>
     /// Generates a JWT token for a specific user.
     /// </summary>
@@ -37,11 +37,13 @@ public class JwtTokenGenerator : IJwtTokenGenerator
     /// 
     /// The token is valid for 8 hours from the moment of generation.
     /// </remarks>
-    /// <exception cref="ArgumentNullException">Thrown when user or secret key is not provided.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when <c>Jwt:SecretKey</c> is not configured.</exception>
     public string GenerateToken(IUser user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(_configuration["Jwt:SecretKey"]);
+        var secretKey = _configuration["Jwt:SecretKey"]
+            ?? throw new InvalidOperationException("Jwt:SecretKey is not configured. Set it in appsettings or via the Jwt__SecretKey environment variable.");
+        var key = Encoding.ASCII.GetBytes(secretKey);
 
         var claims = new[]
         {

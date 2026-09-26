@@ -15,4 +15,12 @@
     <PackageReference Include="OneOf" Version="3.0.271" />
   </ItemGroup>
 
+  <!-- Work item: TD-008. GHSA-rvv3-g6hj-g44x: AutoMapper before 15.1.1 has no depth limit, so mapping a deeply nested
+       object graph can overflow the stack. No mapped type here references itself (request, command, result, and
+       response DTOs are flat or one level of items), so the input cannot nest. Upgrading means AutoMapper 15+, which
+       needs a license key. Remove this suppression when the package is upgraded. -->
+  <ItemGroup>
+    <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-rvv3-g6hj-g44x" />
+  </ItemGroup>
+
 </Project>

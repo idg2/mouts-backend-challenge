@@ -27,7 +27,7 @@ public sealed class ScenarioContext
     private readonly StepWaiter _waiter;
     private readonly TimeSpan _waitTimeout;
 
-    // Work item: TASK-056 (FEAT-017), TASK-057 (FEAT-017)
+    // Work item: TASK-056 (FEAT-017), TASK-057 (FEAT-017), TD-030
     /// <summary>
     /// Initializes a new instance of ScenarioContext
     /// </summary>
@@ -39,9 +39,11 @@ public sealed class ScenarioContext
     /// <param name="output">Where scenario messages go</param>
     /// <param name="adminEmail">The seeded administrator's e-mail (Seed:Admin:Email)</param>
     /// <param name="adminPassword">The seeded administrator's password (Seed:Admin:Password)</param>
+    /// <param name="services">The hosted API's root service provider</param>
+    /// <param name="faults">The faults a scenario can arm in the hosted API</param>
     public ScenarioContext(
         HttpClient client, string adminToken, StepWaiter waiter, TimeSpan waitTimeout, string runId, TextWriter output,
-        string adminEmail, string adminPassword)
+        string adminEmail, string adminPassword, IServiceProvider services, TraceFaults faults)
     {
         Client = client;
         AdminToken = adminToken;
@@ -51,8 +53,18 @@ public sealed class ScenarioContext
         Out = output;
         AdminEmail = adminEmail;
         AdminPassword = adminPassword;
+        Services = services;
+        Faults = faults;
         Faker = new Faker("pt_BR");
     }
+
+    // Work item: TD-030
+    /// <summary>Gets the hosted API's root service provider, for the steps no HTTP request reaches.</summary>
+    public IServiceProvider Services { get; }
+
+    // Work item: TD-030
+    /// <summary>Gets the faults a scenario can arm in the hosted API.</summary>
+    public TraceFaults Faults { get; }
 
     /// <summary>Gets the TestServer client.</summary>
     public HttpClient Client { get; }

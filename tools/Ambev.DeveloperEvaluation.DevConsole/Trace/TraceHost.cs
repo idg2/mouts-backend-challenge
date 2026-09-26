@@ -1,7 +1,10 @@
+using Ambev.DeveloperEvaluation.ORM.Outbox;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
 namespace Ambev.DeveloperEvaluation.DevConsole.Trace;
@@ -25,15 +28,27 @@ public sealed class TraceHost : WebApplicationFactory<Ambev.DeveloperEvaluation.
         _hostSettings = hostSettings;
     }
 
+    // Work item: TD-030
+    /// <summary>Gets the faults a scenario can arm in the hosted API.</summary>
+    public TraceFaults Faults { get; } = new();
+
+    // Work item: TASK-045 (FEAT-017), TD-030
     /// <summary>
     /// Points the content root at the WebApi project, found from the build output through the solution file. Under
     /// dotnet run the factory's own lookup falls back to the solution directory plus the WebApi assembly name, a
-    /// directory that does not exist, and the host fails to start.
+    /// directory that does not exist, and the host fails to start. It also wraps the outbox relay and adds an action
+    /// filter, so a scenario can arm <see cref="Faults"/>; both do nothing until armed.
     /// </summary>
     /// <param name="builder">The web host builder</param>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseSolutionRelativeContentRoot("src/Ambev.DeveloperEvaluation.WebApi");
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddScoped<OutboxRelay>();
+            services.AddScoped<IOutboxRelay>(provider => new FaultyOutboxRelay(provider.GetRequiredService<OutboxRelay>(), Faults));
+            services.Configure<MvcOptions>(options => options.Filters.Add(new FailingRequestFilter(Faults)));
+        });
     }
 
     /// <inheritdoc />

@@ -1329,7 +1329,7 @@
       "description": "The trace console's full run cannot exercise eight documented keys, which the summary lists as expected misses: SAL-CRT-06 (redelivered queued command), SAL-OBW-02 (outbox write outside a transaction), SAL-RLY-07 (failed relay cycle), SAL-DSP-07 (failed dispatch), SAL-BUS-06 (retried delivery; only fail-fast validation failures are provoked), USR-SED-06 (seed skip; the run always starts from a wiped database), CMN-RSP-10 (unhandled exception; no scenario provokes one), SAL-PRJ-02 (an event older than the read model document; only a redelivery, or two events of one sale in one relay batch, produces one). Covering them needs fault injection or a redelivery in a scenario.",
       "parent": null,
       "moscow": "could",
-      "status": "backlog",
+      "status": "done",
       "createdAt": "2026-09-25",
       "updatedAt": "2026-09-26"
     },

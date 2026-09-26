@@ -2,6 +2,7 @@ using System.Text.Json;
 using Ambev.DeveloperEvaluation.DevConsole.Trace;
 using Ambev.DeveloperEvaluation.DevConsole.Trace.Scenarios;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.DevConsole;
@@ -12,7 +13,7 @@ namespace Ambev.DeveloperEvaluation.Unit.DevConsole;
 /// </summary>
 public class ScenarioCatalogTests
 {
-    // Work item: TASK-058 (FEAT-017)
+    // Work item: TASK-058 (FEAT-017), TD-030
     [Theory(DisplayName = "Given many bodies of one run When creating customers or branches Then no two share a name")]
     [InlineData("customers")]
     [InlineData("branches")]
@@ -21,7 +22,8 @@ public class ScenarioCatalogTests
         // Arrange
         var scenario = (RegistryScenario)ScenarioCatalog.All.Single(candidate => candidate.Name == registry);
         using var client = new HttpClient();
-        var context = new ScenarioContext(client, string.Empty, new StepWaiter(), TimeSpan.FromSeconds(1), "run1", TextWriter.Null, "a@b.c", "p");
+        var context = new ScenarioContext(client, string.Empty, new StepWaiter(), TimeSpan.FromSeconds(1), "run1", TextWriter.Null, "a@b.c", "p",
+            new ServiceCollection().BuildServiceProvider(), new TraceFaults());
 
         // Act
         var names = Enumerable.Range(0, 200)
@@ -57,6 +59,18 @@ public class ScenarioCatalogTests
         names.Should().OnlyHaveUniqueItems();
         names.Should().Contain(["discount-policy", "sale-discount"]);
         names.IndexOf("discount-policy").Should().BeLessThan(names.IndexOf("sale-create"));
+    }
+
+    // Work item: TD-030
+    [Fact(DisplayName = "Given the catalog When a full run is summarized Then the failures scenario runs last and no documented key is an expected miss")]
+    public void Given_Catalog_When_FullRunSummarized_Then_FailuresLastAndNoExpectedMiss()
+    {
+        // Act
+        var last = ScenarioCatalog.All[^1].Name;
+
+        // Assert
+        last.Should().Be("failures");
+        ScenarioCatalog.ExpectedMisses.Should().BeEmpty();
     }
 
     // Work item: TASK-065 (FEAT-001)

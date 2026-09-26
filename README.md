@@ -376,11 +376,12 @@ rm trace.txt
 
 The console reads the API's configuration in the API's order (the WebApi `appsettings.json`, `appsettings.Development.json`, the WebApi user secrets, environment variables), then its own `appsettings.json`, then the command line. It forwards the command-line pairs, the resolved connection strings, and the `Seed:Admin` credentials to the hosted API, so the wipe, the login, and the API always use the same databases and administrator.
 
-Scenarios: `conventions`, `auth`, `users`, `customers`, `branches`, `products`, `discount-policy`, `sale-create`, `sale-async`, `sale-update`, `sale-delete`, `sale-list`, `sale-discount`, and `all`.
+Scenarios: `conventions`, `auth`, `users`, `customers`, `branches`, `products`, `discount-policy`, `sale-create`, `sale-async`, `sale-update`, `sale-delete`, `sale-list`, `sale-discount`, `failures`, and `all`.
 
 - Each request and response is printed with `password`, `token`, and a rejected password's `attemptedValue` and `formattedMessagePlaceholderValues` masked as `***`; a body that looks like JSON but does not parse prints as `[unparsed body]`.
 - A failing scenario prints `!!! scenario <name> failed: ...`; the run goes on with the next scenario and exits 1.
-- The run ends with the distinct keys seen and, for `all`, the documented keys that were not exercised. Eight misses are expected (failure and redelivery paths no scenario provokes, and the seed skip, which a wiped database never reaches). `===== no unexpected misses` means every other documented step ran.
+- The run ends with the distinct keys seen and, for `all`, the documented keys that were not exercised. None is expected: `===== no unexpected misses` means every documented step ran.
+- `failures` provokes the failure and redelivery paths on purpose, so its error log lines are expected. It runs the seed again, writes to the outbox outside a transaction, sends a stored sale's command and its `SaleCreated` again, adds an outbox row of an unknown type and deletes it, sends an event that skipped the relay (it ends in the error queue after 5 deliveries), and arms two faults that exist only in the trace host: one failed relay cycle and one unhandled exception (500).
 
 | Key | Default | Meaning |
 |---|---|---|

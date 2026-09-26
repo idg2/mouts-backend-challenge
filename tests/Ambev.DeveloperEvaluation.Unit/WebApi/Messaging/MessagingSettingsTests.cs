@@ -1,0 +1,219 @@
+using Ambev.DeveloperEvaluation.Common.Logging;
+using Ambev.DeveloperEvaluation.WebApi.Messaging;
+using FluentAssertions;
+using Microsoft.Extensions.Configuration;
+using Xunit;
+
+namespace Ambev.DeveloperEvaluation.Unit.WebApi.Messaging;
+
+// Work item: TASK-038 (FEAT-006)
+/// <summary>
+/// Contains unit tests for the <see cref="MessagingSettings"/> class.
+/// </summary>
+public class MessagingSettingsTests
+{
+    private const string ValidConnectionString = "mongodb://user:p%40ss@localhost:27017/bus_db?authSource=admin";
+
+    // Work item: TASK-031 (FEAT-004)
+    /// <summary>
+    /// Tests that a complete configuration yields its values.
+    /// </summary>
+    [Fact(DisplayName = "Given a complete configuration When reading Then returns its values")]
+    public void Given_CompleteConfiguration_When_Reading_Then_ReturnsValues()
+    {
+        // Arrange
+        var configuration = Build(ValidValues());
+
+        // Act
+        var settings = MessagingSettings.FromConfiguration(configuration);
+
+        // Assert
+        settings.ConnectionString.Should().Be(ValidConnectionString);
+        settings.InputQueue.Should().Be("sales-intake");
+        settings.Workers.Should().Be(1);
+        settings.MaxParallelism.Should().Be(20);
+        settings.PollingInterval.Should().Be(TimeSpan.FromSeconds(5));
+        settings.BatchSize.Should().Be(50);
+    }
+
+    // Work item: TASK-031 (FEAT-004)
+    /// <summary>
+    /// Tests that each missing or blank key fails with a message naming it.
+    /// </summary>
+    [Theory(DisplayName = "Given a missing or blank key When reading Then throws naming the key")]
+    [InlineData(MessagingSettings.ConnectionStringKey, null)]
+    [InlineData(MessagingSettings.ConnectionStringKey, "  ")]
+    [InlineData(MessagingSettings.InputQueueKey, null)]
+    [InlineData(MessagingSettings.InputQueueKey, "  ")]
+    [InlineData(MessagingSettings.WorkersKey, null)]
+    [InlineData(MessagingSettings.WorkersKey, "  ")]
+    [InlineData(MessagingSettings.MaxParallelismKey, null)]
+    [InlineData(MessagingSettings.MaxParallelismKey, "  ")]
+    [InlineData(MessagingSettings.PollingIntervalKey, null)]
+    [InlineData(MessagingSettings.PollingIntervalKey, "  ")]
+    [InlineData(MessagingSettings.BatchSizeKey, null)]
+    [InlineData(MessagingSettings.BatchSizeKey, "  ")]
+    public void Given_MissingOrBlankKey_When_Reading_Then_ThrowsNamingTheKey(string key, string? value)
+    {
+        // Arrange
+        var values = ValidValues();
+        if (value is null)
+            values.Remove(key);
+        else
+            values[key] = value;
+
+        // Act
+        var act = () => MessagingSettings.FromConfiguration(Build(values));
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>().WithMessage($"*{key}*");
+    }
+
+    // Work item: TASK-031 (FEAT-004)
+    /// <summary>
+    /// Tests that worker and parallelism counts must be positive integers.
+    /// </summary>
+    [Theory(DisplayName = "Given a non-positive or non-numeric count When reading Then throws naming the key")]
+    [InlineData(MessagingSettings.WorkersKey, "0")]
+    [InlineData(MessagingSettings.WorkersKey, "-1")]
+    [InlineData(MessagingSettings.WorkersKey, "abc")]
+    [InlineData(MessagingSettings.MaxParallelismKey, "0")]
+    [InlineData(MessagingSettings.MaxParallelismKey, "2.5")]
+    [InlineData(MessagingSettings.MaxParallelismKey, "abc")]
+    [InlineData(MessagingSettings.BatchSizeKey, "0")]
+    [InlineData(MessagingSettings.BatchSizeKey, "-1")]
+    [InlineData(MessagingSettings.BatchSizeKey, "ten")]
+    [InlineData(MessagingSettings.BatchSizeKey, "2.5")]
+    public void Given_InvalidCount_When_Reading_Then_ThrowsNamingTheKey(string key, string value)
+    {
+        // Arrange
+        var values = ValidValues();
+        values[key] = value;
+
+        // Act
+        var act = () => MessagingSettings.FromConfiguration(Build(values));
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>().WithMessage($"*{key}*");
+    }
+
+    // Work item: TASK-031 (FEAT-004), TD-043
+    /// <summary>
+    /// Tests that a polling interval outside 100 ms to 1 hour fails naming the key: a bare number reads as days and
+    /// stalls the relay (or, above Task.Delay's limit, stops the host), and a tiny interval spins it in a hot loop.
+    /// </summary>
+    [Theory(DisplayName = "Given an invalid polling interval When reading Then throws naming the key")]
+    [InlineData("abc")]
+    [InlineData("00:00:00")]
+    [InlineData("-00:00:05")]
+    [InlineData("5")]
+    [InlineData("50")]
+    [InlineData("00:00:00.0001")]
+    [InlineData("01:00:01")]
+    public void Given_InvalidPollingInterval_When_Reading_Then_ThrowsNamingTheKey(string value)
+    {
+        // Arrange
+        var values = ValidValues();
+        values[MessagingSettings.PollingIntervalKey] = value;
+
+        // Act
+        var act = () => MessagingSettings.FromConfiguration(Build(values));
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>().WithMessage($"*{MessagingSettings.PollingIntervalKey}*");
+    }
+
+    /// <summary>
+    /// Tests that a URL without a database path is rejected: the MongoDB transport stores the queue in that database.
+    /// </summary>
+    [Theory(DisplayName = "Given a MongoDB URL without a database When reading Then throws naming the key")]
+    [InlineData("mongodb://user:pass@localhost:27017/?authSource=admin")]
+    [InlineData("mongodb://localhost:27017")]
+    public void Given_UrlWithoutDatabase_When_Reading_Then_ThrowsNamingTheKey(string connectionString)
+    {
+        // Arrange
+        var values = ValidValues();
+        values[MessagingSettings.ConnectionStringKey] = connectionString;
+
+        // Act
+        var act = () => MessagingSettings.FromConfiguration(Build(values));
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage($"*{MessagingSettings.ConnectionStringKey}*database*");
+    }
+
+    /// <summary>
+    /// Tests that a malformed URL fails naming the key without echoing the password.
+    /// </summary>
+    [Theory(DisplayName = "Given a malformed MongoDB URL When reading Then throws naming the key without the password")]
+    [InlineData("mongodb://developer:s3cret@x@localhost:27017/?authSource=admin")]
+    [InlineData("mongodb://developer:ab/cds3cret@localhost:27017/?authSource=admin")]
+    [InlineData("Host=localhost;Password=s3cret")]
+    public void Given_InvalidMongoUrl_When_Reading_Then_ThrowsNamingTheKeyWithoutThePassword(string connectionString)
+    {
+        // Arrange
+        var values = ValidValues();
+        values[MessagingSettings.ConnectionStringKey] = connectionString;
+
+        // Act
+        var act = () => MessagingSettings.FromConfiguration(Build(values));
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>()
+            .Which.Message.Should().Contain(MessagingSettings.ConnectionStringKey).And.NotContain("s3cret");
+    }
+
+    /// <summary>
+    /// Tests that a database name MongoDB refuses is rejected at startup instead of failing inside the transport.
+    /// </summary>
+    [Theory(DisplayName = "Given a database name MongoDB refuses When reading Then throws naming the key")]
+    [InlineData("mongodb://localhost:27017/bad.db")]
+    [InlineData("mongodb://localhost:27017/bad$db")]
+    [InlineData("mongodb://localhost:27017/bad db")]
+    public void Given_InvalidDatabaseName_When_Reading_Then_ThrowsNamingTheKey(string connectionString)
+    {
+        // Arrange
+        var values = ValidValues();
+        values[MessagingSettings.ConnectionStringKey] = connectionString;
+
+        // Act
+        var act = () => MessagingSettings.FromConfiguration(Build(values));
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage($"*{MessagingSettings.ConnectionStringKey}*");
+    }
+
+    /// <summary>
+    /// Tests that the queue cannot share the log database.
+    /// </summary>
+    [Fact(DisplayName = "Given the queue database is the log database When reading Then throws naming both keys")]
+    public void Given_QueueDatabaseIsLogDatabase_When_Reading_Then_ThrowsNamingBothKeys()
+    {
+        // Arrange
+        var values = ValidValues();
+        values[LogStorageSettings.DatabaseKey] = "bus_db";
+
+        // Act
+        var act = () => MessagingSettings.FromConfiguration(Build(values));
+
+        // Assert
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage($"*{MessagingSettings.ConnectionStringKey}*{LogStorageSettings.DatabaseKey}*");
+    }
+
+    // Work item: TASK-031 (FEAT-004)
+    private static Dictionary<string, string?> ValidValues() => new()
+    {
+        [MessagingSettings.ConnectionStringKey] = ValidConnectionString,
+        [MessagingSettings.InputQueueKey] = "sales-intake",
+        [MessagingSettings.WorkersKey] = "1",
+        [MessagingSettings.MaxParallelismKey] = "20",
+        [MessagingSettings.PollingIntervalKey] = "00:00:05",
+        [MessagingSettings.BatchSizeKey] = "50"
+    };
+
+    private static IConfiguration Build(Dictionary<string, string?> values) =>
+        new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+}

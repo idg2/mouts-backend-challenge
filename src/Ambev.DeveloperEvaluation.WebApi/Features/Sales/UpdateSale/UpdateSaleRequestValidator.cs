@@ -1,0 +1,40 @@
+using FluentValidation;
+
+namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales.UpdateSale;
+
+// Work item: TASK-022 (FEAT-010)
+/// <summary>
+/// Validator for UpdateSaleRequest.
+/// </summary>
+public class UpdateSaleRequestValidator : AbstractValidator<UpdateSaleRequest>
+{
+    // Work item: BUG-007 (FEAT-010), BUG-009 (FEAT-010), TASK-064 (FEAT-001)
+    /// <summary>
+    /// Initializes validation rules for UpdateSaleRequest.
+    /// </summary>
+    /// <remarks>
+    /// Rules: sale, customer, and branch ids required; at least one item; no null item; item ids unique; per item, id
+    /// not empty when present, product id required, quantity greater than zero, requested discount percentage null or
+    /// between 0 and 100 with at most two decimals.
+    /// </remarks>
+    public UpdateSaleRequestValidator()
+    {
+        RuleFor(sale => sale.Id).NotEmpty().WithMessage("Sale ID is required");
+        RuleFor(sale => sale.CustomerId).NotEmpty();
+        RuleFor(sale => sale.BranchId).NotEmpty();
+        RuleFor(sale => sale.Items).NotEmpty().WithMessage("A sale must have at least one item.");
+        RuleFor(sale => sale.Items)
+            .Must(items => items is null
+                           || items.Where(i => i?.Id != null).Select(i => i!.Id).Distinct().Count()
+                           == items.Count(i => i?.Id != null))
+            .WithMessage("Item ids must be unique.");
+        RuleForEach(sale => sale.Items).NotNull();
+        RuleForEach(sale => sale.Items).ChildRules(item =>
+        {
+            item.RuleFor(i => i.Id).NotEqual(Guid.Empty).When(i => i.Id.HasValue);
+            item.RuleFor(i => i.ProductId).NotEmpty();
+            item.RuleFor(i => i.Quantity).GreaterThan(0);
+            item.RuleFor(i => i.DiscountPercentage).InclusiveBetween(0m, 100m).PrecisionScale(5, 2, true);
+        });
+    }
+}

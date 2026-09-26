@@ -1,13 +1,12 @@
 namespace Ambev.DeveloperEvaluation.DevConsole.Trace;
 
-// Work item: TASK-056 (FEAT-017)
+// Work item: TASK-056 (FEAT-017), TD-030
 /// <summary>
-/// The scenarios in menu order, and the documented keys that only an infrastructure failure or a redelivery produces,
-/// which the summary reports as expected misses instead of gaps.
+/// The scenarios in menu order, and the documented keys the summary reports as expected misses instead of gaps.
 /// </summary>
 public static class ScenarioCatalog
 {
-    // Work item: TASK-056 (FEAT-017), TASK-057 (FEAT-017), TASK-058 (FEAT-017), TASK-065 (FEAT-001)
+    // Work item: TASK-056 (FEAT-017), TASK-057 (FEAT-017), TASK-058 (FEAT-017), TASK-065 (FEAT-001), TD-030
     /// <summary>Gets the scenarios in the order the menu shows and "all" runs.</summary>
     public static IReadOnlyList<IScenario> All { get; } = new List<IScenario>
     {
@@ -35,20 +34,14 @@ public static class ScenarioCatalog
         new Scenarios.SaleUpdateScenario(),
         new Scenarios.SaleDeleteScenario(),
         new Scenarios.SaleListScenario(),
-        new Scenarios.SaleDiscountScenario()
+        new Scenarios.SaleDiscountScenario(),
+        new Scenarios.FailuresScenario()
     };
 
-    // Work item: TASK-072 (FEAT-018), TASK-078 (FEAT-003)
-    /// <summary>Gets the keys a full run does not exercise on purpose.</summary>
-    public static IReadOnlySet<string> ExpectedMisses { get; } = new HashSet<string>
-    {
-        "SAL-CRT-06",   // a redelivered queued command
-        "SAL-OBW-02",   // an outbox write outside a transaction
-        "SAL-RLY-07",   // a failed relay cycle
-        "SAL-DSP-07",   // a failed dispatch
-        "SAL-BUS-06",   // a retried delivery (only validation failures are provoked, and they fail fast)
-        "SAL-PRJ-02",   // an event older than the read model document: only a redelivery or two events of one sale in one batch produce one
-        "CMN-RSP-10",   // an unhandled exception: no scenario provokes one
-        "USR-SED-06"    // the seed skip: the database is wiped, so the administrator is always created
-    };
+    // Work item: TASK-072 (FEAT-018), TASK-078 (FEAT-003), TD-030
+    /// <summary>
+    /// Gets the keys a full run does not exercise on purpose. None today: the failures scenario reaches the failure and
+    /// redelivery paths, so any documented key a full run misses is a gap.
+    /// </summary>
+    public static IReadOnlySet<string> ExpectedMisses { get; } = new HashSet<string>();
 }

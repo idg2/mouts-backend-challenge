@@ -26,7 +26,7 @@ public static class TraceCommand
     // Work item: TASK-056 (FEAT-017)
     private static readonly Regex StepKey = new(@"\b[A-Z]{3}-[A-Z]{3}-\d{2}\b", RegexOptions.Compiled);
 
-    // Work item: TASK-045 (FEAT-017), TASK-056 (FEAT-017), TASK-057 (FEAT-017), TASK-059 (FEAT-017)
+    // Work item: TASK-045 (FEAT-017), TASK-056 (FEAT-017), TASK-057 (FEAT-017), TASK-059 (FEAT-017), TD-030
     /// <summary>
     /// Runs the command and returns the process exit code.
     /// </summary>
@@ -78,7 +78,7 @@ public static class TraceCommand
             {
                 client = host.CreateClient();
                 sink.HostReady = true;
-                adminToken = await new ScenarioContext(client, string.Empty, waiter, waitTimeout, runId, Console.Out, adminEmail, adminPassword)
+                adminToken = await new ScenarioContext(client, string.Empty, waiter, waitTimeout, runId, Console.Out, adminEmail, adminPassword, host.Services, host.Faults)
                     .LoginAsync(adminEmail, adminPassword);
             }
             catch (Exception exception)
@@ -94,7 +94,7 @@ public static class TraceCommand
                 return 1;
             }
 
-            var context = new ScenarioContext(client, adminToken, waiter, waitTimeout, runId, Console.Out, adminEmail, adminPassword);
+            var context = new ScenarioContext(client, adminToken, waiter, waitTimeout, runId, Console.Out, adminEmail, adminPassword, host.Services, host.Faults);
             var allSucceeded = await RunScenariosAsync(scenarios, context);
             PrintSummary(sink, scenarios.Count == ScenarioCatalog.All.Count);
             return allSucceeded ? 0 : 1;

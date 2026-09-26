@@ -1,6 +1,7 @@
 using Ambev.DeveloperEvaluation.DevConsole.Trace;
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.DevConsole;
@@ -146,9 +147,10 @@ public class TraceCommandTests
         output.ToString().Should().NotContain("!!!");
     }
 
-    // Work item: TASK-057 (FEAT-017)
+    // Work item: TASK-057 (FEAT-017), TD-030
     private static ScenarioContext Context(TextWriter output) =>
-        new(new HttpClient(), "token", new StepWaiter(), TimeSpan.FromSeconds(1), "run1", output, "admin@example.com", "unused");
+        new(new HttpClient(), "token", new StepWaiter(), TimeSpan.FromSeconds(1), "run1", output, "admin@example.com", "unused",
+            new ServiceCollection().BuildServiceProvider(), new TraceFaults());
 
     // Work item: TASK-057 (FEAT-017)
     /// <summary>

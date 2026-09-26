@@ -1,4 +1,4 @@
-using Ambev.DeveloperEvaluation.Domain.Entities;
+using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities;
@@ -9,6 +9,7 @@ namespace Ambev.DeveloperEvaluation.Unit.Domain.Entities;
 /// </summary>
 public class BranchTests
 {
+    // Work item: TASK-014 (FEAT-010), TD-042
     /// <summary>
     /// Tests that validation passes when the branch data is valid.
     /// </summary>
@@ -16,7 +17,7 @@ public class BranchTests
     public void Given_ValidBranch_When_Validated_Then_ShouldReturnValid()
     {
         // Arrange
-        var branch = new Branch { Id = Guid.NewGuid(), Name = "Downtown" };
+        var branch = BranchTestData.GenerateValidBranch();
 
         // Act
         var result = branch.Validate();

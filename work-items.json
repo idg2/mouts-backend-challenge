@@ -1706,6 +1706,17 @@
       "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TD-042",
+      "type": "td",
+      "title": "Bogus generators for Customer, Branch, Product, and Sale tests",
+      "description": "Faker<T> appeared only in the three template User test files; the Customer, Branch, Product, and Sale tests built their data by hand. Adds Bogus generators in Unit Domain/Entities/TestData (a valid CPF for customers; SaleLine lines and Sale.Create for sales, since Sale has no public setter) and uses them in the entity tests. DiscountPolicy keeps its deterministic builder, whose tests pin the README tiers. Evaluation gap N1 (rows C12, T10).",
+      "parent": null,
+      "moscow": "could",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
     }
   ]
 }

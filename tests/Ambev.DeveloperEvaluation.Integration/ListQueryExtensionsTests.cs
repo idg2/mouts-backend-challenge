@@ -283,7 +283,8 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
 
     private static FieldFilter Like(string field, string pattern) => new(field, FilterOperator.Like, pattern);
 
-    private static Sale NewSale(string marker, DateTime saleDate, Guid customerId = default, bool isCancelled = false) => new()
+    // Work item: TD-039
+    private static Sale NewSale(string marker, DateTime saleDate, Guid customerId = default, bool isCancelled = false) => Persisted.New<Sale>(new
     {
         SaleDate = saleDate,
         CustomerId = customerId == default ? Guid.NewGuid() : customerId,
@@ -292,9 +293,9 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
         BranchName = "Downtown",
         TotalAmount = 10m,
         IsCancelled = isCancelled,
-        Items =
-        [
-            new SaleItem
+        Items = new List<SaleItem>
+        {
+            Persisted.New<SaleItem>(new
             {
                 LineNumber = 1,
                 ProductId = Guid.NewGuid(),
@@ -302,9 +303,9 @@ public class ListQueryExtensionsTests : IClassFixture<PostgresFixture>
                 UnitPrice = 10m,
                 Quantity = 1,
                 TotalAmount = 10m
-            }
-        ]
-    };
+            })
+        }
+    });
 
     private Task SeedProductsAsync(string marker) => SeedAsync(
         new Product { Code = $"{marker}-1", Description = $"{marker} beer", UnitPrice = 5m },

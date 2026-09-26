@@ -66,7 +66,7 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
         _discountPolicyResolver = discountPolicyResolver;
     }
 
-    // Work item: TASK-029 (FEAT-004), TASK-053 (FEAT-017), TASK-064 (FEAT-001)
+    // Work item: TASK-029 (FEAT-004), TASK-053 (FEAT-017), TASK-064 (FEAT-001), TD-039
     /// <summary>
     /// Handles the UpdateSaleCommand request.
     /// </summary>
@@ -166,37 +166,29 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
             throw new ValidationException(discountFailures);
 
         if (customer != null)
-        {
-            sale.CustomerId = customer.Id;
-            sale.CustomerName = customer.Name;
-        }
+            sale.ChangeCustomer(customer.Id, customer.Name);
 
         if (branch != null)
-        {
-            sale.BranchId = branch.Id;
-            sale.BranchName = branch.Name;
-        }
+            sale.ChangeBranch(branch.Id, branch.Name);
 
-        sale.IsCancelled = command.IsCancelled;
+        sale.SetCancelled(command.IsCancelled);
 
-        var incomingItems = new List<SaleItem>();
+        var incomingLines = new List<SaleLine>();
         foreach (var item in command.Items)
         {
             var keptCopy = CopiesFromCatalog(item) ? null : existingItems[item.Id!.Value];
-            incomingItems.Add(new SaleItem
-            {
-                Id = item.Id ?? Guid.Empty,
-                ProductId = item.ProductId,
-                ProductDescription = keptCopy?.ProductDescription ?? products[item.ProductId].Description,
-                UnitPrice = keptCopy?.UnitPrice ?? products[item.ProductId].UnitPrice,
-                Quantity = item.Quantity,
-                RequestedDiscountPercentage = item.DiscountPercentage,
-                IsCancelled = item.IsCancelled
-            });
+            incomingLines.Add(new SaleLine(
+                item.Id,
+                item.ProductId,
+                keptCopy?.ProductDescription ?? products[item.ProductId].Description,
+                keptCopy?.UnitPrice ?? products[item.ProductId].UnitPrice,
+                item.Quantity,
+                item.DiscountPercentage,
+                item.IsCancelled));
         }
-        StepTrace.Step("SAL-UPD-09", "Apply header values and copy new names", [("saleId", sale.Id), ("customerName", sale.CustomerName), ("branchName", sale.BranchName), ("isCancelled", sale.IsCancelled), ("incoming", incomingItems.Count)]);
+        StepTrace.Step("SAL-UPD-09", "Apply header values and copy new names", [("saleId", sale.Id), ("customerName", sale.CustomerName), ("branchName", sale.BranchName), ("isCancelled", sale.IsCancelled), ("incoming", incomingLines.Count)]);
 
-        sale.SyncItems(incomingItems);
+        sale.SyncItems(incomingLines);
 
         sale.ApplyDiscounts(policies);
         StepTrace.Step("SAL-UPD-20", "Apply the discounts per product total", [("saleId", sale.Id), ("items", sale.Items.Count), ("totalAmount", sale.TotalAmount)]);

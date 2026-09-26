@@ -2,9 +2,9 @@ using System.Globalization;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using FluentValidation.Results;
 
-namespace Ambev.DeveloperEvaluation.Application.Sales.Common;
+namespace Ambev.DeveloperEvaluation.Domain.Services;
 
-// Work item: TASK-064 (FEAT-001)
+// Work item: TASK-064 (FEAT-001), TD-039
 /// <summary>
 /// Checks the lines of a sale against the discount policies resolved for it, before the sale is built, so every
 /// violation reaches the client as one 400 entry (A15) instead of a DomainException from <see cref="Sale.ApplyDiscounts"/>.

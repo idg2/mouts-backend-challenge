@@ -10,6 +10,7 @@ namespace Ambev.DeveloperEvaluation.ORM.Mapping;
 /// </summary>
 public class SaleConfiguration : IEntityTypeConfiguration<Sale>
 {
+    // Work item: TD-039
     /// <summary>
     /// Configures the Sales table and its one-to-many relationship with SaleItems
     /// </summary>
@@ -37,5 +38,7 @@ public class SaleConfiguration : IEntityTypeConfiguration<Sale>
             .WithOne()
             .HasForeignKey(i => i.SaleId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(s => s.Items).HasField("_items").UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

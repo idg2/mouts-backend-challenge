@@ -1,6 +1,7 @@
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.ValueObjects;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
+using Ambev.DeveloperEvaluation.Unit.TestData;
 using FluentAssertions;
 using Xunit;
 
@@ -43,6 +44,7 @@ public class SaleDiscountTests
         sale.TotalAmount.Should().Be(96m);
     }
 
+    // Work item: TD-039
     /// <summary>
     /// Tests that cancelling a line reprices the remaining lines of the product at the lower tier.
     /// </summary>
@@ -56,7 +58,7 @@ public class SaleDiscountTests
         sale.ApplyDiscounts(Policies(_product));
 
         // Act
-        sale.Items[0].IsCancelled = true;
+        Persisted.Set(sale.Items[0], nameof(SaleItem.IsCancelled), true);
         sale.ApplyDiscounts(Policies(_product));
 
         // Assert
@@ -84,6 +86,7 @@ public class SaleDiscountTests
         item.TotalAmount.Should().Be(47.5m);
     }
 
+    // Work item: TD-039
     /// <summary>
     /// Tests that a requested discount above a ceiling that dropped is clamped to the new ceiling.
     /// </summary>
@@ -98,7 +101,7 @@ public class SaleDiscountTests
         kept.DiscountPercentage.Should().Be(20m);
 
         // Act
-        removed.IsCancelled = true;
+        Persisted.Set(removed, nameof(SaleItem.IsCancelled), true);
         sale.ApplyDiscounts(Policies(_product));
 
         // Assert
@@ -257,6 +260,7 @@ public class SaleDiscountTests
         second.DiscountCeilingPercentage.Should().Be(0m);
     }
 
+    // Work item: TD-039
     /// <summary>
     /// Tests that a priced item that is then cancelled keeps its snapshot and is left out of the sale total.
     /// </summary>
@@ -270,7 +274,7 @@ public class SaleDiscountTests
         sale.ApplyDiscounts(Policies(_product));
 
         // Act
-        cancelled.IsCancelled = true;
+        Persisted.Set(cancelled, nameof(SaleItem.IsCancelled), true);
         sale.ApplyDiscounts(Policies(_product));
 
         // Assert
@@ -282,6 +286,7 @@ public class SaleDiscountTests
         sale.TotalAmount.Should().Be(36m);
     }
 
+    // Work item: TD-039
     /// <summary>
     /// Tests that an item that was never priced and arrives cancelled gets its policy with no discount.
     /// </summary>
@@ -292,7 +297,7 @@ public class SaleDiscountTests
         var sale = NewSale();
         AddItem(sale, _product, 4, 10m, null);
         var cancelled = AddItem(sale, _product, 3, 10m, 5m);
-        cancelled.IsCancelled = true;
+        Persisted.Set(cancelled, nameof(SaleItem.IsCancelled), true);
 
         // Act
         sale.ApplyDiscounts(Policies(_product));
@@ -306,6 +311,7 @@ public class SaleDiscountTests
         sale.TotalAmount.Should().Be(36m);
     }
 
+    // Work item: TD-039
     /// <summary>
     /// Tests that a sale with every item cancelled totals zero.
     /// </summary>
@@ -318,7 +324,7 @@ public class SaleDiscountTests
         sale.ApplyDiscounts(Policies(_product));
 
         // Act
-        item.IsCancelled = true;
+        Persisted.Set(item, nameof(SaleItem.IsCancelled), true);
         sale.ApplyDiscounts(Policies(_product));
 
         // Assert
@@ -326,7 +332,8 @@ public class SaleDiscountTests
         item.TotalAmount.Should().Be(36m);
     }
 
-    private static Sale NewSale() => new()
+    // Work item: TD-039
+    private static Sale NewSale() => Persisted.New<Sale>(new
     {
         Id = Guid.NewGuid(),
         SaleDate = SaleDate,
@@ -334,11 +341,12 @@ public class SaleDiscountTests
         CustomerName = "Acme Market",
         BranchId = Guid.NewGuid(),
         BranchName = "Downtown"
-    };
+    });
 
+    // Work item: TD-039
     private static SaleItem AddItem(Sale sale, Guid productId, int quantity, decimal unitPrice, decimal? requested)
     {
-        var item = new SaleItem
+        var item = Persisted.New<SaleItem>(new
         {
             Id = Guid.NewGuid(),
             LineNumber = sale.Items.Count + 1,
@@ -347,8 +355,8 @@ public class SaleDiscountTests
             UnitPrice = unitPrice,
             Quantity = quantity,
             RequestedDiscountPercentage = requested
-        };
-        sale.Items.Add(item);
+        });
+        Persisted.Set(sale, nameof(Sale.Items), sale.Items.Append(item).ToList());
         return item;
     }
 

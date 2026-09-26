@@ -1,5 +1,6 @@
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Events.Sales;
+using Ambev.DeveloperEvaluation.Unit.TestData;
 using FluentAssertions;
 using Xunit;
 
@@ -11,7 +12,7 @@ namespace Ambev.DeveloperEvaluation.Unit.Domain.Events;
 /// </summary>
 public class SaleSnapshotTests
 {
-    // Work item: TASK-062 (FEAT-001)
+    // Work item: TASK-062 (FEAT-001), TD-039
     /// <summary>
     /// Tests that the snapshot copies every sale and item value and lists the items by line number.
     /// </summary>
@@ -20,23 +21,23 @@ public class SaleSnapshotTests
     {
         // Arrange
         var policyId = Guid.NewGuid();
-        var second = new SaleItem
+        var second = Persisted.New<SaleItem>(new
         {
             Id = Guid.NewGuid(), LineNumber = 2, ProductId = Guid.NewGuid(), ProductDescription = "Soda 2L",
             UnitPrice = 5m, Quantity = 2, TotalAmount = 10m, IsCancelled = true, DiscountPolicyId = policyId
-        };
-        var first = new SaleItem
+        });
+        var first = Persisted.New<SaleItem>(new
         {
             Id = Guid.NewGuid(), LineNumber = 1, ProductId = Guid.NewGuid(), ProductDescription = "Beer 350ml",
             UnitPrice = 10.99m, Quantity = 4, DiscountPercentage = 10m, DiscountAmount = 4.40m, TotalAmount = 39.56m,
             RequestedDiscountPercentage = 10m, DiscountPolicyId = policyId, DiscountCeilingPercentage = 10m
-        };
-        var sale = new Sale
+        });
+        var sale = Persisted.New<Sale>(new
         {
-            Id = Guid.NewGuid(), SaleNumber = 42, SaleDate = new DateTime(2026, 9, 24, 13, 45, 30, DateTimeKind.Utc),
+            Id = Guid.NewGuid(), SaleNumber = 42L, SaleDate = new DateTime(2026, 9, 24, 13, 45, 30, DateTimeKind.Utc),
             CustomerId = Guid.NewGuid(), CustomerName = "Acme Market", BranchId = Guid.NewGuid(), BranchName = "Downtown",
-            TotalAmount = 49.56m, IsCancelled = true, Items = [second, first]
-        };
+            TotalAmount = 49.56m, IsCancelled = true, Items = new List<SaleItem> {second, first}
+        });
 
         // Act
         var snapshot = SaleSnapshot.From(sale);

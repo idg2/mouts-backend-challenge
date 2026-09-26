@@ -1,6 +1,7 @@
 using Ambev.DeveloperEvaluation.Application.Sales.Common;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Events.Sales;
+using Ambev.DeveloperEvaluation.Unit.TestData;
 using AutoMapper;
 using FluentAssertions;
 using Xunit;
@@ -15,6 +16,7 @@ public class SaleProfileTests
 {
     private readonly IMapper _mapper = new MapperConfiguration(cfg => cfg.AddProfile<SaleProfile>()).CreateMapper();
 
+    // Work item: TD-039
     /// <summary>
     /// Tests that the result lists the items by line number, the order the client sent them in, so the create,
     /// update, and get responses agree.
@@ -23,16 +25,16 @@ public class SaleProfileTests
     public void Given_ItemsOutOfLineOrder_When_MappingSale_Then_ResultItemsAreOrderedByLineNumber()
     {
         // Arrange
-        var sale = new Sale
+        var sale = Persisted.New<Sale>(new
         {
             Id = Guid.NewGuid(),
-            Items =
-            [
-                new SaleItem { Id = Guid.Parse("00000000-0000-0000-0000-000000000001"), LineNumber = 3, Quantity = 30 },
-                new SaleItem { Id = Guid.Parse("00000000-0000-0000-0000-000000000002"), LineNumber = 1, Quantity = 10 },
-                new SaleItem { Id = Guid.Parse("00000000-0000-0000-0000-000000000003"), LineNumber = 2, Quantity = 20 }
-            ]
-        };
+            Items = new List<SaleItem>
+            {
+                Persisted.New<SaleItem>(new { Id = Guid.Parse("00000000-0000-0000-0000-000000000001"), LineNumber = 3, Quantity = 30 }),
+                Persisted.New<SaleItem>(new { Id = Guid.Parse("00000000-0000-0000-0000-000000000002"), LineNumber = 1, Quantity = 10 }),
+                Persisted.New<SaleItem>(new { Id = Guid.Parse("00000000-0000-0000-0000-000000000003"), LineNumber = 2, Quantity = 20 })
+            }
+        });
 
         // Act
         var result = _mapper.Map<SaleResult>(sale);
@@ -41,7 +43,7 @@ public class SaleProfileTests
         result.Items.Select(i => i.Quantity).Should().Equal(10, 20, 30);
     }
 
-    // Work item: TASK-064 (FEAT-001), TASK-066 (FEAT-001)
+    // Work item: TASK-064 (FEAT-001), TASK-066 (FEAT-001), TD-039
     /// <summary>
     /// Tests that the item result carries the requested discount and the discount snapshot: policy, ceiling, and
     /// applied percentage.
@@ -51,19 +53,19 @@ public class SaleProfileTests
     {
         // Arrange
         var policyId = Guid.NewGuid();
-        var sale = new Sale
+        var sale = Persisted.New<Sale>(new
         {
             Id = Guid.NewGuid(),
-            Items =
-            [
-                new SaleItem
+            Items = new List<SaleItem>
+            {
+                Persisted.New<SaleItem>(new
                 {
                     Id = Guid.NewGuid(), LineNumber = 1, Quantity = 5, UnitPrice = 10m, DiscountPolicyId = policyId,
                     DiscountCeilingPercentage = 10m, DiscountPercentage = 5m, DiscountAmount = 2.5m, TotalAmount = 47.5m,
                     RequestedDiscountPercentage = 7.5m
-                }
-            ]
-        };
+                })
+            }
+        });
 
         // Act
         var item = _mapper.Map<SaleResult>(sale).Items.Single();

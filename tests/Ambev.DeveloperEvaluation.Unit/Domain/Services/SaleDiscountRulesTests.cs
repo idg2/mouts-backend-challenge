@@ -1,12 +1,12 @@
-using Ambev.DeveloperEvaluation.Application.Sales.Common;
+using Ambev.DeveloperEvaluation.Domain.Services;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using FluentAssertions;
 using Xunit;
 
-namespace Ambev.DeveloperEvaluation.Unit.Application.Sales;
+namespace Ambev.DeveloperEvaluation.Unit.Domain.Services;
 
-// Work item: TASK-064 (FEAT-001)
+// Work item: TASK-064 (FEAT-001), TD-039
 /// <summary>
 /// Contains unit tests for <see cref="SaleDiscountRules"/>: the three business codes, the line each one lands on, and
 /// their messages (spec section 5).

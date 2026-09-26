@@ -1,6 +1,6 @@
-namespace Ambev.DeveloperEvaluation.Application.Sales.Common;
+namespace Ambev.DeveloperEvaluation.Domain.Services;
 
-// Work item: TASK-064 (FEAT-001)
+// Work item: TASK-064 (FEAT-001), TD-039
 /// <summary>
 /// One line of a create or update command, as the discount rules see it.
 /// </summary>

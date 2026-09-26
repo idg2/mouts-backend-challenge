@@ -6,6 +6,7 @@ using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.Domain.Services;
 using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
+using Ambev.DeveloperEvaluation.Unit.TestData;
 using AutoMapper;
 using FluentAssertions;
 using FluentValidation;
@@ -52,7 +53,7 @@ public class CreateSaleHandlerTests
     // Work item: TASK-064 (FEAT-001)
     private readonly DiscountPolicy _readme = DiscountPolicyTestData.Create();
 
-    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001), TD-039
     /// <summary>
     /// Initializes the test dependencies with one customer, one branch, and one product in the catalogs.
     /// </summary>
@@ -77,8 +78,9 @@ public class CreateSaleHandlerTests
                 _idSentToRepository = sale.Id;
                 if (sale.Id == Guid.Empty)
                     sale.Id = Guid.NewGuid();
-                sale.SaleNumber = 1001;
-                sale.Items.ForEach(item => item.Id = Guid.NewGuid());
+                Persisted.Set(sale, nameof(Sale.SaleNumber), 1001L);
+                foreach (var item in sale.Items)
+                    item.Id = Guid.NewGuid();
                 _savedSale = sale;
                 return sale;
             });
@@ -245,7 +247,7 @@ public class CreateSaleHandlerTests
         _savedSale!.Id.Should().Be(id);
     }
 
-    // Work item: TASK-037 (FEAT-006), TASK-029 (FEAT-004), TASK-064 (FEAT-001)
+    // Work item: TASK-037 (FEAT-006), TASK-029 (FEAT-004), TASK-064 (FEAT-001), TD-039
     /// <summary>
     /// Tests that a redelivered command whose sale is already stored returns that sale and writes nothing.
     /// </summary>
@@ -253,7 +255,7 @@ public class CreateSaleHandlerTests
     public async Task Given_IdOfStoredSale_When_Handled_Then_ReturnsItWithoutWriting()
     {
         // Arrange
-        var existing = new Sale { Id = Guid.NewGuid() };
+        var existing = Persisted.New<Sale>(new { Id = Guid.NewGuid() });
         _saleRepository.GetByIdAsync(existing.Id, Arg.Any<CancellationToken>()).Returns(existing);
         var expected = new SaleResult { Id = existing.Id };
         _mapper.Map<SaleResult>(existing).Returns(expected);

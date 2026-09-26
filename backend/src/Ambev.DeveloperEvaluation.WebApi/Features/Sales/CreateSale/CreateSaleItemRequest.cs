@@ -1,8 +1,9 @@
 namespace Ambev.DeveloperEvaluation.WebApi.Features.Sales.CreateSale;
 
-// Work item: TASK-021 (FEAT-010)
+// Work item: TASK-021 (FEAT-010), TASK-064 (FEAT-001)
 /// <summary>
-/// One item of a <see cref="CreateSaleRequest"/>.
+/// One item of a <see cref="CreateSaleRequest"/>. The server computes the discount amount and the total from the
+/// discount policies.
 /// </summary>
 public class CreateSaleItemRequest
 {
@@ -16,18 +17,10 @@ public class CreateSaleItemRequest
     /// </summary>
     public int Quantity { get; set; }
 
+    // Work item: TASK-064 (FEAT-001)
     /// <summary>
-    /// Gets or sets the discount percentage, from 0 to 100, stored as received.
+    /// Gets or sets the requested discount percentage, from 0 to 100; omit it to receive the ceiling of the product's
+    /// total. A value above the ceiling is rejected with DiscountAboveAllowed.
     /// </summary>
-    public decimal DiscountPercentage { get; set; }
-
-    /// <summary>
-    /// Gets or sets the discount amount, stored as received.
-    /// </summary>
-    public decimal DiscountAmount { get; set; }
-
-    /// <summary>
-    /// Gets or sets the item total, stored as received.
-    /// </summary>
-    public decimal TotalAmount { get; set; }
+    public decimal? DiscountPercentage { get; set; }
 }

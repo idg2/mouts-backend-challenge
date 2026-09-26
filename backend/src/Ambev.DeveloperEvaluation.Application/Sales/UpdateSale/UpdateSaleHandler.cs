@@ -3,6 +3,7 @@ using Ambev.DeveloperEvaluation.Common.Tracing;
 using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
+using Ambev.DeveloperEvaluation.Domain.Services;
 using AutoMapper;
 using FluentValidation;
 using FluentValidation.Results;
@@ -10,16 +11,17 @@ using MediatR;
 
 namespace Ambev.DeveloperEvaluation.Application.Sales.UpdateSale;
 
-// Work item: TASK-022 (FEAT-010), TASK-029 (FEAT-004)
+// Work item: TASK-022 (FEAT-010), TASK-029 (FEAT-004), TASK-064 (FEAT-001)
 /// <summary>
 /// Handler for processing UpdateSaleCommand requests.
 /// </summary>
 /// <remarks>
 /// Copied values are refreshed only when their reference changes: the customer or branch name when its id
 /// changes, and the product description and unit price for new items or items whose product changes. The
-/// sale number and date never change. The sale and its items are saved in a single SaveChangesAsync.
-/// After the save it enqueues SaleModified, then ItemCancelled for each existing item that went from active to cancelled
-/// (in incoming order), then SaleCancelled when the sale went from active to cancelled.
+/// sale number and date never change. Discounts are recalculated from the policies in effect at the stored sale date,
+/// never the current date; a cancelled item keeps the values it was last priced with. The sale and its items are saved
+/// in a single SaveChangesAsync. After the save it enqueues SaleModified, then ItemCancelled for each existing item
+/// that went from active to cancelled (in incoming order), then SaleCancelled when the sale went from active to cancelled.
 /// </remarks>
 public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
 {
@@ -32,7 +34,10 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
     // Work item: TASK-029 (FEAT-004)
     private readonly IOutbox _outbox;
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-064 (FEAT-001)
+    private readonly DiscountPolicyResolver _discountPolicyResolver;
+
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     /// <summary>
     /// Initializes a new instance of UpdateSaleHandler.
     /// </summary>
@@ -42,13 +47,15 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
     /// <param name="productRepository">The product repository</param>
     /// <param name="mapper">The AutoMapper instance</param>
     /// <param name="outbox">The outbox the sale events are recorded in</param>
+    /// <param name="discountPolicyResolver">Picks the discount policy of each product at the sale date</param>
     public UpdateSaleHandler(
         ISaleRepository saleRepository,
         ICustomerRepository customerRepository,
         IBranchRepository branchRepository,
         IProductRepository productRepository,
         IMapper mapper,
-        IOutbox outbox)
+        IOutbox outbox,
+        DiscountPolicyResolver discountPolicyResolver)
     {
         _saleRepository = saleRepository;
         _customerRepository = customerRepository;
@@ -56,9 +63,10 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
         _productRepository = productRepository;
         _mapper = mapper;
         _outbox = outbox;
+        _discountPolicyResolver = discountPolicyResolver;
     }
 
-    // Work item: TASK-029 (FEAT-004), TASK-053 (FEAT-017)
+    // Work item: TASK-029 (FEAT-004), TASK-053 (FEAT-017), TASK-064 (FEAT-001)
     /// <summary>
     /// Handles the UpdateSaleCommand request.
     /// </summary>
@@ -100,8 +108,15 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
         if (failures.Count > 0)
             throw new ValidationException(failures);
 
+        // An existing item sent as cancelled takes only the flag (Sale.SyncItems): its stored product stays, so the
+        // catalog is not read for it and the discount check and ItemCancelled use the stored product.
+        bool KeepsStoredValues(UpdateSaleItemInput item) => item.Id.HasValue && item.IsCancelled;
+
+        Guid EffectiveProductId(UpdateSaleItemInput item) =>
+            KeepsStoredValues(item) ? existingItems[item.Id!.Value].ProductId : item.ProductId;
+
         bool CopiesFromCatalog(UpdateSaleItemInput item) =>
-            !item.Id.HasValue || existingItems[item.Id.Value].ProductId != item.ProductId;
+            !item.Id.HasValue || (!KeepsStoredValues(item) && existingItems[item.Id.Value].ProductId != item.ProductId);
 
         var productIds = command.Items.Where(CopiesFromCatalog).Select(item => item.ProductId).Distinct().ToList();
         var products = productIds.Count == 0
@@ -136,6 +151,20 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
         if (failures.Count > 0)
             throw new ValidationException(failures);
 
+        // The stored sale date, never the current one (D9): a later policy never reprices an older sale.
+        var policyProductIds = command.Items.Select(EffectiveProductId).Distinct().ToList();
+        var policies = await _discountPolicyResolver.ResolveAsync(command.BranchId, policyProductIds, sale.SaleDate, cancellationToken);
+        StepTrace.Step("SAL-UPD-18", "Resolve the discount policies at the sale date",
+            [("saleId", sale.Id), ("branchId", command.BranchId), ("saleDate", sale.SaleDate), ("productIds", policyProductIds.Count), ("resolved", policies.Count)]);
+
+        var lines = command.Items
+            .Select(item => new SaleDiscountLine(EffectiveProductId(item), item.Quantity, item.DiscountPercentage, item.IsCancelled))
+            .ToList();
+        var discountFailures = SaleDiscountRules.Check(lines, command.BranchId, sale.SaleDate, policies);
+        StepTrace.Step("SAL-UPD-19", "Discount rules respected?", [("saleId", sale.Id), ("lines", lines.Count), ("failures", discountFailures.Count)]);
+        if (discountFailures.Count > 0)
+            throw new ValidationException(discountFailures);
+
         if (customer != null)
         {
             sale.CustomerId = customer.Id;
@@ -148,7 +177,6 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
             sale.BranchName = branch.Name;
         }
 
-        sale.TotalAmount = command.TotalAmount;
         sale.IsCancelled = command.IsCancelled;
 
         var incomingItems = new List<SaleItem>();
@@ -162,15 +190,16 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
                 ProductDescription = keptCopy?.ProductDescription ?? products[item.ProductId].Description,
                 UnitPrice = keptCopy?.UnitPrice ?? products[item.ProductId].UnitPrice,
                 Quantity = item.Quantity,
-                DiscountPercentage = item.DiscountPercentage,
-                DiscountAmount = item.DiscountAmount,
-                TotalAmount = item.TotalAmount,
+                RequestedDiscountPercentage = item.DiscountPercentage,
                 IsCancelled = item.IsCancelled
             });
         }
-        StepTrace.Step("SAL-UPD-09", "Apply header values and copy new names", [("saleId", sale.Id), ("customerName", sale.CustomerName), ("branchName", sale.BranchName), ("totalAmount", sale.TotalAmount), ("isCancelled", sale.IsCancelled), ("incoming", incomingItems.Count)]);
+        StepTrace.Step("SAL-UPD-09", "Apply header values and copy new names", [("saleId", sale.Id), ("customerName", sale.CustomerName), ("branchName", sale.BranchName), ("isCancelled", sale.IsCancelled), ("incoming", incomingItems.Count)]);
 
         sale.SyncItems(incomingItems);
+
+        sale.ApplyDiscounts(policies);
+        StepTrace.Step("SAL-UPD-20", "Apply the discounts per product total", [("saleId", sale.Id), ("items", sale.Items.Count), ("totalAmount", sale.TotalAmount)]);
 
         var updatedSale = await _saleRepository.UpdateAsync(sale, cancellationToken);
         StepTrace.Step("SAL-UPD-11", "Save the sale and its items", [("saleId", updatedSale.Id), ("saleNumber", updatedSale.SaleNumber), ("items", updatedSale.Items.Count)]);
@@ -178,8 +207,9 @@ public class UpdateSaleHandler : IRequestHandler<UpdateSaleCommand, SaleResult>
         StepTrace.Step("SAL-UPD-12", "Enqueue SaleModified", [("saleId", updatedSale.Id), ("eventType", nameof(SaleModified))]);
         foreach (var item in command.Items.Where(item => item.IsCancelled && item.Id.HasValue && activeItemIds.Contains(item.Id.Value)))
         {
-            await _outbox.EnqueueAsync(new ItemCancelled(updatedSale.Id, item.Id!.Value, item.ProductId), cancellationToken);
-            StepTrace.Step("SAL-UPD-13", "Enqueue ItemCancelled per item turned cancelled", [("saleId", updatedSale.Id), ("itemId", item.Id!.Value), ("productId", item.ProductId), ("eventType", nameof(ItemCancelled))]);
+            var productId = EffectiveProductId(item);
+            await _outbox.EnqueueAsync(new ItemCancelled(updatedSale.Id, item.Id!.Value, productId), cancellationToken);
+            StepTrace.Step("SAL-UPD-13", "Enqueue ItemCancelled per item turned cancelled", [("saleId", updatedSale.Id), ("itemId", item.Id!.Value), ("productId", productId), ("eventType", nameof(ItemCancelled))]);
         }
         StepTrace.Step("SAL-UPD-14", "Sale turned cancelled?", [("saleId", updatedSale.Id), ("wasCancelled", wasCancelled), ("isCancelled", updatedSale.IsCancelled)]);
         if (!wasCancelled && updatedSale.IsCancelled)

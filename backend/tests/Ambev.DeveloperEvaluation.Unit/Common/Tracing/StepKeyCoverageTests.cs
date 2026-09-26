@@ -14,6 +14,7 @@ public class StepKeyCoverageTests
 
     private static readonly Regex QuotedStepKey = new("\"([A-Z]{3}-[A-Z]{3}-\\d{2})\"", RegexOptions.Compiled);
 
+    // Work item: TASK-063 (FEAT-001)
     [Theory(DisplayName = "Given a document When comparing with the code Then every documented key is traced")]
     [InlineData("conventions.md")]
     [InlineData("auth.md")]
@@ -22,6 +23,7 @@ public class StepKeyCoverageTests
     [InlineData("branches.md")]
     [InlineData("products.md")]
     [InlineData("sales.md")]
+    [InlineData("discount-policies.md")]
     public void Given_Document_When_ComparedWithCode_Then_EveryKeyIsTraced(string document)
     {
         // Arrange

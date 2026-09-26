@@ -116,11 +116,11 @@ public class SalesControllerCreateSaleTests
         await _mediator.DidNotReceive().Send(Arg.Any<CreateSaleCommand>(), Arg.Any<CancellationToken>());
     }
 
+    // Work item: TASK-064 (FEAT-001)
     private static CreateSaleRequest ValidRequest() => new()
     {
         CustomerId = Guid.NewGuid(),
         BranchId = Guid.NewGuid(),
-        TotalAmount = 10m,
-        Items = [new CreateSaleItemRequest { ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m }]
+        Items = [new CreateSaleItemRequest { ProductId = Guid.NewGuid(), Quantity = 1 }]
     };
 }

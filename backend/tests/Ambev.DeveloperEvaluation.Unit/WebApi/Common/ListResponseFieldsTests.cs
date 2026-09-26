@@ -2,6 +2,7 @@ using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.WebApi.Common;
 using Ambev.DeveloperEvaluation.WebApi.Features.Branches.ListBranches;
 using Ambev.DeveloperEvaluation.WebApi.Features.Customers.ListCustomers;
+using Ambev.DeveloperEvaluation.WebApi.Features.DiscountPolicies.ListDiscountPolicies;
 using Ambev.DeveloperEvaluation.WebApi.Features.Products.ListProducts;
 using Ambev.DeveloperEvaluation.WebApi.Features.Sales.ListSales;
 using FluentAssertions;
@@ -9,12 +10,13 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.WebApi.Common;
 
-// Work item: TASK-027 (FEAT-011)
+// Work item: TASK-027 (FEAT-011), TASK-063 (FEAT-001)
 /// <summary>
 /// Pins the list response fields that clients filter and order by to the entity properties the ORM queries.
 /// </summary>
 public class ListResponseFieldsTests
 {
+    // Work item: TASK-063 (FEAT-001)
     /// <summary>
     /// Gets each list response with its entity.
     /// </summary>
@@ -23,7 +25,8 @@ public class ListResponseFieldsTests
         { typeof(ListCustomersResponse), typeof(Customer) },
         { typeof(ListBranchesResponse), typeof(Branch) },
         { typeof(ListProductsResponse), typeof(Product) },
-        { typeof(ListSalesResponse), typeof(Sale) }
+        { typeof(ListSalesResponse), typeof(Sale) },
+        { typeof(DiscountPolicyListFields), typeof(DiscountPolicy) }
     };
 
     /// <summary>

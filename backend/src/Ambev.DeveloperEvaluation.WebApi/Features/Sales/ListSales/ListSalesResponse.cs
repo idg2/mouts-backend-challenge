@@ -41,8 +41,9 @@ public class ListSalesResponse
     /// </summary>
     public string BranchName { get; set; } = string.Empty;
 
+    // Work item: TASK-066 (FEAT-001)
     /// <summary>
-    /// The sale total, as received.
+    /// The sale total, computed from the active items.
     /// </summary>
     public decimal TotalAmount { get; set; }
 

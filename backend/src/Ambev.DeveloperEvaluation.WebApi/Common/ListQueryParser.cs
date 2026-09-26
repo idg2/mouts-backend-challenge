@@ -27,11 +27,12 @@ public static class ListQueryParser
     private static readonly HashSet<Type> RangeTypes = [typeof(decimal), typeof(long), typeof(DateTime)];
     private static readonly string[] InstantFormats = ["yyyy-MM-dd'T'HH:mm:ss.FFFFFFFK", "yyyy-MM-dd'T'HH:mmK"];
 
+    // Work item: TASK-063 (FEAT-001)
     /// <summary>
-    /// Gets the property types a list response may expose.
+    /// Gets the property types a list response may expose. A nullable id matches one id, never null.
     /// </summary>
     public static IReadOnlySet<Type> SupportedTypes { get; } =
-        new HashSet<Type> { typeof(string), typeof(Guid), typeof(bool), typeof(decimal), typeof(long), typeof(DateTime) };
+        new HashSet<Type> { typeof(string), typeof(Guid), typeof(Guid?), typeof(bool), typeof(decimal), typeof(long), typeof(DateTime) };
 
     // Work item: TASK-047 (FEAT-017)
     /// <summary>
@@ -215,31 +216,35 @@ public static class ListQueryParser
     private static bool TryParseDay(string value, out DateTime day) =>
         DateTime.TryParseExact(value, DayFormat, CultureInfo.InvariantCulture, UtcStyles, out day) && day < DateTime.MaxValue.Date;
 
+    // Work item: TASK-063 (FEAT-001)
     private static bool TryConvert(string value, Type type, out object converted)
     {
         var invariant = CultureInfo.InvariantCulture;
+        var target = Nullable.GetUnderlyingType(type) ?? type;
         converted = null!;
 
-        if (type == typeof(Guid) && Guid.TryParse(value, out var id))
+        if (target == typeof(Guid) && Guid.TryParse(value, out var id))
             converted = id;
-        else if (type == typeof(bool) && bool.TryParse(value, out var flag))
+        else if (target == typeof(bool) && bool.TryParse(value, out var flag))
             converted = flag;
-        else if (type == typeof(decimal) && decimal.TryParse(value, DecimalStyles, invariant, out var number))
+        else if (target == typeof(decimal) && decimal.TryParse(value, DecimalStyles, invariant, out var number))
             converted = number;
-        else if (type == typeof(long) && long.TryParse(value, NumberStyles.AllowLeadingSign, invariant, out var integer))
+        else if (target == typeof(long) && long.TryParse(value, NumberStyles.AllowLeadingSign, invariant, out var integer))
             converted = integer;
-        else if (type == typeof(DateTime) && DateTime.TryParseExact(value, InstantFormats, invariant, UtcStyles, out var instant))
+        else if (target == typeof(DateTime) && DateTime.TryParseExact(value, InstantFormats, invariant, UtcStyles, out var instant))
             converted = instant;
 
         return converted != null;
     }
 
+    // Work item: TASK-063 (FEAT-001)
     private static ValidationFailure InvalidValue(string key, string value, Type type)
     {
-        var expected = type == typeof(Guid) ? "an id"
-            : type == typeof(bool) ? "true or false"
-            : type == typeof(decimal) ? "a number with '.' as the decimal separator"
-            : type == typeof(long) ? "a whole number"
+        var target = Nullable.GetUnderlyingType(type) ?? type;
+        var expected = target == typeof(Guid) ? "an id"
+            : target == typeof(bool) ? "true or false"
+            : target == typeof(decimal) ? "a number with '.' as the decimal separator"
+            : target == typeof(long) ? "a whole number"
             : "a date (yyyy-MM-dd) or a date and time (yyyy-MM-ddTHH:mm:ssZ)";
         return Failure(key, "InvalidValue", $"'{value}' is not valid for '{key}': expected {expected}.");
     }

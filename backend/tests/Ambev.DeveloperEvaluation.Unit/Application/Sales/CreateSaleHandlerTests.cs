@@ -4,6 +4,8 @@ using Ambev.DeveloperEvaluation.Domain.Entities;
 using Ambev.DeveloperEvaluation.Domain.Events;
 using Ambev.DeveloperEvaluation.Domain.Events.Sales;
 using Ambev.DeveloperEvaluation.Domain.Repositories;
+using Ambev.DeveloperEvaluation.Domain.Services;
+using Ambev.DeveloperEvaluation.Unit.Domain.Entities.TestData;
 using AutoMapper;
 using FluentAssertions;
 using FluentValidation;
@@ -12,10 +14,10 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.Application.Sales;
 
-// Work item: TASK-021 (FEAT-010)
+// Work item: TASK-021 (FEAT-010), TASK-064 (FEAT-001)
 /// <summary>
 /// Contains unit tests for the <see cref="CreateSaleHandler"/> class.
-/// Tests cover the copies taken from the catalogs and the amounts stored as received.
+/// Tests cover the copies taken from the catalogs and the discounts priced from the policies.
 /// </summary>
 public class CreateSaleHandlerTests
 {
@@ -44,7 +46,13 @@ public class CreateSaleHandlerTests
     // Work item: TASK-029 (FEAT-004)
     private Guid? _idSentToRepository;
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-064 (FEAT-001)
+    private readonly IDiscountPolicyRepository _discountPolicies = Substitute.For<IDiscountPolicyRepository>();
+
+    // Work item: TASK-064 (FEAT-001)
+    private readonly DiscountPolicy _readme = DiscountPolicyTestData.Create();
+
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     /// <summary>
     /// Initializes the test dependencies with one customer, one branch, and one product in the catalogs.
     /// </summary>
@@ -79,16 +87,21 @@ public class CreateSaleHandlerTests
         _outbox.When(outbox => outbox.EnqueueAsync(Arg.Any<IIntegrationEvent>(), Arg.Any<CancellationToken>()))
             .Do(call => _enqueued.Add(call.Arg<IIntegrationEvent>()));
 
+        _discountPolicies.GetApplicableAsync(Arg.Any<Guid>(), Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DiscountPolicy> { _readme });
+
         _handler = new CreateSaleHandler(
-            _saleRepository, _customerRepository, _branchRepository, _productRepository, _mapper, _timeProvider, _outbox);
+            _saleRepository, _customerRepository, _branchRepository, _productRepository, _mapper, _timeProvider, _outbox,
+            new DiscountPolicyResolver(_discountPolicies));
     }
 
+    // Work item: TASK-021 (FEAT-010), TASK-064 (FEAT-001)
     /// <summary>
-    /// Tests that the sale copies the customer name, branch name, product description, and unit price,
-    /// takes its date from the time provider, and stores discount and total values exactly as received.
+    /// Tests that the sale copies the customer name, branch name, product description, and unit price, takes its date
+    /// from the time provider, and prices the item from the default policy with the requested discount.
     /// </summary>
-    [Fact(DisplayName = "Given a valid sale When creating sale Then copies catalog values and keeps received amounts")]
-    public async Task Given_ValidCommand_When_Handled_Then_CopiesCatalogValuesAndKeepsReceivedAmounts()
+    [Fact(DisplayName = "Given a valid sale When creating sale Then copies catalog values and prices the items")]
+    public async Task Given_ValidCommand_When_Handled_Then_CopiesCatalogValuesAndPricesItems()
     {
         // Arrange
         var expected = new SaleResult { Id = Guid.NewGuid() };
@@ -97,18 +110,7 @@ public class CreateSaleHandlerTests
         {
             CustomerId = _customer.Id,
             BranchId = _branch.Id,
-            TotalAmount = 99m,
-            Items =
-            [
-                new CreateSaleItemInput
-                {
-                    ProductId = _beer.Id,
-                    Quantity = 5,
-                    DiscountPercentage = 10m,
-                    DiscountAmount = 3m,
-                    TotalAmount = 40m
-                }
-            ]
+            Items = [new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 5, DiscountPercentage = 10m }]
         };
 
         // Act
@@ -123,20 +125,23 @@ public class CreateSaleHandlerTests
         sale.CustomerName.Should().Be("Acme Market");
         sale.BranchId.Should().Be(_branch.Id);
         sale.BranchName.Should().Be("Downtown");
-        sale.TotalAmount.Should().Be(99m);
+        sale.TotalAmount.Should().Be(45m);
         sale.IsCancelled.Should().BeFalse();
         var item = sale.Items.Should().ContainSingle().Which;
         item.ProductId.Should().Be(_beer.Id);
         item.ProductDescription.Should().Be("Beer 350ml");
         item.UnitPrice.Should().Be(10m);
         item.Quantity.Should().Be(5);
+        item.RequestedDiscountPercentage.Should().Be(10m);
+        item.DiscountPolicyId.Should().Be(_readme.Id);
+        item.DiscountCeilingPercentage.Should().Be(10m);
         item.DiscountPercentage.Should().Be(10m);
-        item.DiscountAmount.Should().Be(3m);
-        item.TotalAmount.Should().Be(40m);
+        item.DiscountAmount.Should().Be(5m);
+        item.TotalAmount.Should().Be(45m);
         item.IsCancelled.Should().BeFalse();
     }
 
-    // Work item: TD-010 (FEAT-010)
+    // Work item: TD-010 (FEAT-010), TASK-064 (FEAT-001)
     /// <summary>
     /// Tests that the lines are numbered from 1 in the order the command lists them.
     /// </summary>
@@ -148,12 +153,11 @@ public class CreateSaleHandlerTests
         {
             CustomerId = _customer.Id,
             BranchId = _branch.Id,
-            TotalAmount = 60m,
             Items =
             [
-                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 3, TotalAmount = 30m },
-                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 1, TotalAmount = 10m },
-                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 2, TotalAmount = 20m }
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 3 },
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 1 },
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 2 }
             ]
         };
 
@@ -165,7 +169,7 @@ public class CreateSaleHandlerTests
             .Equal((1, 3), (2, 1), (3, 2));
     }
 
-    // Work item: TD-007 (FEAT-010), TASK-029 (FEAT-004)
+    // Work item: TD-007 (FEAT-010), TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     /// <summary>
     /// Tests that an unknown customer, branch, and product are all reported, and nothing is saved.
     /// </summary>
@@ -177,8 +181,7 @@ public class CreateSaleHandlerTests
         {
             CustomerId = Guid.NewGuid(),
             BranchId = Guid.NewGuid(),
-            TotalAmount = 10m,
-            Items = [new CreateSaleItemInput { ProductId = Guid.NewGuid(), Quantity = 1, TotalAmount = 10m }]
+            Items = [new CreateSaleItemInput { ProductId = Guid.NewGuid(), Quantity = 1 }]
         };
 
         // Act
@@ -192,6 +195,7 @@ public class CreateSaleHandlerTests
         _enqueued.Should().BeEmpty();
     }
 
+    // Work item: TASK-064 (FEAT-001)
     /// <summary>
     /// Tests that two lines of the same product both copy it and the product is loaded once.
     /// </summary>
@@ -203,11 +207,10 @@ public class CreateSaleHandlerTests
         {
             CustomerId = _customer.Id,
             BranchId = _branch.Id,
-            TotalAmount = 90m,
             Items =
             [
-                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 5, TotalAmount = 45m },
-                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 5, TotalAmount = 45m }
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 5 },
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 5 }
             ]
         };
 
@@ -242,7 +245,7 @@ public class CreateSaleHandlerTests
         _savedSale!.Id.Should().Be(id);
     }
 
-    // Work item: TASK-037 (FEAT-006), TASK-029 (FEAT-004)
+    // Work item: TASK-037 (FEAT-006), TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     /// <summary>
     /// Tests that a redelivered command whose sale is already stored returns that sale and writes nothing.
     /// </summary>
@@ -267,6 +270,8 @@ public class CreateSaleHandlerTests
         await _branchRepository.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _productRepository.DidNotReceive().GetByIdsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<CancellationToken>());
         _enqueued.Should().BeEmpty();
+        await _discountPolicies.DidNotReceive().GetApplicableAsync(
+            Arg.Any<Guid>(), Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<DateTime>(), Arg.Any<CancellationToken>());
     }
 
     // Work item: TASK-037 (FEAT-006), TASK-029 (FEAT-004)
@@ -287,7 +292,7 @@ public class CreateSaleHandlerTests
         await _saleRepository.DidNotReceive().GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
-    // Work item: TASK-029 (FEAT-004)
+    // Work item: TASK-029 (FEAT-004), TASK-064 (FEAT-001)
     /// <summary>
     /// Tests that a created sale enqueues exactly one SaleCreated carrying the saved number, ids, and items.
     /// </summary>
@@ -299,11 +304,10 @@ public class CreateSaleHandlerTests
         {
             CustomerId = _customer.Id,
             BranchId = _branch.Id,
-            TotalAmount = 30m,
             Items =
             [
-                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 1, TotalAmount = 10m },
-                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 2, TotalAmount = 20m }
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 1 },
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 2 }
             ]
         };
 
@@ -341,12 +345,143 @@ public class CreateSaleHandlerTests
             .Which.Sale.SaleDate.Should().Be(expected);
     }
 
-    // Work item: TASK-037 (FEAT-006)
+    // Work item: TASK-064 (FEAT-001)
+    /// <summary>
+    /// Tests that three lines of four units of one product reach the 10-unit tier together, so every line gets 20%.
+    /// </summary>
+    [Fact(DisplayName = "Given three lines of four units When creating sale Then every line gets twenty percent")]
+    public async Task Given_ThreeLinesOfFourUnits_When_Handled_Then_EveryLineGetsTwentyPercent()
+    {
+        // Arrange
+        var command = new CreateSaleCommand
+        {
+            CustomerId = _customer.Id,
+            BranchId = _branch.Id,
+            Items =
+            [
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 4 },
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 4 },
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 4 }
+            ]
+        };
+
+        // Act
+        await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        _savedSale!.Items.Should().AllSatisfy(item =>
+        {
+            item.DiscountCeilingPercentage.Should().Be(20m);
+            item.DiscountPercentage.Should().Be(20m);
+            item.DiscountAmount.Should().Be(8m);
+            item.TotalAmount.Should().Be(32m);
+        });
+        _savedSale.TotalAmount.Should().Be(96m);
+    }
+
+    // Work item: TASK-064 (FEAT-001)
+    /// <summary>
+    /// Tests that the policies are resolved once, for the sale's branch and products, at the truncated sale date.
+    /// </summary>
+    [Fact(DisplayName = "Given a valid sale When creating sale Then resolves the policies once at the sale date")]
+    public async Task Given_ValidCommand_When_Handled_Then_ResolvesOnceAtTheSaleDate()
+    {
+        // Arrange
+        _timeProvider.GetUtcNow().Returns(Now.AddTicks(7));
+
+        // Act
+        await _handler.Handle(ValidCommand(), CancellationToken.None);
+
+        // Assert
+        await _discountPolicies.Received(1).GetApplicableAsync(
+            _branch.Id,
+            Arg.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 1 && ids.Contains(_beer.Id)),
+            Now.UtcDateTime,
+            Arg.Any<CancellationToken>());
+    }
+
+    // Work item: TASK-064 (FEAT-001)
+    /// <summary>
+    /// Tests that 21 units of one product split over two lines fail on both lines and nothing is saved.
+    /// </summary>
+    [Fact(DisplayName = "Given a product total above the maximum When creating sale Then QuantityLimitExceeded on every line and nothing is saved")]
+    public async Task Given_TotalAboveMaximum_When_Handled_Then_QuantityLimitExceeded()
+    {
+        // Arrange
+        var command = new CreateSaleCommand
+        {
+            CustomerId = _customer.Id,
+            BranchId = _branch.Id,
+            Items =
+            [
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 12 },
+                new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 9 }
+            ]
+        };
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        var exception = await act.Should().ThrowAsync<ValidationException>();
+        exception.Which.Errors.Select(error => (error.PropertyName, error.ErrorCode)).Should().Equal(
+            ("Items[0].Quantity", SaleDiscountRules.QuantityLimitExceeded),
+            ("Items[1].Quantity", SaleDiscountRules.QuantityLimitExceeded));
+        await _saleRepository.DidNotReceive().CreateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
+        _enqueued.Should().BeEmpty();
+    }
+
+    // Work item: TASK-064 (FEAT-001)
+    /// <summary>
+    /// Tests that a requested discount above the ceiling of the product's total fails on its line.
+    /// </summary>
+    [Fact(DisplayName = "Given a requested discount above the ceiling When creating sale Then DiscountAboveAllowed on that line")]
+    public async Task Given_RequestedAboveCeiling_When_Handled_Then_DiscountAboveAllowed()
+    {
+        // Arrange
+        var command = new CreateSaleCommand
+        {
+            CustomerId = _customer.Id,
+            BranchId = _branch.Id,
+            Items = [new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 5, DiscountPercentage = 10.01m }]
+        };
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        var exception = await act.Should().ThrowAsync<ValidationException>();
+        exception.Which.Errors.Should().ContainSingle(error =>
+            error.PropertyName == "Items[0].DiscountPercentage" && error.ErrorCode == SaleDiscountRules.DiscountAboveAllowed);
+        await _saleRepository.DidNotReceive().CreateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
+    }
+
+    // Work item: TASK-064 (FEAT-001)
+    /// <summary>
+    /// Tests that a product without any policy in effect fails with NoDiscountPolicy on its line.
+    /// </summary>
+    [Fact(DisplayName = "Given no policy in effect When creating sale Then NoDiscountPolicy on the product's line")]
+    public async Task Given_NoPolicy_When_Handled_Then_NoDiscountPolicy()
+    {
+        // Arrange
+        _discountPolicies.GetApplicableAsync(Arg.Any<Guid>(), Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<DateTime>(), Arg.Any<CancellationToken>())
+            .Returns(new List<DiscountPolicy>());
+
+        // Act
+        var act = () => _handler.Handle(ValidCommand(), CancellationToken.None);
+
+        // Assert
+        var exception = await act.Should().ThrowAsync<ValidationException>();
+        exception.Which.Errors.Should().ContainSingle(error =>
+            error.PropertyName == "Items[0].ProductId" && error.ErrorCode == SaleDiscountRules.NoDiscountPolicy);
+        await _saleRepository.DidNotReceive().CreateAsync(Arg.Any<Sale>(), Arg.Any<CancellationToken>());
+    }
+
+    // Work item: TASK-037 (FEAT-006), TASK-064 (FEAT-001)
     private CreateSaleCommand ValidCommand() => new()
     {
         CustomerId = _customer.Id,
         BranchId = _branch.Id,
-        TotalAmount = 10m,
-        Items = [new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 1, TotalAmount = 10m }]
+        Items = [new CreateSaleItemInput { ProductId = _beer.Id, Quantity = 1 }]
     };
 }

@@ -7,7 +7,7 @@ namespace Ambev.DeveloperEvaluation.DevConsole.Trace;
 /// </summary>
 public static class ScenarioCatalog
 {
-    // Work item: TASK-056 (FEAT-017), TASK-057 (FEAT-017), TASK-058 (FEAT-017)
+    // Work item: TASK-056 (FEAT-017), TASK-057 (FEAT-017), TASK-058 (FEAT-017), TASK-065 (FEAT-001)
     /// <summary>Gets the scenarios in the order the menu shows and "all" runs.</summary>
     public static IReadOnlyList<IScenario> All { get; } = new List<IScenario>
     {
@@ -29,11 +29,13 @@ public static class ScenarioCatalog
             context => new { code = $"P-{context.RunId}-{context.Faker.Random.AlphaNumeric(4).ToUpperInvariant()}", description = $"Product {context.RunId} {context.Faker.Commerce.ProductName()}", unitPrice = 10m },
             (context, current) => new { code = current.GetProperty("code").GetString(), description = $"Product {context.RunId} updated", unitPrice = 12.5m },
             uniqueField: "code", filterField: "description"),
+        new Scenarios.DiscountPolicyScenario(),
         new Scenarios.SaleCreateScenario(),
         new Scenarios.SaleAsyncScenario(),
         new Scenarios.SaleUpdateScenario(),
         new Scenarios.SaleDeleteScenario(),
-        new Scenarios.SaleListScenario()
+        new Scenarios.SaleListScenario(),
+        new Scenarios.SaleDiscountScenario()
     };
 
     /// <summary>Gets the keys a full run does not exercise on purpose.</summary>

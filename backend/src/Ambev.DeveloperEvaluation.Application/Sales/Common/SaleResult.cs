@@ -1,6 +1,6 @@
 namespace Ambev.DeveloperEvaluation.Application.Sales.Common;
 
-// Work item: TASK-021 (FEAT-010)
+// Work item: TASK-021 (FEAT-010), TASK-064 (FEAT-001)
 /// <summary>
 /// A sale with its items, returned by the create, get, and update operations.
 /// </summary>
@@ -41,8 +41,9 @@ public class SaleResult
     /// </summary>
     public string BranchName { get; set; } = string.Empty;
 
+    // Work item: TASK-064 (FEAT-001)
     /// <summary>
-    /// The sale total, as received.
+    /// The sale total: the sum of the totals of the active items.
     /// </summary>
     public decimal TotalAmount { get; set; }
 

@@ -1,5 +1,6 @@
 using Ambev.DeveloperEvaluation.Domain.Repositories;
 using Ambev.DeveloperEvaluation.WebApi.Common;
+using Ambev.DeveloperEvaluation.WebApi.Features.DiscountPolicies.ListDiscountPolicies;
 using Ambev.DeveloperEvaluation.WebApi.Features.Products.ListProducts;
 using Ambev.DeveloperEvaluation.WebApi.Features.Sales.ListSales;
 using FluentAssertions;
@@ -367,6 +368,38 @@ public class ListQueryParserTests
         // Act & Assert
         ErrorCodes<ListProductsResponse>("colour=red&_minCode=a&_order=weight")
             .Should().BeEquivalentTo("UnknownField", "InvalidRange", "UnknownField");
+    }
+
+    // Work item: TASK-063 (FEAT-001)
+    /// <summary>
+    /// Tests that an id on a nullable id field becomes an equality filter with the id.
+    /// </summary>
+    [Fact(DisplayName = "Given a nullable id field When parsing an id Then returns an equality filter")]
+    public void Given_NullableIdField_When_ParsingId_Then_ReturnsEqualityFilter()
+    {
+        // Arrange
+        var id = Guid.NewGuid();
+
+        // Act
+        var (filters, _) = Parse<DiscountPolicyListFields>($"productId={id}");
+
+        // Assert
+        filters.Should().Equal(new FieldFilter("ProductId", FilterOperator.Equal, id));
+    }
+
+    // Work item: TASK-063 (FEAT-001)
+    /// <summary>
+    /// Tests that a value that is not an id on a nullable id field fails like one on an id field.
+    /// </summary>
+    [Fact(DisplayName = "Given a nullable id field When parsing a non-id Then fails with InvalidValue asking for an id")]
+    public void Given_NullableIdField_When_ParsingNonId_Then_InvalidValue()
+    {
+        // Act
+        var act = () => Parse<DiscountPolicyListFields>("branchId=abc");
+
+        // Assert
+        act.Should().Throw<ValidationException>().Which.Errors.Should()
+            .ContainSingle(error => error.ErrorCode == "InvalidValue" && error.ErrorMessage.Contains("an id"));
     }
 
     private static (IReadOnlyList<FieldFilter> Filters, IReadOnlyList<SortField> Order) Parse<TResponse>(string queryString) =>

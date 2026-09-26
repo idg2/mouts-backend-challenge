@@ -13,6 +13,7 @@ How each API of the DeveloperStore sales backend behaves, from the HTTP contract
 | [branches.md](branches.md) | BRN | Branch registry |
 | [products.md](products.md) | PRD | Product registry |
 | [sales.md](sales.md) | SAL | Sales, the queue, the transactional outbox, and the event consumer |
+| [discount-policies.md](discount-policies.md) | DSC | Discount policies: create, read, list, and disable; the default policy seed |
 | [TEMPLATE.md](TEMPLATE.md) | — | Structure and key rules every document follows |
 
 ## Topics
@@ -59,6 +60,10 @@ How each API of the DeveloperStore sales backend behaves, from the HTTP contract
 | [SAL-BUS](sales.md#sal-bus--message-bus) | Message bus | sales.md |
 | [SAL-CON](sales.md#sal-con--event-consumer) | Event consumer | sales.md |
 | [SAL-ERR](sales.md#sal-err--failures-and-the-error-queue) | Failures and the error queue | sales.md |
+| [DSC-CRT](discount-policies.md#dsc-crt--create-a-discount-policy) | Create a discount policy | discount-policies.md |
+| [DSC-GET](discount-policies.md#dsc-get--get-a-discount-policy) | Get a discount policy | discount-policies.md |
+| [DSC-LST](discount-policies.md#dsc-lst--list-discount-policies) | List discount policies | discount-policies.md |
+| [DSC-DIS](discount-policies.md#dsc-dis--disable-discount-policies) | Disable discount policies | discount-policies.md |
 
 ## Keys
 

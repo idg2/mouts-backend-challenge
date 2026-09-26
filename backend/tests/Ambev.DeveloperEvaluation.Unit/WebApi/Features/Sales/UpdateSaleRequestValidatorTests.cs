@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Ambev.DeveloperEvaluation.Unit.WebApi.Features.Sales;
 
-// Work item: BUG-007 (FEAT-010), BUG-009 (FEAT-010), TD-007 (FEAT-010)
+// Work item: BUG-007 (FEAT-010), BUG-009 (FEAT-010), TD-007 (FEAT-010), TASK-064 (FEAT-001)
 /// <summary>
 /// Contains unit tests for the <see cref="UpdateSaleRequestValidator"/> class.
 /// Tests cover null items, item ids, empty items and ids, and decimal precision limits.
@@ -13,15 +13,16 @@ public class UpdateSaleRequestValidatorTests
 {
     private readonly UpdateSaleRequestValidator _validator = new();
 
+    // Work item: TASK-064 (FEAT-001), TASK-066 (FEAT-001)
     /// <summary>
-    /// Tests that a well-formed request passes, including amounts with trailing zeros.
+    /// Tests that a well-formed request passes, including a discount percentage with two decimals.
     /// </summary>
     [Fact(DisplayName = "Given a valid request When validated Then is valid")]
     public void Given_ValidRequest_When_Validated_Then_IsValid()
     {
         // Arrange
         var request = ValidRequest();
-        request.Items[0].TotalAmount = 10.10m;
+        request.Items[0].DiscountPercentage = 10.10m;
 
         // Act
         var result = _validator.Validate(request);
@@ -138,51 +139,33 @@ public class UpdateSaleRequestValidatorTests
             .Contain(["Id", "CustomerId", "BranchId", "Items[0].ProductId"]);
     }
 
+    // Work item: TASK-064 (FEAT-001)
     /// <summary>
-    /// Tests that amounts that do not fit numeric(18,2) and percentages that do not fit numeric(5,2) are rejected.
+    /// Tests that a requested discount percentage out of range or beyond numeric(5,2) is rejected.
     /// </summary>
-    [Theory(DisplayName = "Given an amount beyond the stored precision When validated Then is invalid")]
-    [InlineData("TotalAmount", "10.123")]
-    [InlineData("TotalAmount", "12345678901234567")]
-    [InlineData("Items[0].DiscountAmount", "0.001")]
-    [InlineData("Items[0].TotalAmount", "10.125")]
-    [InlineData("Items[0].DiscountPercentage", "12.345")]
-    public void Given_AmountBeyondPrecision_When_Validated_Then_IsInvalid(string property, string value)
+    [Theory(DisplayName = "Given a discount percentage out of range or beyond the stored precision When validated Then is invalid")]
+    [InlineData("12.345")]
+    [InlineData("100.01")]
+    [InlineData("-1")]
+    public void Given_BadDiscountPercentage_When_Validated_Then_IsInvalid(string value)
     {
         // Arrange
         var request = ValidRequest();
-        var amount = decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
-        switch (property)
-        {
-            case "TotalAmount": request.TotalAmount = amount; break;
-            case "Items[0].DiscountAmount": request.Items[0].DiscountAmount = amount; break;
-            case "Items[0].TotalAmount": request.Items[0].TotalAmount = amount; break;
-            case "Items[0].DiscountPercentage": request.Items[0].DiscountPercentage = amount; break;
-        }
+        request.Items[0].DiscountPercentage = decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture);
 
         // Act
         var result = _validator.Validate(request);
 
         // Assert
-        result.Errors.Select(e => e.PropertyName).Should().Contain(property);
+        result.Errors.Select(e => e.PropertyName).Should().Contain("Items[0].DiscountPercentage");
     }
 
+    // Work item: TASK-064 (FEAT-001)
     private static UpdateSaleRequest ValidRequest() => new()
     {
         Id = Guid.NewGuid(),
         CustomerId = Guid.NewGuid(),
         BranchId = Guid.NewGuid(),
-        TotalAmount = 20m,
-        Items =
-        [
-            new UpdateSaleItemRequest
-            {
-                ProductId = Guid.NewGuid(),
-                Quantity = 2,
-                DiscountPercentage = 10m,
-                DiscountAmount = 2m,
-                TotalAmount = 18m
-            }
-        ]
+        Items = [new UpdateSaleItemRequest { ProductId = Guid.NewGuid(), Quantity = 2, DiscountPercentage = 10m }]
     };
 }

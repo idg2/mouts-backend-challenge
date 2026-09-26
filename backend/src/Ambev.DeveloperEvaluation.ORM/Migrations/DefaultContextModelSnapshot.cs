@@ -66,6 +66,44 @@ namespace Ambev.DeveloperEvaluation.ORM.Migrations
                     b.ToTable("Customers", (string)null);
                 });
 
+            modelBuilder.Entity("Ambev.DeveloperEvaluation.Domain.Entities.DiscountPolicy", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("BranchId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DisabledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("MaxQuantityPerProduct")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ValidFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ValidTo")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId", "BranchId", "ValidFrom");
+
+                    b.ToTable("DiscountPolicies", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_DiscountPolicies_MaxQuantityPerProduct", "\"MaxQuantityPerProduct\" > 0");
+
+                            t.HasCheckConstraint("CK_DiscountPolicies_ValidTo", "\"ValidTo\" IS NULL OR \"ValidTo\" > \"ValidFrom\"");
+                        });
+                });
+
             modelBuilder.Entity("Ambev.DeveloperEvaluation.Domain.Entities.Product", b =>
                 {
                     b.Property<Guid>("Id")
@@ -161,8 +199,14 @@ namespace Ambev.DeveloperEvaluation.ORM.Migrations
                     b.Property<decimal>("DiscountAmount")
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<decimal>("DiscountCeilingPercentage")
+                        .HasColumnType("numeric(5,2)");
+
                     b.Property<decimal>("DiscountPercentage")
                         .HasColumnType("numeric(5,2)");
+
+                    b.Property<Guid>("DiscountPolicyId")
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("IsCancelled")
                         .HasColumnType("boolean");
@@ -181,6 +225,9 @@ namespace Ambev.DeveloperEvaluation.ORM.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
+                    b.Property<decimal?>("RequestedDiscountPercentage")
+                        .HasColumnType("numeric(5,2)");
+
                     b.Property<Guid>("SaleId")
                         .HasColumnType("uuid");
 
@@ -198,11 +245,15 @@ namespace Ambev.DeveloperEvaluation.ORM.Migrations
                         {
                             t.HasCheckConstraint("CK_SaleItems_DiscountAmount", "\"DiscountAmount\" >= 0");
 
+                            t.HasCheckConstraint("CK_SaleItems_DiscountCeilingPercentage", "\"DiscountCeilingPercentage\" >= 0 AND \"DiscountCeilingPercentage\" <= 100");
+
                             t.HasCheckConstraint("CK_SaleItems_DiscountPercentage", "\"DiscountPercentage\" >= 0 AND \"DiscountPercentage\" <= 100");
 
                             t.HasCheckConstraint("CK_SaleItems_LineNumber", "\"LineNumber\" > 0");
 
                             t.HasCheckConstraint("CK_SaleItems_Quantity", "\"Quantity\" > 0");
+
+                            t.HasCheckConstraint("CK_SaleItems_RequestedDiscountPercentage", "\"RequestedDiscountPercentage\" IS NULL OR (\"RequestedDiscountPercentage\" >= 0 AND \"RequestedDiscountPercentage\" <= 100)");
 
                             t.HasCheckConstraint("CK_SaleItems_TotalAmount", "\"TotalAmount\" >= 0");
 
@@ -294,6 +345,47 @@ namespace Ambev.DeveloperEvaluation.ORM.Migrations
                         .HasFilter("\"ProcessedAt\" IS NULL");
 
                     b.ToTable("OutboxMessages", (string)null);
+                });
+
+            modelBuilder.Entity("Ambev.DeveloperEvaluation.Domain.Entities.DiscountPolicy", b =>
+                {
+                    b.OwnsMany("Ambev.DeveloperEvaluation.Domain.ValueObjects.DiscountTier", "Tiers", b1 =>
+                        {
+                            b1.Property<Guid>("DiscountPolicyId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<int?>("MaxQuantity")
+                                .HasColumnType("integer");
+
+                            b1.Property<int>("MinQuantity")
+                                .HasColumnType("integer");
+
+                            b1.Property<decimal>("Percentage")
+                                .HasPrecision(5, 2)
+                                .HasColumnType("numeric(5,2)");
+
+                            b1.HasKey("DiscountPolicyId", "Id");
+
+                            b1.ToTable("DiscountTiers", null, t =>
+                                {
+                                    t.HasCheckConstraint("CK_DiscountTiers_MaxQuantity", "\"MaxQuantity\" IS NULL OR \"MaxQuantity\" >= \"MinQuantity\"");
+
+                                    t.HasCheckConstraint("CK_DiscountTiers_MinQuantity", "\"MinQuantity\" >= 1");
+
+                                    t.HasCheckConstraint("CK_DiscountTiers_Percentage", "\"Percentage\" > 0 AND \"Percentage\" <= 100");
+                                });
+
+                            b1.WithOwner()
+                                .HasForeignKey("DiscountPolicyId");
+                        });
+
+                    b.Navigation("Tiers");
                 });
 
             modelBuilder.Entity("Ambev.DeveloperEvaluation.Domain.Entities.SaleItem", b =>

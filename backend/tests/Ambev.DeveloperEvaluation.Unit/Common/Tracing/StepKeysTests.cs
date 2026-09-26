@@ -38,11 +38,14 @@ public class StepKeysTests
         transactional.Should().BeSubsetOf(StepKeys.RequestTypeNames);
     }
 
+    // Work item: TASK-063 (FEAT-001), TD-032
     [Theory(DisplayName = "Given a command When resolving the commit Then the documented key or null")]
     [InlineData("CreateSaleCommand", "SAL-CRT-12")]
     [InlineData("UpdateSaleCommand", "SAL-UPD-16")]
     [InlineData("DeleteSaleCommand", "SAL-DEL-05")]
     [InlineData("CreateCustomerCommand", null)]
+    [InlineData("CreateDiscountPolicyCommand", null)]
+    [InlineData("DisableDiscountPoliciesCommand", null)]
     public void Given_Command_When_ResolvingCommit_Then_DocumentedKey(string name, string? expected)
     {
         StepKeys.Resolve(name, SharedPoint.TransactionCommit).Should().Be(expected);

@@ -35,6 +35,7 @@ public sealed class ApiClient
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
     }
 
+    // Work item: TASK-040 (FEAT-006), TASK-044 (FEAT-017), TASK-065 (FEAT-001)
     /// <summary>
     /// Registers one customer, one branch, and three products for this run and returns a three-item sale body over them.
     /// </summary>
@@ -53,10 +54,10 @@ public sealed class ApiClient
                 "api/products",
                 new { code = $"LOAD-{runId}-{index}", description = $"Load product {index}", unitPrice = 10m },
                 "Create product");
-            items.Add(new { productId, quantity = 2, discountPercentage = 0m, discountAmount = 0m, totalAmount = 20m });
+            items.Add(new { productId, quantity = 2 });
         }
 
-        return new { customerId, branchId, totalAmount = 60m, items };
+        return new { customerId, branchId, items };
     }
 
     /// <summary>

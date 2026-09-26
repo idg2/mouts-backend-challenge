@@ -773,5 +773,5 @@ This topic is an operations guide, so it has no step keys of its own; the failur
 
 - [conventions.md](conventions.md#cmn-txn--transactions): the transaction every write runs in
 - [conventions.md](conventions.md#cmn-lst--list-queries): filters, order, and pages
-- [README.md](../README.md#8-asynchronous-sale-intake): how to call the asynchronous intake and watch the events
+- [guide/architecture.md](guide/architecture.md#asynchronous-sale-intake): how to call the asynchronous intake and watch the events
 - [INDEX.md](INDEX.md)

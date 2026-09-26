@@ -1728,6 +1728,17 @@
       "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TD-044",
+      "type": "td",
+      "title": "Split the README into indexed guides",
+      "description": "Second blind review of dev at db09d88 (F16, and the summary on the sum of mechanisms): the 620-line README mixes the quick path (clone, make dev-up, log in, create a sale) with chapters on the load test, the trace console, the outbox, and queue inspection. Keep in README.md what runs where, prerequisites, starting the stack, running the API, the first sale end to end, the automated tests, the repository layout, and an index; move the rest, unchanged, into docs/guide/ (walkthrough, configuration, architecture with the asynchronous intake and sale events, trace console, load test, observability, operations with troubleshooting, contributing). architecture.md also states, for each mechanism (transactional outbox, Rebus over MongoDB, MongoDB read model, asynchronous intake, step tracing, developer console, discount policy engine), what it does, why it exists, which .doc/ file backs it, and what it costs. Fix every link to the old README anchors.",
+      "parent": null,
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
     }
   ]
 }

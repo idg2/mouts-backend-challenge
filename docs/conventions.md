@@ -216,5 +216,6 @@ flowchart TD
 ## See also
 
 - [INDEX.md](INDEX.md)
-- [README.md](../README.md): running and configuring the API
+- [README.md](../README.md): running the API
+- [guide/configuration.md](guide/configuration.md): configuring the API
 - [general-api.md](../.doc/general-api.md): the challenge's target conventions

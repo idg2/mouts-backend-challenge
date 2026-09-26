@@ -42,7 +42,7 @@ erDiagram
 - `DisabledAt` is null while the policy is active; once set it never changes (DSC-DIS). Migration `AddDiscountPolicyDisabledAt` adds it.
 - A tier's key is `(DiscountPolicyId, Id)`; tiers belong to their policy and are never shared.
 - The index on `(ProductId, BranchId, ValidFrom)` serves the policy lookup of SAL-CRT and SAL-UPD.
-- Migration `AddDiscountPolicies` seeds the default policy `7d0c5a6e-2f4b-4c1d-9a39-0f6f2b8a1c01`: every product and branch, from 2026-01-01T00:00:00Z with no end, at most 20 units, 4 to 9 units 10%, 10 to 20 units 20% (the README rules). Its `CreatedAt` equals its `ValidFrom`.
+- Migration `AddDiscountPolicies` seeds the default policy `7d0c5a6e-2f4b-4c1d-9a39-0f6f2b8a1c01`: every product and branch, from 2026-01-01T00:00:00Z with no end, at most 20 units, 4 to 9 units 10%, 10 to 20 units 20% (the challenge rules). Its `CreatedAt` equals its `ValidFrom`.
 - Each sale item keeps the id of the policy that priced it and the ceiling it allowed (see sales.md, Data model).
 
 ## DSC-CRT — Create a discount policy

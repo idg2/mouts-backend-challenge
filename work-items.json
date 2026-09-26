@@ -1326,12 +1326,12 @@
       "id": "TD-030",
       "type": "td",
       "title": "Trace console: keys no scenario exercises",
-      "description": "The trace console's full run cannot exercise six documented keys, which the summary lists as expected misses: SAL-CRT-06 (redelivered queued command), SAL-OBW-02 (outbox write outside a transaction), SAL-RLY-07 (failed relay cycle), SAL-DSP-07 (failed dispatch), SAL-BUS-06 (retried delivery; only fail-fast validation failures are provoked), USR-SED-06 (seed skip; the run always starts from a wiped database). Covering them needs fault injection or a redelivery in a scenario.",
+      "description": "The trace console's full run cannot exercise six documented keys, which the summary lists as expected misses: SAL-CRT-06 (redelivered queued command), SAL-OBW-02 (outbox write outside a transaction), SAL-RLY-07 (failed relay cycle), SAL-DSP-07 (failed dispatch), SAL-BUS-06 (retried delivery; only fail-fast validation failures are provoked), USR-SED-06 (seed skip; the run always starts from a wiped database), CMN-RSP-10 (unhandled exception; no scenario provokes one). Covering them needs fault injection or a redelivery in a scenario.",
       "parent": null,
       "moscow": "could",
       "status": "backlog",
       "createdAt": "2026-09-25",
-      "updatedAt": "2026-09-25"
+      "updatedAt": "2026-09-26"
     },
     {
       "id": "TD-031",
@@ -1370,12 +1370,12 @@
       "id": "TD-034",
       "type": "td",
       "title": "Request-validator 400 bodies use the raw FluentValidation array",
-      "description": "Every controller (FEAT-010 and the discount policy feature) returns BadRequest(validationResult.Errors) from the request validators, a raw array, while handler-level rejections go through ValidationExceptionMiddleware as { success, message, errors[{ error, detail }] }. Unify on the middleware envelope for all controllers.",
+      "description": "Every controller (FEAT-010 and the discount policy feature) returns BadRequest(validationResult.Errors) from the request validators, a raw array, while handler-level rejections go through ValidationExceptionMiddleware as { success, message, errors[{ error, detail }] }. Unify on the middleware envelope for all controllers. Absorbed by FEAT-018: the 28 sites changed there.",
       "parent": "FEAT-001",
       "moscow": "should",
-      "status": "backlog",
+      "status": "cancelled",
       "createdAt": "2026-09-25",
-      "updatedAt": "2026-09-25"
+      "updatedAt": "2026-09-26"
     },
     {
       "id": "TD-035",
@@ -1486,6 +1486,94 @@
       "status": "done",
       "createdAt": "2026-09-25",
       "updatedAt": "2026-09-25"
+    },
+    {
+      "id": "FEAT-018",
+      "type": "feature",
+      "title": "General-api error body",
+      "description": "Every 4xx and 5xx response has the { type, error, detail } body of .doc/general-api.md: type is the category, error the code of the first failure, detail a string holding a JSON array of messages. One ErrorResponse type in WebApi/Common, produced by ValidationExceptionMiddleware (which now answers 500 with a fixed detail and logs the exception), BaseController.BadRequest(ValidationResult), the ApiController InvalidModelStateResponseFactory, and UseStatusCodePages for bodiless statuses (JWT 401/403, route 404, 405, 415). Closes evaluation row A7 (N11) and absorbs TD-034. The success envelope does not change.",
+      "parent": "EPIC-001",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TASK-067",
+      "type": "task",
+      "title": "ErrorResponse",
+      "description": "Plan task 1 of FEAT-018: ErrorResponse.",
+      "parent": "FEAT-018",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TASK-068",
+      "type": "task",
+      "title": "Exception middleware, including the 500",
+      "description": "Plan task 2 of FEAT-018: Exception middleware, including the 500.",
+      "parent": "FEAT-018",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TASK-069",
+      "type": "task",
+      "title": "BaseController helpers and the result filter",
+      "description": "Plan task 3 of FEAT-018: BaseController helpers and the result filter.",
+      "parent": "FEAT-018",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TASK-070",
+      "type": "task",
+      "title": "Model-state factory and status-code pages",
+      "description": "Plan task 4 of FEAT-018: Model-state factory and status-code pages.",
+      "parent": "FEAT-018",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TASK-071",
+      "type": "task",
+      "title": "Controllers: 28 sites, 45 attributes, work-item comments",
+      "description": "Plan task 5 of FEAT-018: Controllers: 28 sites, 45 attributes, work-item comments.",
+      "parent": "FEAT-018",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TASK-072",
+      "type": "task",
+      "title": "Documentation, console, and full verification",
+      "description": "Plan task 6 of FEAT-018: Documentation, console, and full verification.",
+      "parent": "FEAT-018",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TASK-073",
+      "type": "task",
+      "title": "Work items, implementation log, coverage, handoff",
+      "description": "Plan task 7 of FEAT-018: Work items, implementation log, coverage, handoff.",
+      "parent": "FEAT-018",
+      "moscow": "must",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
     }
   ]
 }

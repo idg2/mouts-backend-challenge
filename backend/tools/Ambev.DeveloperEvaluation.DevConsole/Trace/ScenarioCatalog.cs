@@ -38,6 +38,7 @@ public static class ScenarioCatalog
         new Scenarios.SaleDiscountScenario()
     };
 
+    // Work item: TASK-072 (FEAT-018)
     /// <summary>Gets the keys a full run does not exercise on purpose.</summary>
     public static IReadOnlySet<string> ExpectedMisses { get; } = new HashSet<string>
     {
@@ -46,6 +47,7 @@ public static class ScenarioCatalog
         "SAL-RLY-07",   // a failed relay cycle
         "SAL-DSP-07",   // a failed dispatch
         "SAL-BUS-06",   // a retried delivery (only validation failures are provoked, and they fail fast)
+        "CMN-RSP-10",   // an unhandled exception: no scenario provokes one
         "USR-SED-06"    // the seed skip: the database is wiped, so the administrator is always created
     };
 }

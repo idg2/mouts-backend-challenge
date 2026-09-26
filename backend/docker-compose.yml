@@ -28,7 +28,7 @@ services:
       POSTGRES_USER: developer
       POSTGRES_PASSWORD: ev@luAt10n
     ports:
-      - "5432:5432"
+      - "5433:5432"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -h localhost -U $$POSTGRES_USER -d $$POSTGRES_DB"]
@@ -54,7 +54,7 @@ services:
     image: redis:7.4.1-alpine
     command: redis-server --requirepass ev@luAt10n
     ports:
-      - "6379:6379"
+      - "6380:6379"
 
 volumes:
   postgres-data:

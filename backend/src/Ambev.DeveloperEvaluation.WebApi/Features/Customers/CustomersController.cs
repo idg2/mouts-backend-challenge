@@ -42,7 +42,7 @@ public class CustomersController : BaseController
         _mapper = mapper;
     }
 
-    // Work item: TASK-049 (FEAT-017)
+    // Work item: TASK-049 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Creates a new customer
     /// </summary>
@@ -52,7 +52,7 @@ public class CustomersController : BaseController
     [HttpPost]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponseWithData<CreateCustomerResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateCustomer([FromBody] CreateCustomerRequest request, CancellationToken cancellationToken)
     {
         var validator = new CreateCustomerRequestValidator();
@@ -60,7 +60,7 @@ public class CustomersController : BaseController
         StepTrace.Step("CUS-CRT-01", "CMN-PIP-04", "Validate the request", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count), ("document", request.Document)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<CreateCustomerCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(CreateCustomerCommand))]);
@@ -75,7 +75,7 @@ public class CustomersController : BaseController
         });
     }
 
-    // Work item: TASK-049 (FEAT-017)
+    // Work item: TASK-049 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Retrieves a customer by its ID
     /// </summary>
@@ -84,8 +84,8 @@ public class CustomersController : BaseController
     /// <returns>The customer details if found</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponseWithData<GetCustomerResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetCustomer([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new GetCustomerRequest { Id = id };
@@ -94,7 +94,7 @@ public class CustomersController : BaseController
         StepTrace.Step("CUS-GET-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<GetCustomerCommand>(request.Id);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(GetCustomerCommand))]);
@@ -109,7 +109,7 @@ public class CustomersController : BaseController
         });
     }
 
-    // Work item: TASK-027 (FEAT-011), TASK-049 (FEAT-017)
+    // Work item: TASK-027 (FEAT-011), TASK-049 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Lists customers one page at a time. Any response field (id, name) can be a query key: text matches ignore
     /// case and accept '*' at the start or end, and a repeated key matches any of its values. Numeric and date fields
@@ -123,7 +123,7 @@ public class CustomersController : BaseController
     /// <returns>The requested page of customers</returns>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedResponse<ListCustomersResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ListCustomers(
         [FromQuery(Name = "_page")] int page = 1,
         [FromQuery(Name = "_size")] int size = 10,
@@ -139,7 +139,7 @@ public class CustomersController : BaseController
         StepTrace.Step("CUS-LST-02", "CMN-LST-08", "Validate _page and _size", [("page", request.Page), ("size", request.Size), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<ListCustomersCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(ListCustomersCommand))]);
@@ -153,7 +153,7 @@ public class CustomersController : BaseController
         return OkPaginated(new PaginatedList<ListCustomersResponse>(customers, response.TotalCount, response.Page, response.Size));
     }
 
-    // Work item: TASK-049 (FEAT-017)
+    // Work item: TASK-049 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Updates a customer
     /// </summary>
@@ -164,8 +164,8 @@ public class CustomersController : BaseController
     [HttpPut("{id}")]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponseWithData<UpdateCustomerResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateCustomer([FromRoute] Guid id, [FromBody] UpdateCustomerRequest request, CancellationToken cancellationToken)
     {
         request.Id = id;
@@ -174,7 +174,7 @@ public class CustomersController : BaseController
         StepTrace.Step("CUS-UPD-01", "CMN-PIP-04", "Validate the request", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count), ("document", request.Document)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<UpdateCustomerCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(UpdateCustomerCommand))]);
@@ -189,7 +189,7 @@ public class CustomersController : BaseController
         });
     }
 
-    // Work item: TASK-049 (FEAT-017)
+    // Work item: TASK-049 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Deletes a customer by its ID
     /// </summary>
@@ -199,8 +199,8 @@ public class CustomersController : BaseController
     [HttpDelete("{id}")]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteCustomer([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new DeleteCustomerRequest { Id = id };
@@ -209,7 +209,7 @@ public class CustomersController : BaseController
         StepTrace.Step("CUS-DEL-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<DeleteCustomerCommand>(request.Id);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(DeleteCustomerCommand))]);

@@ -47,6 +47,7 @@ public class DiscountPoliciesController : BaseController
         _mapper = mapper;
     }
 
+    // Work item: TASK-071 (FEAT-018)
     /// <summary>
     /// Creates a discount policy. It applies to sales dated from ValidFrom, which may not be in the past
     /// </summary>
@@ -56,7 +57,7 @@ public class DiscountPoliciesController : BaseController
     [HttpPost]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponseWithData<DiscountPolicyResult>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateDiscountPolicy([FromBody] CreateDiscountPolicyRequest request, CancellationToken cancellationToken)
     {
         var validator = new CreateDiscountPolicyRequestValidator();
@@ -65,7 +66,7 @@ public class DiscountPoliciesController : BaseController
             [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count), ("tiers", request.Tiers?.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<CreateDiscountPolicyCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(CreateDiscountPolicyCommand))]);
@@ -80,6 +81,7 @@ public class DiscountPoliciesController : BaseController
         });
     }
 
+    // Work item: TASK-071 (FEAT-018)
     /// <summary>
     /// Retrieves a discount policy with its tiers by its ID
     /// </summary>
@@ -88,8 +90,8 @@ public class DiscountPoliciesController : BaseController
     /// <returns>The policy with its tiers if found</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponseWithData<DiscountPolicyResult>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetDiscountPolicy([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new GetDiscountPolicyRequest { Id = id };
@@ -98,7 +100,7 @@ public class DiscountPoliciesController : BaseController
         StepTrace.Step("DSC-GET-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<GetDiscountPolicyCommand>(request.Id);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(GetDiscountPolicyCommand))]);
@@ -113,7 +115,7 @@ public class DiscountPoliciesController : BaseController
         });
     }
 
-    // Work item: TASK-063 (FEAT-001), TD-032
+    // Work item: TASK-063 (FEAT-001), TD-032, TASK-071 (FEAT-018)
     /// <summary>
     /// Lists discount policies one page at a time, each with its tiers. Query keys: productId and branchId (one id
     /// each, repeatable), id, validFrom and createdAt (a date or an instant), _minValidFrom, _maxValidFrom,
@@ -128,7 +130,7 @@ public class DiscountPoliciesController : BaseController
     /// <returns>The requested page of policies</returns>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedResponse<DiscountPolicyResult>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ListDiscountPolicies(
         [FromQuery(Name = "_page")] int page = 1,
         [FromQuery(Name = "_size")] int size = 10,
@@ -162,7 +164,7 @@ public class DiscountPoliciesController : BaseController
             [("page", request.Page), ("size", request.Size), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<ListDiscountPoliciesCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(ListDiscountPoliciesCommand))]);
@@ -176,7 +178,7 @@ public class DiscountPoliciesController : BaseController
         return OkPaginated(new PaginatedList<DiscountPolicyResult>(response.Items, response.TotalCount, response.Page, response.Size));
     }
 
-    // Work item: TD-032
+    // Work item: TD-032, TASK-071 (FEAT-018)
     /// <summary>
     /// Disables discount policies, all or nothing: an unknown id answers 404 and none is disabled. A disabled policy no
     /// longer prices sales; the sales it already priced keep their discounts. Disabling cannot be undone
@@ -187,8 +189,8 @@ public class DiscountPoliciesController : BaseController
     [HttpPost("disable")]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponseWithData<DisableDiscountPoliciesResult>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DisableDiscountPolicies([FromBody] DisableDiscountPoliciesRequest request, CancellationToken cancellationToken)
     {
         var validator = new DisableDiscountPoliciesRequestValidator();
@@ -197,7 +199,7 @@ public class DiscountPoliciesController : BaseController
             [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count), ("ids", request.Ids?.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<DisableDiscountPoliciesCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(DisableDiscountPoliciesCommand))]);

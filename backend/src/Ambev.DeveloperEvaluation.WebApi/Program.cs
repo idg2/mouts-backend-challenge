@@ -7,6 +7,7 @@ using Ambev.DeveloperEvaluation.Common.Validation;
 using Ambev.DeveloperEvaluation.IoC;
 using Ambev.DeveloperEvaluation.ORM;
 using Ambev.DeveloperEvaluation.WebApi.Messaging;
+using Ambev.DeveloperEvaluation.WebApi.Common;
 using Ambev.DeveloperEvaluation.WebApi.Middleware;
 using Ambev.DeveloperEvaluation.WebApi.Seeding;
 using MediatR;
@@ -17,7 +18,7 @@ namespace Ambev.DeveloperEvaluation.WebApi;
 
 public class Program
 {
-    // Work item: TD-006, TASK-033 (FEAT-016), TASK-034 (FEAT-016), TASK-038 (FEAT-006), BUG-012, TASK-046 (FEAT-017), TASK-047 (FEAT-017)
+    // Work item: TD-006, TASK-033 (FEAT-016), TASK-034 (FEAT-016), TASK-038 (FEAT-006), BUG-012, TASK-046 (FEAT-017), TASK-047 (FEAT-017), TASK-070 (FEAT-018)
     public static void Main(string[] args)
     {
         try
@@ -28,6 +29,15 @@ public class Program
             builder.AddDefaultLogging();
 
             builder.Services.AddControllers();
+            // Work item: TASK-070 (FEAT-018)
+            // Model-state failures answer with the general-api body, and bodiless client errors (415, ...) are left
+            // bare for UseStatusCodePages below instead of being wrapped in ProblemDetails.
+            builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+            {
+                options.SuppressMapClientErrors = true;
+                options.InvalidModelStateResponseFactory = context =>
+                    new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(ModelStateErrorResponse.Create(context.ModelState));
+            });
 #if DEBUG
             // Trace-only MVC filters (StepTrace). The action filter takes the lowest order so it runs before the
             // ApiController model-state filter short-circuits a 400.
@@ -83,6 +93,10 @@ public class Program
             app.UseMiddleware<Tracing.StepTraceMiddleware>();
 #endif
             app.UseMiddleware<ValidationExceptionMiddleware>();
+            // Work item: TASK-070 (FEAT-018)
+            app.UseStatusCodePages(context =>
+                StatusCodeErrorResponse.Create(context.HttpContext.Response.StatusCode)
+                    .WriteAsync(context.HttpContext, context.HttpContext.Response.StatusCode));
 
             if (app.Environment.IsDevelopment())
             {

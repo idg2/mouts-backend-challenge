@@ -30,7 +30,7 @@ public class AuthController : BaseController
         _mapper = mapper;
     }
 
-    // Work item: TASK-048 (FEAT-017)
+    // Work item: TASK-048 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Authenticates a user with their credentials
     /// </summary>
@@ -39,8 +39,8 @@ public class AuthController : BaseController
     /// <returns>Authentication token if successful</returns>
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponseWithData<AuthenticateUserResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> AuthenticateUser([FromBody] AuthenticateUserRequest request, CancellationToken cancellationToken)
     {
         var validator = new AuthenticateUserRequestValidator();
@@ -48,7 +48,7 @@ public class AuthController : BaseController
         StepTrace.Step("AUT-LGN-01", "CMN-PIP-04", "Validate e-mail format and password presence", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<AuthenticateUserCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(AuthenticateUserCommand))]);

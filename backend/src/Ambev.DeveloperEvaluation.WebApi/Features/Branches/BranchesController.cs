@@ -42,7 +42,7 @@ public class BranchesController : BaseController
         _mapper = mapper;
     }
 
-    // Work item: TASK-050 (FEAT-017)
+    // Work item: TASK-050 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Creates a new branch
     /// </summary>
@@ -52,7 +52,7 @@ public class BranchesController : BaseController
     [HttpPost]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponseWithData<CreateBranchResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateBranch([FromBody] CreateBranchRequest request, CancellationToken cancellationToken)
     {
         var validator = new CreateBranchRequestValidator();
@@ -60,7 +60,7 @@ public class BranchesController : BaseController
         StepTrace.Step("BRN-CRT-01", "CMN-PIP-04", "Validate the request", [("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<CreateBranchCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(CreateBranchCommand))]);
@@ -75,7 +75,7 @@ public class BranchesController : BaseController
         });
     }
 
-    // Work item: TASK-050 (FEAT-017)
+    // Work item: TASK-050 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Retrieves a branch by its ID
     /// </summary>
@@ -84,8 +84,8 @@ public class BranchesController : BaseController
     /// <returns>The branch details if found</returns>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponseWithData<GetBranchResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetBranch([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new GetBranchRequest { Id = id };
@@ -94,7 +94,7 @@ public class BranchesController : BaseController
         StepTrace.Step("BRN-GET-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<GetBranchCommand>(request.Id);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(GetBranchCommand))]);
@@ -109,7 +109,7 @@ public class BranchesController : BaseController
         });
     }
 
-    // Work item: TASK-027 (FEAT-011), TASK-050 (FEAT-017)
+    // Work item: TASK-027 (FEAT-011), TASK-050 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Lists branches one page at a time. Any response field (id, name) can be a query key: text matches ignore
     /// case and accept '*' at the start or end, and a repeated key matches any of its values. Numeric and date fields
@@ -123,7 +123,7 @@ public class BranchesController : BaseController
     /// <returns>The requested page of branches</returns>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedResponse<ListBranchesResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ListBranches(
         [FromQuery(Name = "_page")] int page = 1,
         [FromQuery(Name = "_size")] int size = 10,
@@ -139,7 +139,7 @@ public class BranchesController : BaseController
         StepTrace.Step("BRN-LST-02", "CMN-LST-08", "Validate _page and _size", [("page", request.Page), ("size", request.Size), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<ListBranchesCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(ListBranchesCommand))]);
@@ -153,7 +153,7 @@ public class BranchesController : BaseController
         return OkPaginated(new PaginatedList<ListBranchesResponse>(branches, response.TotalCount, response.Page, response.Size));
     }
 
-    // Work item: TASK-050 (FEAT-017)
+    // Work item: TASK-050 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Updates a branch
     /// </summary>
@@ -164,8 +164,8 @@ public class BranchesController : BaseController
     [HttpPut("{id}")]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponseWithData<UpdateBranchResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateBranch([FromRoute] Guid id, [FromBody] UpdateBranchRequest request, CancellationToken cancellationToken)
     {
         request.Id = id;
@@ -174,7 +174,7 @@ public class BranchesController : BaseController
         StepTrace.Step("BRN-UPD-01", "CMN-PIP-04", "Validate the request", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<UpdateBranchCommand>(request);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(UpdateBranchCommand))]);
@@ -189,7 +189,7 @@ public class BranchesController : BaseController
         });
     }
 
-    // Work item: TASK-050 (FEAT-017)
+    // Work item: TASK-050 (FEAT-017), TASK-071 (FEAT-018)
     /// <summary>
     /// Deletes a branch by its ID
     /// </summary>
@@ -199,8 +199,8 @@ public class BranchesController : BaseController
     [HttpDelete("{id}")]
     [Authorize(Roles = WriteRoles)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ErrorResponse), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteBranch([FromRoute] Guid id, CancellationToken cancellationToken)
     {
         var request = new DeleteBranchRequest { Id = id };
@@ -209,7 +209,7 @@ public class BranchesController : BaseController
         StepTrace.Step("BRN-DEL-01", "CMN-PIP-04", "Validate the id", [("id", request.Id), ("valid", validationResult.IsValid), ("errors", validationResult.Errors.Count)]);
 
         if (!validationResult.IsValid)
-            return BadRequest(validationResult.Errors);
+            return BadRequest(validationResult);
 
         var command = _mapper.Map<DeleteBranchCommand>(request.Id);
         StepTrace.Step("CMN-PIP-05", "AutoMapper maps the request to a command", [("command", nameof(DeleteBranchCommand))]);

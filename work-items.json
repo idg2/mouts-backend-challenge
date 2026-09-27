@@ -1946,6 +1946,16 @@
       "updatedAt": "2026-09-27"
     },
     {
+      "id": "TD-049",
+      "type": "td",
+      "title": "Reference coverlet.msbuild in the Integration and Functional test projects",
+      "description": "coverage-report.sh/.bat collect coverage with /p:CollectCoverage=true, which needs coverlet.msbuild; only the Unit project referenced it, so the report covered the unit tests only. The Integration and Functional projects now reference coverlet.msbuild 6.0.2 as well.",
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-27",
+      "updatedAt": "2026-09-27"
+    },
+    {
       "id": "TASK-094",
       "type": "task",
       "title": "Documented step keys in the flow and the steps",

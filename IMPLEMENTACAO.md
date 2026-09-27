@@ -2296,3 +2296,10 @@ Workflow `.github/workflows/unit-tests.yml`, disparado em todo `pull_request` (q
 FILES
 - .github/workflows/unit-tests.yml (novo)
 - docs/guide/contributing.md (alterado)
+
+## TD-050 — README: workflow de testes Unit no GitHub Actions
+
+O README (§7, testes automatizados) passou a informar que a suíte Unit (xUnit) roda no GitHub Actions a cada pull request, qualquer que seja a branch de destino, pelo workflow `Unit tests` (FEAT-021), com o resultado no check `unit` da PR e o histórico na aba Actions; as suítes de integração e funcional continuam locais, porque precisam de PostgreSQL e MongoDB. Por quê: deixar visível no guia principal que o repositório público tem CI ativo para os testes unitários.
+
+FILES
+- README.md (alterado)

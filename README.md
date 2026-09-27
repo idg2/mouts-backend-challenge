@@ -25,10 +25,12 @@ This guide takes you from a fresh clone to a running API and a first sale. Confi
 | API | ASP.NET Core 8 (`src/Ambev.DeveloperEvaluation.WebApi`) | REST API, Swagger, JWT auth | 8080 (container) or 5119 (`dotnet run`) |
 | PostgreSQL 13 | compose service `ambev.developerevaluation.database` | Users, customers, branches, products, sales | 5433 (5432 inside the container) |
 | MongoDB 8 | compose service `ambev.developerevaluation.nosql` | Application logs (`developer_evaluation_logs`), the Rebus sale queue (`developer_evaluation_bus`), and the sales read model (`developer_evaluation_read`) | 27017 |
-| Redis 7 | compose service `ambev.developerevaluation.cache` | Started by the stack; not used by the code yet | 6380 (6379 inside the container) |
+| Redis 7 | compose service `ambev.developerevaluation.cache` | Started by the stack; not used by the code (see below) | 6380 (6379 inside the container) |
 | Developer console | console app (`tools/Ambev.DeveloperEvaluation.DevConsole`) | Traced scenarios against the API hosted in process, and the load simulator | — |
 
 PostgreSQL keeps its data in the named volume `postgres-data` and MongoDB in `mongo-data`, so both survive `docker compose down`.
+
+Redis is deliberately not used. Every sale write resolves its discount policies with one indexed PostgreSQL query, and a stale cache entry would price a sale with the wrong policy. Where a cache would apply is the discount policy matrix: a decorator of `IDiscountPolicyRepository.GetApplicableAsync`, the single read behind `DiscountPolicyResolver`, so the resolver and the sale handlers stay unchanged. It would hold every policy, disabled ones included, because editing a sale reprices it at its original date, and creating or disabling a policy (DSC-CRT, DSC-DIS) would clear it. `IMemoryCache` serves one API instance; Redis fits once several instances share the policies (FEAT-008).
 
 ## 2. Prerequisites
 

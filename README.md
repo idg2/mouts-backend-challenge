@@ -199,6 +199,8 @@ dotnet test tests/Ambev.DeveloperEvaluation.Functional    # the challenge sales 
 ./coverage-report.sh                                      # coverage report in TestResults/CoverageReport/index.html
 ```
 
+The Unit suite (xUnit) also runs on GitHub Actions for every pull request, whatever its base branch: the `Unit tests` workflow ([.github/workflows/unit-tests.yml](.github/workflows/unit-tests.yml)) builds the solution and runs it, and its result shows as the `unit` check on the pull request. Runs are listed under the repository's [Actions](https://github.com/idg2/mouts-backend-challenge/actions/workflows/unit-tests.yml) tab. The integration and functional suites need PostgreSQL and MongoDB, so they run locally.
+
 The integration tests create a throwaway database for each test class, apply the migrations, and drop it afterwards, so they never touch `developer_evaluation`.
 
 The functional tests host the whole API in process against throwaway PostgreSQL and MongoDB databases, dropped afterwards, and prove the challenge sales rules through HTTP with the seeded default policy: 1 to 3 identical items get no discount, 4 to 9 get 10%, 10 to 20 get 20%, more than 20 (on one line or across lines) answer 400 `QuantityLimitExceeded`, a requested discount above the tier answers 400 `DiscountAboveAllowed`, each product is priced on its own total, names and prices come from the catalog, cancelling a line reprices the others, a policy scoped to one product applies its own cap and tiers while the other products keep the challenge rules, and disabling the default policy leaves older sales editable. They also check that the API refuses to start without `ConnectionStrings:DefaultConnection`, naming the key.

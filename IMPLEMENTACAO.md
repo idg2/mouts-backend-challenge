@@ -2288,3 +2288,11 @@ Os scripts `coverage-report.sh`/`.bat` coletam cobertura com `/p:CollectCoverage
 FILES
 - tests/Ambev.DeveloperEvaluation.Integration/Ambev.DeveloperEvaluation.Integration.csproj (alterado)
 - tests/Ambev.DeveloperEvaluation.Functional/Ambev.DeveloperEvaluation.Functional.csproj (alterado)
+
+## FEAT-021 — Testes Unit a cada pull request (GitHub Actions)
+
+Workflow `.github/workflows/unit-tests.yml`, disparado em todo `pull_request` (qualquer branch de destino, o que cobre as PRs para `dev` e as releases para `main`): `actions/checkout@v7`, `actions/setup-dotnet@v6` com o SDK 8.0.x, `dotnet build` da solução e `dotnet test` da suíte Unit com `--no-build`. Build em Debug, porque a suíte Unit tem falhas conhecidas em Release (TD-045). Integration e Functional precisam de PostgreSQL e MongoDB e continuam locais. Permissão do token só de leitura (`contents: read`). Por quê: com o repositório público, cada PR mostra o resultado dos testes como check. Verificado antes do push: os testes Unit não abrem conexão (as connection strings dos testes são só dados), e os mesmos comandos do workflow numa cópia limpa do repositório (`git archive`) compilaram sem avisos e passaram 867/867. O guia de contribuição passou a citar o workflow.
+
+FILES
+- .github/workflows/unit-tests.yml (novo)
+- docs/guide/contributing.md (alterado)

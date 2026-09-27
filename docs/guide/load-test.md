@@ -43,7 +43,7 @@ With the defaults, a run has 1,000 concurrent loops × 20 requests, which is 20,
 
 **Step 1: bring the platform up** ([README §3](../../README.md#3-start-the-containers-with-make); the API applies the schema itself, [README §4](../../README.md#4-database-schema-and-the-administrator)).
 
-**Step 2: run exactly one API instance** ([README §5](../../README.md#5-choose-how-to-run-the-api)). For the most direct comparison, use Option B (`dotnet run`, port 5119, the simulator default) with the API container stopped.
+**Step 2: run exactly one API instance** ([README §5](../../README.md#5-choose-how-to-run-the-api)). For the most direct comparison, use Option B (`dotnet run`, port 5119, the simulator default) with the API container stopped. Add `--Diagnostics:Trace:Enabled=false` to that `dotnet run`: the Development settings turn on the in-memory step trace buffer ([validation-ui.md](validation-ui.md)), which formats every traced step and would skew the numbers.
 
 **Step 3: decide the capacity settings.** Leave the defaults (pool 100, `MaxParallelism` 20) for the first run; change them later as shown in [configuration.md](configuration.md). Keep `Rebus:MaxParallelism` below the pool size, otherwise the consumers can exhaust the pool themselves.
 

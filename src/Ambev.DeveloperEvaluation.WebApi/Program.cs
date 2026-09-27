@@ -13,12 +13,15 @@ using Ambev.DeveloperEvaluation.WebApi.Seeding;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+#if DEBUG
+using Ambev.DeveloperEvaluation.WebApi.Features.Diagnostics;
+#endif
 
 namespace Ambev.DeveloperEvaluation.WebApi;
 
 public class Program
 {
-    // Work item: TD-006, TASK-033 (FEAT-016), TASK-034 (FEAT-016), TASK-038 (FEAT-006), BUG-012, TASK-046 (FEAT-017), TASK-047 (FEAT-017), TASK-070 (FEAT-018), TD-014, TD-043
+    // Work item: TD-006, TASK-033 (FEAT-016), TASK-034 (FEAT-016), TASK-038 (FEAT-006), BUG-012, TASK-046 (FEAT-017), TASK-047 (FEAT-017), TASK-070 (FEAT-018), TD-014, TD-043, TASK-084 (FEAT-019)
     public static void Main(string[] args)
     {
         try
@@ -79,6 +82,9 @@ public class Program
             builder.AddMessaging();
 
             builder.AddAdminSeed();
+#if DEBUG
+            builder.AddDiagnostics();
+#endif
 
             builder.Services.AddAutoMapper(typeof(Program).Assembly, typeof(ApplicationLayer).Assembly);
 
@@ -97,6 +103,9 @@ public class Program
             var app = builder.Build();
             app.MigrateAndSeedAsync().GetAwaiter().GetResult();
 
+#if DEBUG
+            app.UseMiddleware<Tracing.DiagnosticsTraceMuteMiddleware>();
+#endif
             app.UseRequestLogging();
 #if DEBUG
             app.UseMiddleware<Tracing.StepTraceMiddleware>();

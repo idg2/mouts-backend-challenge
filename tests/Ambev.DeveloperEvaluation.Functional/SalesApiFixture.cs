@@ -33,6 +33,10 @@ public sealed class SalesApiFixture : IAsyncLifetime
     /// <summary>Gets a client that sends the seeded administrator's token.</summary>
     public HttpClient Client { get; private set; } = null!;
 
+    // Work item: TASK-084 (FEAT-019)
+    /// <summary>Creates a client of the same API without a token.</summary>
+    public HttpClient CreateAnonymousClient() => _factory.CreateClient();
+
     /// <inheritdoc />
     public async Task InitializeAsync()
     {

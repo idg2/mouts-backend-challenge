@@ -1739,6 +1739,181 @@
       "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "FEAT-019",
+      "type": "feature",
+      "title": "Debug diagnostics and the debug container stack",
+      "description": "Debug-only diagnostics endpoints (GET /api/diagnostics, /api/diagnostics/outbox, /api/diagnostics/trace) reading the outbox and an in-memory StepTrace ring buffer by cursor; Diagnostics:Trace:* keys; docker-compose.debug.yml with the WebApi built in Debug; make debug-up.",
+      "parent": "EPIC-001",
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "FEAT-020",
+      "type": "feature",
+      "title": "Guided validation UI in Angular",
+      "description": "Angular 22 app in tools/validation-ui that runs 18 guided scenarios (discount rules, discount policies, outbox and events) against a Debug API, with a flat flow per scenario, expected versus actual per step, and the trace panel; served by nginx in the debug compose stack. Depends on FEAT-019.",
+      "parent": "EPIC-001",
+      "moscow": "should",
+      "status": "todo",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TASK-081",
+      "type": "task",
+      "title": "Trace buffer and the diagnostics mute",
+      "parent": "FEAT-019",
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "TraceBuffer (ring buffer with cursors, AsyncLocal mute) and DiagnosticsTraceMuteMiddleware, Debug only, with unit tests."
+    },
+    {
+      "id": "TASK-082",
+      "type": "task",
+      "title": "Diagnostics settings and configuration keys",
+      "parent": "FEAT-019",
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "DiagnosticsSettings (Diagnostics:Trace:Enabled/Capacity, required), appsettings keys, DevConsole host settings force the buffer off, configuration guide rows."
+    },
+    {
+      "id": "TASK-083",
+      "type": "task",
+      "title": "Outbox inspector",
+      "parent": "FEAT-019",
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "OutboxInspector: read-only outbox rows after a sequence (capped at 500) and the head, Debug only, with integration tests."
+    },
+    {
+      "id": "TASK-084",
+      "type": "task",
+      "title": "Diagnostics controller and wiring",
+      "parent": "FEAT-019",
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "DiagnosticsController (status anonymous; outbox and trace Admin), response DTOs, AddDiagnostics, Program.cs wiring, functional tests in a non-parallel collection."
+    },
+    {
+      "id": "TASK-085",
+      "type": "task",
+      "title": "Debug compose stack, make target, docs, and handoff",
+      "parent": "FEAT-019",
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "docker-compose.debug.yml (Debug API image under its own tag), make debug-up, validation-ui guide, README and CLAUDE.md, live verification, handoff."
+    },
+    {
+      "id": "TASK-086",
+      "type": "task",
+      "title": "Scaffold, runtime config, and development mode",
+      "parent": "FEAT-020",
+      "moscow": "should",
+      "status": "todo",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "Angular 22 project in tools/validation-ui, runtime config.json loader, npm start with write-config and the /api proxy, ignore rules."
+    },
+    {
+      "id": "TASK-087",
+      "type": "task",
+      "title": "Session, HTTP client, interceptor, guard, and API probe",
+      "parent": "FEAT-020",
+      "moscow": "should",
+      "status": "todo",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "Session, auth interceptor, guard, ApiClient that resolves HTTP errors, Debug/Release/unreachable probe, with Vitest tests."
+    },
+    {
+      "id": "TASK-088",
+      "type": "task",
+      "title": "Scenario engine: model, run context, polling, clock, filters, runner",
+      "parent": "FEAT-020",
+      "moscow": "should",
+      "status": "todo",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "Scenario model, RunContext, pollUntil, ServerClock, outbox event filters, idle-relay trace filter, sequential Runner, with Vitest tests."
+    },
+    {
+      "id": "TASK-089",
+      "type": "task",
+      "title": "Screens: shell, login, runner page, flow strip, steps, trace",
+      "parent": "FEAT-020",
+      "moscow": "should",
+      "status": "todo",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "Shell with badge, login page, runner page, scenario list and detail, flow strip, steps table, trace panel, styles."
+    },
+    {
+      "id": "TASK-090",
+      "type": "task",
+      "title": "Fixtures and the discount-rule scenarios D1–D8",
+      "parent": "FEAT-020",
+      "moscow": "should",
+      "status": "todo",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "Fixtures (CPF, unique references) and scenarios D1-D8 for the default discount policy."
+    },
+    {
+      "id": "TASK-091",
+      "type": "task",
+      "title": "Discount-policy scenarios P1–P3",
+      "parent": "FEAT-020",
+      "moscow": "should",
+      "status": "todo",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "Scenarios P1-P3 for product, product-and-branch, and disabled discount policies, with validFrom from the server clock."
+    },
+    {
+      "id": "TASK-092",
+      "type": "task",
+      "title": "Outbox and event scenarios O1–O7",
+      "parent": "FEAT-020",
+      "moscow": "should",
+      "status": "todo",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "Scenarios O1-O7 for the outbox events, relay, and read model, after checking the event sets against the handlers."
+    },
+    {
+      "id": "TASK-093",
+      "type": "task",
+      "title": "UI container, compose service, make target, acceptance, docs, and handoff",
+      "parent": "FEAT-020",
+      "moscow": "should",
+      "status": "todo",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26",
+      "description": "UI Dockerfile with nginx templates and the missing-variable check, compose service on 4280, make debug-up, acceptance run of 18 scenarios, docs, handoff."
+    },
+    {
+      "id": "TD-045",
+      "type": "td",
+      "title": "Skip the StepTrace unit tests in Release builds",
+      "description": "Found during FEAT-019: `dotnet test tests/Ambev.DeveloperEvaluation.Unit -c Release` fails 13 tests of StepTraceTests, because StepTrace.Step is [Conditional(\"DEBUG\")] and compiles away in Release. Wrap those tests in #if DEBUG (as the FEAT-019 tests are) so a Release test run is green.",
+      "moscow": "could",
+      "status": "backlog",
+      "createdAt": "2026-09-26",
+      "updatedAt": "2026-09-26"
     }
   ]
 }

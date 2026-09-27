@@ -1,0 +1,18 @@
+# Layered on docker-compose.yml by `make debug-up`: the API built in Debug, so the diagnostics routes and the StepTrace
+# buffer exist. It reuses the API container name and port 8080, so `make debug-up` and `make dev-up` replace each
+# other's API container.
+
+# One definition of the seeded administrator for everything in this stack.
+x-admin-email: &admin-email admin@example.com
+x-admin-password: &admin-password Adm1n@Pass
+
+services:
+  ambev.developerevaluation.webapi:
+    image: ${DOCKER_REGISTRY-}ambevdeveloperevaluationwebapi-debug
+    build:
+      args:
+        BUILD_CONFIGURATION: Debug
+    environment:
+      Diagnostics__Trace__Enabled: "true"
+      Seed__Admin__Email: *admin-email
+      Seed__Admin__Password: *admin-password

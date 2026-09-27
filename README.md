@@ -87,6 +87,8 @@ To start only the databases, for example when you run the API with `dotnet run`,
 docker compose up -d ambev.developerevaluation.database ambev.developerevaluation.nosql
 ```
 
+To run the API built in Debug instead, with the diagnostics routes and the step trace buffer, use `make debug-up` ([validation guide](docs/guide/validation-ui.md)). It replaces the API container of `make dev-up`, and `make dev-up` replaces it back.
+
 ## 4. Database schema and the administrator
 
 Nothing to run by hand. Every time the API starts, before it listens, it applies the pending migrations and then creates the administrator from `Seed:Admin` ([configuration guide](docs/guide/configuration.md)) unless a user already has that e-mail. After new migrations arrive or the `postgres-data` volume is recreated, start the API again. The API container waits for the PostgreSQL healthcheck before it starts.
@@ -206,8 +208,9 @@ The functional tests host the whole API in process against throwaway PostgreSQL 
 ├── Ambev.DeveloperEvaluation.sln
 ├── CHALLENGE.md                  # challenge statement
 ├── README.md                     # this guide
-├── Makefile                      # make dev-up: the local stack
+├── Makefile                      # make dev-up / debug-up: the local stack
 ├── docker-compose.yml            # PostgreSQL, MongoDB, Redis, API; named volumes
+├── docker-compose.debug.yml      # overlay: the API built in Debug
 ├── .doc/                         # API conventions and reference docs
 ├── docs/                         # API documentation: INDEX.md, TEMPLATE.md, one file per API
 │   └── guide/                    # the guides indexed in §9
@@ -234,6 +237,7 @@ The functional tests host the whole API in process against throwaway PostgreSQL 
 | [configuration.md](docs/guide/configuration.md) | Every configuration key, environment overrides, changing ports and pool sizes |
 | [architecture.md](docs/guide/architecture.md) | Each mechanism around the sales CRUD and why it exists; the asynchronous sale intake, the sale events and the transactional outbox, the read model, and how to inspect the queue |
 | [trace-console.md](docs/guide/trace-console.md) | Running a documented flow with every step printed |
+| [validation-ui.md](docs/guide/validation-ui.md) | The Debug stack (`make debug-up`) and its diagnostics routes: outbox rows and trace events after a cursor |
 | [load-test.md](docs/guide/load-test.md) | The simulator that compares synchronous and asynchronous sale creation under load |
 | [observability.md](docs/guide/observability.md) | Where the logs go and how to query them |
 | [operations.md](docs/guide/operations.md) | Stop, restart, reset, and troubleshooting |

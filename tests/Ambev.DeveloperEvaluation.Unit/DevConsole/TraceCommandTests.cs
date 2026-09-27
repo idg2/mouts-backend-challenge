@@ -178,4 +178,18 @@ public class TraceCommandTests
             return _failure is null ? Task.CompletedTask : Task.FromException(_failure);
         }
     }
+
+    // Work item: TASK-082 (FEAT-019)
+    [Fact(DisplayName = "Given any configuration When building the host settings Then the diagnostics trace buffer is off")]
+    public void Given_AnyConfiguration_When_BuildingHostSettings_Then_DiagnosticsTraceBufferOff()
+    {
+        // Arrange
+        var configuration = Configuration(("Trace:AppLogMinimumLevel", "Warning"));
+
+        // Act
+        var settings = TraceCommand.HostSettings(configuration, ["--Diagnostics:Trace:Enabled=true"]);
+
+        // Assert
+        settings.Should().Contain("Diagnostics:Trace:Enabled", "false");
+    }
 }

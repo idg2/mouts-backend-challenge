@@ -2273,3 +2273,18 @@ Cópia deste log de implementação na raiz do repositório com o nome `IMPLEMEN
 
 FILES
 - IMPLEMENTACAO.md (novo)
+
+## Release v1.0.1 — dev → main (PRs #36 a #40)
+
+PR #41 (`dev` → `main`, merge commit `ee05e58`) levou ao `main` o diagnóstico em Debug (FEAT-019), a UI de validação guiada (FEAT-020), a tela da matriz de descontos (TASK-095) e os ajustes de documentação (TD-046, TD-047, TD-048). Tag anotada `v1.0.1` no merge commit. Verificado antes, no `dev` em `004160e`: build Debug e Release com 0 avisos, Unit 867, Integration 74, Functional 30, UI 67, nenhuma mudança de modelo pendente. O teste de implantação a frio da release v1.0.0 não foi repetido: o stack do `make dev-up` não mudou nessas PRs.
+
+FILES
+- nenhum (release)
+
+## TD-049 — coverlet.msbuild nos projetos de teste Integration e Functional
+
+Os scripts `coverage-report.sh`/`.bat` coletam cobertura com `/p:CollectCoverage=true`, que depende do pacote `coverlet.msbuild`. Só o projeto Unit o referenciava, então o relatório cobria apenas os testes unitários: Integration e Functional rodavam sem gerar `coverage.cobertura.xml` (reproduzido antes da mudança). Os dois passaram a referenciar `coverlet.msbuild` 6.0.2, com os mesmos `IncludeAssets`/`PrivateAssets` do `coverlet.collector` ao lado. Verificado: com o pacote, cada projeto gera o arquivo (Integration 74 testes, 58,69% de linhas; Functional 30 testes, 70,14%), e a solução compila sem avisos. Os outros pontos dos scripts (vírgulas do `/p:Exclude` sem escape no `.sh`, `pause` no `.sh`, build em Release redundante) ficaram fora, a pedido.
+
+FILES
+- tests/Ambev.DeveloperEvaluation.Integration/Ambev.DeveloperEvaluation.Integration.csproj (alterado)
+- tests/Ambev.DeveloperEvaluation.Functional/Ambev.DeveloperEvaluation.Functional.csproj (alterado)

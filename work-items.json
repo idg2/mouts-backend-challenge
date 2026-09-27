@@ -1946,6 +1946,37 @@
       "updatedAt": "2026-09-27"
     },
     {
+      "id": "TD-049",
+      "type": "td",
+      "title": "Reference coverlet.msbuild in the Integration and Functional test projects",
+      "description": "coverage-report.sh/.bat collect coverage with /p:CollectCoverage=true, which needs coverlet.msbuild; only the Unit project referenced it, so the report covered the unit tests only. The Integration and Functional projects now reference coverlet.msbuild 6.0.2 as well.",
+      "moscow": "should",
+      "status": "done",
+      "createdAt": "2026-09-27",
+      "updatedAt": "2026-09-27"
+    },
+    {
+      "id": "FEAT-021",
+      "type": "feature",
+      "title": "Unit tests on every pull request (GitHub Actions)",
+      "description": "A GitHub Actions workflow builds the solution and runs the Unit suite on every pull request, whatever its base branch. Debug build (the Unit suite has known failures in Release, TD-045). The Integration and Functional suites need PostgreSQL and MongoDB and stay local.",
+      "parent": "EPIC-001",
+      "moscow": "could",
+      "status": "done",
+      "createdAt": "2026-09-27",
+      "updatedAt": "2026-09-27"
+    },
+    {
+      "id": "TD-050",
+      "type": "td",
+      "title": "README: the Unit tests workflow on GitHub Actions",
+      "description": "README §7 states that the Unit suite (xUnit) runs on GitHub Actions for every pull request through the Unit tests workflow (FEAT-021), where its result shows, and that the integration and functional suites stay local.",
+      "moscow": "could",
+      "status": "done",
+      "createdAt": "2026-09-27",
+      "updatedAt": "2026-09-27"
+    },
+    {
       "id": "TASK-094",
       "type": "task",
       "title": "Documented step keys in the flow and the steps",

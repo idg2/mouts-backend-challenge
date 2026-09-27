@@ -68,3 +68,23 @@ details.trace summary { padding: 8px 10px; cursor: pointer; font-weight: 600; }
 .key.seen { color: var(--done); font-weight: 600; }
 .keys { display: inline-flex; flex-wrap: wrap; gap: 4px; }
 .n .keys { display: flex; justify-content: center; gap: 6px; margin-bottom: 2px; }
+/* Work item: TASK-095 (FEAT-020) */
+.pages { display: flex; gap: 10px; }
+.pages a { color: var(--bar-fg); opacity: .7; text-decoration: none; }
+.pages a.on { opacity: 1; font-weight: 600; border-bottom: 2px solid var(--bar-fg); }
+.matrix-page { max-width: 900px; }
+.matrix-page .num { text-align: right; font-variant-numeric: tabular-nums; }
+.tier { padding: 1px 6px; border-radius: 4px; background: var(--sel); white-space: nowrap; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin: 14px 0 10px; align-items: start; }
+.card { border: 1px solid var(--line); border-radius: 8px; padding: 4px 12px 12px; display: grid; gap: 8px; justify-items: start; }
+.card .h4 { margin-bottom: 2px; }
+.field { display: grid; grid-template-columns: 110px auto; align-items: center; gap: 8px; }
+.field label { color: var(--muted); }
+.card input { box-sizing: border-box; width: 72px; padding: 4px 6px; border: 1px solid var(--pending); border-radius: 5px; background: var(--bg); color: var(--fg); text-align: center; }
+.card input.wide { width: 180px; text-align: left; }
+table.tiers { border-collapse: collapse; }
+table.checks { width: auto; min-width: 560px; max-width: 680px; }
+.checks th, .checks td { padding-right: 18px; }
+.tiers th { color: var(--muted); font-weight: 500; text-align: center; padding: 0 4px 3px; }
+.tiers td { padding: 2px 4px; }
+.tiers td:first-child { width: 102px; padding-left: 0; color: var(--muted); }

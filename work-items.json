@@ -1925,6 +1925,17 @@
       "description": "Flow nodes show their documented step keys above the text, the steps table gets a Key column, keys seen in the run's trace turn green, and a Unit test checks every key used by the UI exists in docs/.",
       "createdAt": "2026-09-27",
       "updatedAt": "2026-09-27"
+    },
+    {
+      "id": "TASK-095",
+      "type": "task",
+      "title": "Discount matrix demo page",
+      "parent": "FEAT-020",
+      "moscow": "could",
+      "status": "done",
+      "description": "Page /matrix in the validation UI: creates its own customer, product, and branch, shows the default policy and the policies registered on the page, a form (maximum plus three tier rows, scope fixed to the page's product), and a check that posts real sales per quantity and shows the policy, ceiling, and discount of each, or the error code.",
+      "createdAt": "2026-09-27",
+      "updatedAt": "2026-09-27"
     }
   ]
 }

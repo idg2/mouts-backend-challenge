@@ -28,6 +28,15 @@ For each scenario the page shows:
 
 With a Release API the page says so and disables every scenario.
 
+### Discount matrix
+
+**Discount matrix** in the top bar registers discount policies (DSC-CRT) and checks them with real sales (SAL-CRT). On load the page creates its own customer, branch, and product; every policy it registers is scoped to that product, so the scenarios and other sales are untouched. The table lists the default policy and the policies registered on the page, numbered #1, #2, and so on.
+
+1. Set the maximum per product and up to three tiers (from, to, discount %), then click **Register policy**. The policy starts 2 s after the API's clock, because a policy may not start in the past; a refused policy shows the API's error code, such as `InvalidTierSet`.
+2. Type some quantities, such as `3, 5, 10, 31`, and click **Check**. The page waits until the newest policy has started, then posts one sale per quantity and shows the policy that priced it, the ceiling, the discount, and the total, or the error of a refused sale, such as `QuantityLimitExceeded`.
+
+Registering a second policy and checking again shows that the newest policy of a scope wins. Reload the page to start over with new data. This page does not need the diagnostics routes, so it also works with a Release API.
+
 ### Working on the UI itself
 
 ```bash

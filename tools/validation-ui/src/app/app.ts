@@ -1,19 +1,25 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Session } from './core/auth/session';
 import { AppConfigStore } from './core/config/app-config';
 import { Diagnostics } from './core/diagnostics/diagnostics';
 
-// Work item: TASK-089 (FEAT-020)
-/** The shell: top bar with the API badge and the signed-in user, a config error banner, and the routed page. */
+// Work item: TASK-089 (FEAT-020), TASK-095 (FEAT-020)
+/** The shell: top bar with the API badge, the page links, and the signed-in user, a config error banner, and the routed page. */
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <header class="top">
       <b>DeveloperStore · Guided validation</b>
       <span class="badge" [class.ok]="diagnostics.mode() === 'debug'">{{ badge() }}</span>
+      @if (session.email()) {
+        <nav class="pages">
+          <a routerLink="/" routerLinkActive="on" [routerLinkActiveOptions]="{ exact: true }">Scenarios</a>
+          <a routerLink="/matrix" routerLinkActive="on">Discount matrix</a>
+        </nav>
+      }
       <span class="spacer"></span>
       @if (session.email(); as email) {
         <span class="user">{{ email }}</span>

@@ -1916,6 +1916,16 @@
       "updatedAt": "2026-09-26"
     },
     {
+      "id": "TD-046",
+      "type": "td",
+      "title": "Record in the README that Redis is not used and where a policy cache would fit",
+      "description": "README §1 states that Redis is started by the stack but deliberately not used, and that a discount policy cache (FEAT-008) would decorate IDiscountPolicyRepository.GetApplicableAsync, the single read behind DiscountPolicyResolver, rather than extend the resolver: IMemoryCache for one API instance, Redis for several.",
+      "moscow": "could",
+      "status": "done",
+      "createdAt": "2026-09-27",
+      "updatedAt": "2026-09-27"
+    },
+    {
       "id": "TASK-094",
       "type": "task",
       "title": "Documented step keys in the flow and the steps",

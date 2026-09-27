@@ -1926,6 +1926,26 @@
       "updatedAt": "2026-09-27"
     },
     {
+      "id": "TD-047",
+      "type": "td",
+      "title": "Mention the Discount matrix page in the README guide index and the UI README",
+      "description": "README §9 described validation-ui.md with the 18 scenarios and the diagnostics routes only, and tools/validation-ui/README.md said the app runs the scenarios against a Debug API; both now mention the Discount matrix page (TASK-095), which also works with a Release API.",
+      "moscow": "could",
+      "status": "done",
+      "createdAt": "2026-09-27",
+      "updatedAt": "2026-09-27"
+    },
+    {
+      "id": "TD-048",
+      "type": "td",
+      "title": "Publish the implementation log as IMPLEMENTACAO.md at the repository root",
+      "description": "Copy of the local implementation log (PT-BR, one section per work item with what was done, why, and the files touched) at the repository root, so reviewers can read the history of the changes on GitHub.",
+      "moscow": "could",
+      "status": "done",
+      "createdAt": "2026-09-27",
+      "updatedAt": "2026-09-27"
+    },
+    {
       "id": "TASK-094",
       "type": "task",
       "title": "Documented step keys in the flow and the steps",

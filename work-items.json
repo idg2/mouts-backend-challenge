@@ -1,6 +1,6 @@
 {
   "meta": {
-    "updatedAt": "2026-09-26",
+    "updatedAt": "2026-09-27",
     "types": [
       "epic",
       "feature",
@@ -1758,9 +1758,9 @@
       "description": "Angular 22 app in tools/validation-ui that runs 18 guided scenarios (discount rules, discount policies, outbox and events) against a Debug API, with a flat flow per scenario, expected versus actual per step, and the trace panel; served by nginx in the debug compose stack. Depends on FEAT-019.",
       "parent": "EPIC-001",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-26",
-      "updatedAt": "2026-09-26"
+      "updatedAt": "2026-09-27"
     },
     {
       "id": "TASK-081",
@@ -1823,7 +1823,7 @@
       "title": "Scaffold, runtime config, and development mode",
       "parent": "FEAT-020",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26",
       "description": "Angular 22 project in tools/validation-ui, runtime config.json loader, npm start with write-config and the /api proxy, ignore rules."
@@ -1834,7 +1834,7 @@
       "title": "Session, HTTP client, interceptor, guard, and API probe",
       "parent": "FEAT-020",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26",
       "description": "Session, auth interceptor, guard, ApiClient that resolves HTTP errors, Debug/Release/unreachable probe, with Vitest tests."
@@ -1845,7 +1845,7 @@
       "title": "Scenario engine: model, run context, polling, clock, filters, runner",
       "parent": "FEAT-020",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26",
       "description": "Scenario model, RunContext, pollUntil, ServerClock, outbox event filters, idle-relay trace filter, sequential Runner, with Vitest tests."
@@ -1856,7 +1856,7 @@
       "title": "Screens: shell, login, runner page, flow strip, steps, trace",
       "parent": "FEAT-020",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26",
       "description": "Shell with badge, login page, runner page, scenario list and detail, flow strip, steps table, trace panel, styles."
@@ -1867,7 +1867,7 @@
       "title": "Fixtures and the discount-rule scenarios D1–D8",
       "parent": "FEAT-020",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26",
       "description": "Fixtures (CPF, unique references) and scenarios D1-D8 for the default discount policy."
@@ -1878,7 +1878,7 @@
       "title": "Discount-policy scenarios P1–P3",
       "parent": "FEAT-020",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26",
       "description": "Scenarios P1-P3 for product, product-and-branch, and disabled discount policies, with validFrom from the server clock."
@@ -1889,7 +1889,7 @@
       "title": "Outbox and event scenarios O1–O7",
       "parent": "FEAT-020",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26",
       "description": "Scenarios O1-O7 for the outbox events, relay, and read model, after checking the event sets against the handlers."
@@ -1900,9 +1900,9 @@
       "title": "UI container, compose service, make target, acceptance, docs, and handoff",
       "parent": "FEAT-020",
       "moscow": "should",
-      "status": "todo",
+      "status": "done",
       "createdAt": "2026-09-26",
-      "updatedAt": "2026-09-26",
+      "updatedAt": "2026-09-27",
       "description": "UI Dockerfile with nginx templates and the missing-variable check, compose service on 4280, make debug-up, acceptance run of 18 scenarios, docs, handoff."
     },
     {
@@ -1914,6 +1914,17 @@
       "status": "backlog",
       "createdAt": "2026-09-26",
       "updatedAt": "2026-09-26"
+    },
+    {
+      "id": "TASK-094",
+      "type": "task",
+      "title": "Documented step keys in the flow and the steps",
+      "parent": "FEAT-020",
+      "moscow": "should",
+      "status": "done",
+      "description": "Flow nodes show their documented step keys above the text, the steps table gets a Key column, keys seen in the run's trace turn green, and a Unit test checks every key used by the UI exists in docs/.",
+      "createdAt": "2026-09-27",
+      "updatedAt": "2026-09-27"
     }
   ]
 }

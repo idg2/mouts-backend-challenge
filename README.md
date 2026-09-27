@@ -87,7 +87,7 @@ To start only the databases, for example when you run the API with `dotnet run`,
 docker compose up -d ambev.developerevaluation.database ambev.developerevaluation.nosql
 ```
 
-To run the API built in Debug instead, with the diagnostics routes and the step trace buffer, use `make debug-up` ([validation guide](docs/guide/validation-ui.md)). It replaces the API container of `make dev-up`, and `make dev-up` replaces it back.
+To run the API built in Debug instead, with the diagnostics routes and the step trace buffer, plus the guided validation UI on port 4280, use `make debug-up` ([validation guide](docs/guide/validation-ui.md)). It replaces the API container of `make dev-up`, and `make dev-up` replaces it back.
 
 ## 4. Database schema and the administrator
 
@@ -226,7 +226,8 @@ The functional tests host the whole API in process against throwaway PostgreSQL 
 │   ├── Ambev.DeveloperEvaluation.Integration
 │   └── Ambev.DeveloperEvaluation.Functional    # the challenge sales rules over HTTP
 └── tools/
-    └── Ambev.DeveloperEvaluation.DevConsole    # trace console and load simulator
+    ├── Ambev.DeveloperEvaluation.DevConsole    # trace console and load simulator
+    └── validation-ui                          # Angular guided validation UI (make debug-up)
 ```
 
 ## 9. Guides
@@ -237,7 +238,7 @@ The functional tests host the whole API in process against throwaway PostgreSQL 
 | [configuration.md](docs/guide/configuration.md) | Every configuration key, environment overrides, changing ports and pool sizes |
 | [architecture.md](docs/guide/architecture.md) | Each mechanism around the sales CRUD and why it exists; the asynchronous sale intake, the sale events and the transactional outbox, the read model, and how to inspect the queue |
 | [trace-console.md](docs/guide/trace-console.md) | Running a documented flow with every step printed |
-| [validation-ui.md](docs/guide/validation-ui.md) | The Debug stack (`make debug-up`) and its diagnostics routes: outbox rows and trace events after a cursor |
+| [validation-ui.md](docs/guide/validation-ui.md) | The guided validation UI (`make debug-up`, port 4280): 18 scenarios for the discount rules, the policies, and the outbox; the Debug diagnostics routes |
 | [load-test.md](docs/guide/load-test.md) | The simulator that compares synchronous and asynchronous sale creation under load |
 | [observability.md](docs/guide/observability.md) | Where the logs go and how to query them |
 | [operations.md](docs/guide/operations.md) | Stop, restart, reset, and troubleshooting |

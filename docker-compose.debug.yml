@@ -16,3 +16,17 @@ services:
       Diagnostics__Trace__Enabled: "true"
       Seed__Admin__Email: *admin-email
       Seed__Admin__Password: *admin-password
+
+  # The guided validation UI (tools/validation-ui): nginx serving the Angular build and proxying /api/ to the API.
+  ambev.developerevaluation.ui:
+    container_name: ambev_developer_evaluation_ui
+    build:
+      context: tools/validation-ui
+    environment:
+      API_UPSTREAM: http://ambev.developerevaluation.webapi:8080
+      UI_LOGIN_EMAIL: *admin-email
+      UI_LOGIN_PASSWORD: *admin-password
+    ports:
+      - "4280:8080"
+    depends_on:
+      - ambev.developerevaluation.webapi

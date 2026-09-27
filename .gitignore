@@ -363,3 +363,9 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 .idea
+
+# Guided validation UI (tools/validation-ui)
+tools/validation-ui/node_modules/
+tools/validation-ui/dist/
+tools/validation-ui/.angular/
+tools/validation-ui/public/config.json

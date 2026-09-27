@@ -19,8 +19,12 @@ Configuration comes from `src/Ambev.DeveloperEvaluation.WebApi/appsettings.json`
 | `Outbox:BatchSize` | `50` | Outbox rows one relay cycle sends. |
 | `ConnectionStrings:ReadModel` | MongoDB on `localhost:27017` | MongoDB URL of the sales read model (no database in the path; the database is `ReadModel:Database`). |
 | `ReadModel:Database` / `Collection` | `developer_evaluation_read` / `sales` | Where the sale events are projected and where `GET /api/sales` reads. |
+| `Diagnostics:Trace:Enabled` | `false` (`true` in `appsettings.Development.json`) | Debug builds only. When `true`, StepTrace events go to an in-memory buffer that `GET /api/diagnostics/trace` serves ([validation UI guide](validation-ui.md)). Release builds ignore the key. The trace console always turns it off. |
+| `Diagnostics:Trace:Capacity` | `5000` | Debug builds only. How many trace events the buffer keeps; the oldest are overwritten. |
 | `Seed:Admin:Username` / `Email` / `Password` / `Phone` | `admin` / `admin@example.com` / `Adm1n@Pass` / `+5511999990000` | The administrator created at startup when no user has that e-mail ([README §4](../../README.md#4-database-schema-and-the-administrator)). The values must pass the user rules, or the API does not start. Replace the password outside development. |
 | `Serilog` section | Levels, console output, `/health` filter | EF Core and ASP.NET Core log at Warning, so SQL commands do not flood the log. |
+
+**Validation UI variables** (`tools/validation-ui`, not the API): the container needs `API_UPSTREAM` (the API URL nginx proxies `/api/` to), `UI_LOGIN_EMAIL`, and `UI_LOGIN_PASSWORD` (the login form's prefilled values; `docker-compose.debug.yml` takes them from the same definition as the API's `Seed:Admin`). `npm start` needs `API_URL`, `UI_LOGIN_EMAIL`, and `UI_LOGIN_PASSWORD`. A missing variable stops the container or the dev server with its name.
 
 The API container overrides `DefaultConnection`, `LogStorage`, `MessageBus`, and `ReadModel` in `docker-compose.yml` so they point at the service names instead of `localhost`.
 

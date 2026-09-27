@@ -1,0 +1,1 @@
+{ "loginHint": { "email": "${UI_LOGIN_EMAIL}", "password": "${UI_LOGIN_PASSWORD}" } }

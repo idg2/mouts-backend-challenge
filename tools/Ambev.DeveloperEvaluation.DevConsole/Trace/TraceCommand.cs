@@ -135,11 +135,12 @@ public static class TraceCommand
         return allSucceeded;
     }
 
-    // Work item: TASK-056 (FEAT-017)
+    // Work item: TASK-056 (FEAT-017), TASK-082 (FEAT-019)
     /// <summary>
     /// Builds the host configuration of the in-process API: every setting given on the command line, then the
     /// console's resolved connection strings and administrator, so the API uses exactly the databases the console
-    /// wiped and the administrator it logs in as, plus the application log level of the trace.
+    /// wiped and the administrator it logs in as, plus the application log level of the trace. The diagnostics trace
+    /// buffer is always off: it would replace the console's StepTrace sink.
     /// </summary>
     /// <param name="configuration">The merged configuration</param>
     /// <param name="configurationArgs">The command-line settings, as --Key=value</param>
@@ -157,6 +158,7 @@ public static class TraceCommand
         }
 
         settings["Serilog:MinimumLevel:Default"] = Required(configuration, "Trace:AppLogMinimumLevel");
+        settings["Diagnostics:Trace:Enabled"] = "false";
         return settings;
     }
 

@@ -25,10 +25,12 @@ This guide takes you from a fresh clone to a running API and a first sale. Confi
 | API | ASP.NET Core 8 (`src/Ambev.DeveloperEvaluation.WebApi`) | REST API, Swagger, JWT auth | 8080 (container) or 5119 (`dotnet run`) |
 | PostgreSQL 13 | compose service `ambev.developerevaluation.database` | Users, customers, branches, products, sales | 5433 (5432 inside the container) |
 | MongoDB 8 | compose service `ambev.developerevaluation.nosql` | Application logs (`developer_evaluation_logs`), the Rebus sale queue (`developer_evaluation_bus`), and the sales read model (`developer_evaluation_read`) | 27017 |
-| Redis 7 | compose service `ambev.developerevaluation.cache` | Started by the stack; not used by the code yet | 6380 (6379 inside the container) |
+| Redis 7 | compose service `ambev.developerevaluation.cache` | Started by the stack; not used by the code (see below) | 6380 (6379 inside the container) |
 | Developer console | console app (`tools/Ambev.DeveloperEvaluation.DevConsole`) | Traced scenarios against the API hosted in process, and the load simulator | — |
 
 PostgreSQL keeps its data in the named volume `postgres-data` and MongoDB in `mongo-data`, so both survive `docker compose down`.
+
+Redis is deliberately not used. Every sale write resolves its discount policies with one indexed PostgreSQL query, and a stale cache entry would price a sale with the wrong policy. Where a cache would apply is the discount policy matrix: a decorator of `IDiscountPolicyRepository.GetApplicableAsync`, the single read behind `DiscountPolicyResolver`, so the resolver and the sale handlers stay unchanged. It would hold every policy, disabled ones included, because editing a sale reprices it at its original date, and creating or disabling a policy (DSC-CRT, DSC-DIS) would clear it. `IMemoryCache` serves one API instance; Redis fits once several instances share the policies (FEAT-008).
 
 ## 2. Prerequisites
 
@@ -86,6 +88,8 @@ To start only the databases, for example when you run the API with `dotnet run`,
 ```bash
 docker compose up -d ambev.developerevaluation.database ambev.developerevaluation.nosql
 ```
+
+To run the API built in Debug instead, with the diagnostics routes and the step trace buffer, plus the guided validation UI on port 4280, use `make debug-up` ([validation guide](docs/guide/validation-ui.md)). It replaces the API container of `make dev-up`, and `make dev-up` replaces it back.
 
 ## 4. Database schema and the administrator
 
@@ -206,8 +210,9 @@ The functional tests host the whole API in process against throwaway PostgreSQL 
 ├── Ambev.DeveloperEvaluation.sln
 ├── CHALLENGE.md                  # challenge statement
 ├── README.md                     # this guide
-├── Makefile                      # make dev-up: the local stack
+├── Makefile                      # make dev-up / debug-up: the local stack
 ├── docker-compose.yml            # PostgreSQL, MongoDB, Redis, API; named volumes
+├── docker-compose.debug.yml      # overlay: the API built in Debug
 ├── .doc/                         # API conventions and reference docs
 ├── docs/                         # API documentation: INDEX.md, TEMPLATE.md, one file per API
 │   └── guide/                    # the guides indexed in §9
@@ -223,7 +228,8 @@ The functional tests host the whole API in process against throwaway PostgreSQL 
 │   ├── Ambev.DeveloperEvaluation.Integration
 │   └── Ambev.DeveloperEvaluation.Functional    # the challenge sales rules over HTTP
 └── tools/
-    └── Ambev.DeveloperEvaluation.DevConsole    # trace console and load simulator
+    ├── Ambev.DeveloperEvaluation.DevConsole    # trace console and load simulator
+    └── validation-ui                          # Angular guided validation UI (make debug-up)
 ```
 
 ## 9. Guides
@@ -234,6 +240,7 @@ The functional tests host the whole API in process against throwaway PostgreSQL 
 | [configuration.md](docs/guide/configuration.md) | Every configuration key, environment overrides, changing ports and pool sizes |
 | [architecture.md](docs/guide/architecture.md) | Each mechanism around the sales CRUD and why it exists; the asynchronous sale intake, the sale events and the transactional outbox, the read model, and how to inspect the queue |
 | [trace-console.md](docs/guide/trace-console.md) | Running a documented flow with every step printed |
+| [validation-ui.md](docs/guide/validation-ui.md) | The guided validation UI (`make debug-up`, port 4280): 18 scenarios for the discount rules, the policies, and the outbox; the Discount matrix page (register policies, check them with real sales); the Debug diagnostics routes |
 | [load-test.md](docs/guide/load-test.md) | The simulator that compares synchronous and asynchronous sale creation under load |
 | [observability.md](docs/guide/observability.md) | Where the logs go and how to query them |
 | [operations.md](docs/guide/operations.md) | Stop, restart, reset, and troubleshooting |

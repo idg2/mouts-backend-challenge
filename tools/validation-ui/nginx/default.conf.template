@@ -1,0 +1,24 @@
+# Work item: TASK-093 (FEAT-020)
+# Rendered by the nginx image's envsubst step; only defined environment variables are replaced, so $uri and
+# $api_upstream stay. The upstream is a variable resolved through the container's DNS (NGINX_LOCAL_RESOLVERS, read
+# from /etc/resolv.conf by the image), so a recreated API container with a new address is found again.
+server {
+    listen 8080;
+    root /usr/share/nginx/html;
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=10s ipv6=off;
+
+    location /api/ {
+        set $api_upstream ${API_UPSTREAM};
+        proxy_pass $api_upstream;
+        # Keep the API's Date header: the scenarios take the API's clock from it.
+        proxy_pass_header Date;
+    }
+
+    location = /config.json {
+        add_header Cache-Control "no-store";
+    }
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
